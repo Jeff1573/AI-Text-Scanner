@@ -1,4 +1,4 @@
-import { app, BrowserWindow, desktopCapturer, session, ipcMain } from 'electron';
+import { app, BrowserWindow, desktopCapturer, session, ipcMain, screen } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 
@@ -12,6 +12,7 @@ if (started) {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let screenshotWindow: BrowserWindow | null = null;
 
 const createWindow = () => {
   // Create the browser window.
@@ -44,6 +45,76 @@ const createWindow = () => {
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
 };
+
+// 创建截图展示窗口
+const createScreenshotWindow = (screenshotData: ScreenSource) => {
+  console.log('创建截图窗口，数据:', screenshotData);
+  
+  // 关闭已存在的截图窗口
+  if (screenshotWindow) {
+    screenshotWindow.close();
+  }
+
+  // 获取主显示器的尺寸
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.workAreaSize;
+
+  screenshotWindow = new BrowserWindow({
+    width: width,
+    height: height,
+    x: 0,
+    y: 0,
+    fullscreen: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  // 打开开发者工具用于调试
+  screenshotWindow.webContents.openDevTools();
+
+  // 加载截图展示页面
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    const url = `${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/screenshot`;
+    console.log('加载URL:', url);
+    screenshotWindow.loadURL(url);
+  } else {
+    screenshotWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`), {
+      hash: '/screenshot'
+    });
+  }
+
+  // 传递截图数据到新窗口 - 改进时机
+  screenshotWindow.webContents.on('did-finish-load', () => {
+    console.log('窗口加载完成，准备发送数据');
+    // 延迟一点时间确保组件已经挂载
+    setTimeout(() => {
+      if (screenshotWindow && !screenshotWindow.isDestroyed()) {
+        console.log('发送截图数据到新窗口:', screenshotData);
+        screenshotWindow.webContents.send('screenshot-data', screenshotData);
+      }
+    }, 500);
+  });
+
+  // 添加错误处理
+  screenshotWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('窗口加载失败:', errorCode, errorDescription);
+  });
+
+  // 窗口关闭时清理引用
+  screenshotWindow.on('closed', () => {
+    screenshotWindow = null;
+  });
+};
+
+// 添加ScreenSource类型定义
+interface ScreenSource {
+  id: string;
+  name: string;
+  thumbnail: string;
+}
 
 // 处理屏幕截图请求
 ipcMain.handle('capture-screen', async () => {
@@ -87,6 +158,21 @@ ipcMain.handle('capture-screen', async () => {
       mainWindow.show();
     }
     
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+});
+
+// 处理创建截图展示窗口请求
+ipcMain.handle('create-screenshot-window', async (event, screenshotData) => {
+  try {
+    console.log('收到创建截图窗口请求，数据:', screenshotData);
+    createScreenshotWindow(screenshotData);
+    return { success: true };
+  } catch (error) {
+    console.error('创建截图窗口失败:', error);
     return {
       success: false,
       error: error.message

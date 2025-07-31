@@ -1,19 +1,18 @@
 # Fast OCR - 屏幕截图工具
 
-这是一个基于Electron的桌面应用程序，提供了强大的屏幕截图功能。
+这是一个基于Electron的桌面应用程序，提供了简单高效的屏幕截图功能。
 
 ## 功能特性
 
 ### 🖥️ 屏幕截图
-- 获取所有可用屏幕的缩略图
-- 支持多显示器环境
-- 高质量截图保存
-- 实时预览功能
+- 一键获取屏幕截图
+- 自动在新窗口中全屏显示
 - **智能窗口隐藏**: 截图时自动隐藏应用窗口，确保截图内容纯净
+- **即时展示**: 获取截图后立即在新窗口中展示
 
 ### 🎨 现代化界面
-- 响应式设计
-- 美观的用户界面
+- 简洁的用户界面
+- 一键操作设计
 - 流畅的动画效果
 - 直观的操作体验
 
@@ -56,22 +55,40 @@ ipcMain.handle('capture-screen', async () => {
   
   return { success: true, sources };
 });
+
+// 创建全屏截图展示窗口
+ipcMain.handle('create-screenshot-window', async (event, screenshotData) => {
+  const screenshotWindow = new BrowserWindow({
+    fullscreen: true,
+    webPreferences: { contextIsolation: true }
+  });
+  
+  screenshotWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/screenshot`);
+  screenshotWindow.webContents.send('screenshot-data', screenshotData);
+});
 ```
 
 #### 2. 预加载脚本 (`main/preload.ts`)
 ```typescript
 // 暴露安全的API给渲染进程
 contextBridge.exposeInMainWorld('electronAPI', {
-  captureScreen: (options = {}) => ipcRenderer.invoke('capture-screen', options)
+  captureScreen: (options = {}) => ipcRenderer.invoke('capture-screen', options),
+  createScreenshotWindow: (data) => ipcRenderer.invoke('create-screenshot-window', data),
+  onScreenshotData: (callback) => ipcRenderer.on('screenshot-data', callback)
 });
 ```
 
 #### 3. 渲染进程界面 (`renderer/src/App.tsx`)
 ```typescript
-// 获取屏幕截图
+// 一键截图并显示
 const handleCaptureScreen = async () => {
   const result = await window.electronAPI.captureScreen();
-  setCaptureResult(result);
+  
+  if (result.success && result.sources && result.sources.length > 0) {
+    // 直接使用第一个屏幕的截图创建新窗口
+    const firstSource = result.sources[0];
+    await window.electronAPI.createScreenshotWindow(firstSource);
+  }
 };
 ```
 
@@ -105,10 +122,14 @@ npm run make
 ### 屏幕截图
 1. 点击"获取屏幕截图"按钮
 2. 应用窗口会自动隐藏，确保截图内容纯净
-3. 系统将显示所有可用屏幕的缩略图
-4. 点击选择要查看的屏幕
-5. 点击"保存截图"将图片保存到本地
-6. 应用窗口会自动恢复显示
+3. 系统自动获取第一个可用屏幕的截图
+4. 新窗口自动打开并全屏显示截图内容
+5. 应用窗口会自动恢复显示
+
+### 全屏展示功能
+- 新窗口会自动全屏显示截图内容
+- 窗口顶部有标题栏和关闭按钮
+- 点击关闭按钮或按ESC键可以关闭全屏窗口
 
 ## 安全特性
 
@@ -116,6 +137,7 @@ npm run make
 - **权限控制**: 通过`setDisplayMediaRequestHandler`控制屏幕访问权限
 - **API限制**: 只暴露必要的API给渲染进程
 - **窗口管理**: 智能隐藏/显示窗口，确保截图质量
+- **多窗口支持**: 安全的多窗口通信机制
 
 ## 开发指南
 
@@ -127,10 +149,15 @@ fast-ocr/
 │   └── preload.ts       # 预加载脚本
 ├── renderer/             # 渲染进程代码
 │   └── src/
-│       ├── App.tsx      # 主界面组件
+│       ├── App.tsx      # 主界面组件（包含路由）
 │       └── App.css      # 样式文件
 └── package.json         # 项目配置
 ```
+
+### 组件架构
+- **MainApp**: 主应用界面，包含一键截图功能
+- **ScreenshotViewer**: 全屏截图展示组件
+- **App**: 路由组件，根据URL hash切换组件
 
 ### 添加新功能
 1. 在主进程中实现核心逻辑
@@ -147,6 +174,9 @@ A: 确保应用有屏幕录制权限，在系统偏好设置中允许应用访�
 
 **Q: 截图时窗口没有隐藏**
 A: 检查应用是否有窗口管理权限，某些系统可能需要额外权限。
+
+**Q: 全屏窗口无法显示**
+A: 检查是否有其他应用占用全屏模式，确保系统支持多窗口。
 
 **Q: 应用启动失败**
 A: 检查Node.js版本，确保所有依赖正确安装。
