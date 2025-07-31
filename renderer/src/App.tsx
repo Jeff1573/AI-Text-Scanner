@@ -1,42 +1,6 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-
-// 声明electronAPI类型
-declare global {
-  interface Window {
-    electronAPI: {
-      captureScreen: (options?: Record<string, unknown>) => Promise<{
-        success: boolean;
-        sources?: Array<{
-          id: string;
-          name: string;
-          thumbnail: string;
-        }>;
-        error?: string;
-      }>;
-      createScreenshotWindow: (screenshotData: ScreenSource) => Promise<{
-        success: boolean;
-        error?: string;
-      }>;
-      onScreenshotData: (callback: (data: ScreenSource) => void) => void;
-      removeScreenshotDataListener: () => void;
-      getSelectedContent: (imageData: string, selection: { x: number; y: number; width: number; height: number }) => Promise<{
-        success: boolean;
-        selectedImageData?: string;
-        error?: string;
-      }>;
-      onSelectedImage: (callback: (data: { imageData: string; selection: { width: number; height: number } }) => void) => void;
-      removeSelectedImageListener: () => void;
-      sendSelectedImage: (data: { imageData: string; selection: { x: number; y: number; width: number; height: number } }) => void;
-    };
-  }
-}
-
-interface ScreenSource {
-  id: string;
-  name: string;
-  thumbnail: string;
-}
+import type { ScreenSource } from './types/electron'
 
 // 主应用组件
 function MainApp() {
@@ -68,17 +32,30 @@ function MainApp() {
 
   // 监听选中图片数据
   useEffect(() => {
-    const handleSelectedImage = (data: { imageData: string; selection: { width: number; height: number } }) => {
-      console.log('收到选中图片数据:', data);
-      setSelectedImage(data.imageData);
-      setSelectedImageInfo({ width: data.selection.width, height: data.selection.height });
+    // 从localStorage读取之前保存的选中图片数据
+    const savedImageData = localStorage.getItem('selectedImageData');
+    const savedImageInfo = localStorage.getItem('selectedImageInfo');
+    
+    if (savedImageData && savedImageInfo) {
+      setSelectedImage(savedImageData);
+      setSelectedImageInfo(JSON.parse(savedImageInfo));
+    }
+
+    // 监听窗口焦点事件，检查是否有新的选中图片数据
+    const handleWindowFocus = () => {
+      const newImageData = localStorage.getItem('selectedImageData');
+      const newImageInfo = localStorage.getItem('selectedImageInfo');
+      
+      if (newImageData && newImageInfo) {
+        setSelectedImage(newImageData);
+        setSelectedImageInfo(JSON.parse(newImageInfo));
+      }
     };
 
-    // 注册监听器
-    window.electronAPI.onSelectedImage(handleSelectedImage);
+    window.addEventListener('focus', handleWindowFocus);
 
     return () => {
-      window.electronAPI.removeSelectedImageListener();
+      window.removeEventListener('focus', handleWindowFocus);
     };
   }, []);
 
@@ -86,6 +63,8 @@ function MainApp() {
   const handleClearSelectedImage = () => {
     setSelectedImage(null);
     setSelectedImageInfo(null);
+    localStorage.removeItem('selectedImageData');
+    localStorage.removeItem('selectedImageInfo');
   };
 
   return (
@@ -263,11 +242,12 @@ function ScreenshotViewer() {
         if (result.success) {
           console.log('选中内容处理成功:', result);
           
-          // 发送选中图片数据到主界面
-          await window.electronAPI.sendSelectedImage({
-            imageData: selectedImageData,
-            selection: selection
-          });
+          // 保存选中图片数据到localStorage
+          localStorage.setItem('selectedImageData', selectedImageData);
+          localStorage.setItem('selectedImageInfo', JSON.stringify({
+            width: selection.width,
+            height: selection.height
+          }));
           
           // 关闭当前窗口
           window.close();

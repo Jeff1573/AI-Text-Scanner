@@ -24,6 +24,7 @@ const createWindow = () => {
       nodeIntegration: false,
       contextIsolation: true,
     },
+    frame: false,
   });
 
   // 设置桌面捕获权限处理
@@ -195,32 +196,6 @@ ipcMain.handle('get-selected-content', async (event, { imageData, selection }) =
     };
   } catch (error) {
     console.error('获取选中内容失败:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-});
-
-// 处理发送选中图片数据请求
-ipcMain.handle('send-selected-image', async (event, data) => {
-  try {
-    console.log('收到发送选中图片数据请求:', { selection: data.selection });
-    
-    // 发送数据到主窗口
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('selected-image-data', {
-        imageData: data.imageData,
-        selection: {
-          width: data.selection.width,
-          height: data.selection.height
-        }
-      });
-    }
-    
-    return { success: true };
-  } catch (error) {
-    console.error('发送选中图片数据失败:', error);
     return {
       success: false,
       error: error.message

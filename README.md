@@ -81,9 +81,8 @@ ipcMain.handle('create-screenshot-window', async (event, screenshotData) => {
   screenshotWindow.webContents.send('screenshot-data', screenshotData);
 });
 
-// 处理选中内容
+// 处理选中内容（简化版本）
 ipcMain.handle('get-selected-content', async (event, { imageData, selection }) => {
-  // 处理选中区域的图片内容
   return { success: true, selectedImageData: imageData };
 });
 ```
@@ -129,6 +128,19 @@ const handleMouseMove = (e) => {
 const handleMouseUp = () => {
   // 完成选择，获取选中内容
   handleGetSelectedContent();
+};
+
+// 选中内容处理（使用localStorage传递数据）
+const handleGetSelectedContent = async () => {
+  // 使用Canvas裁剪图片
+  const selectedImageData = canvas.toDataURL('image/png');
+  
+  // 保存到localStorage
+  localStorage.setItem('selectedImageData', selectedImageData);
+  localStorage.setItem('selectedImageInfo', JSON.stringify(selection));
+  
+  // 关闭窗口
+  window.close();
 };
 ```
 
@@ -206,9 +218,16 @@ fast-ocr/
 ├── renderer/             # 渲染进程代码
 │   └── src/
 │       ├── App.tsx      # 主界面组件（包含路由）
-│       └── App.css      # 样式文件
+│       ├── App.css      # 样式文件
+│       └── types/       # 类型定义
+│           └── electron.d.ts  # 统一的Electron API类型定义
 └── package.json         # 项目配置
 ```
+
+### 类型定义架构
+- **统一类型定义**: 所有Electron API类型定义集中在 `renderer/src/types/electron.d.ts`
+- **类型复用**: 渲染进程组件通过import引用统一类型
+- **类型安全**: 确保API调用和类型定义的一致性
 
 ### 组件架构
 - **MainApp**: 主应用界面，包含一键截图功能
