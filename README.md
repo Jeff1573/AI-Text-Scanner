@@ -9,6 +9,7 @@
 - 支持多显示器环境
 - 高质量截图保存
 - 实时预览功能
+- **智能窗口隐藏**: 截图时自动隐藏应用窗口，确保截图内容纯净
 
 ### 🎨 现代化界面
 - 响应式设计
@@ -35,13 +36,25 @@ session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
   });
 }, { useSystemPicker: true });
 
-// 处理屏幕截图请求
+// 处理屏幕截图请求 - 包含窗口隐藏逻辑
 ipcMain.handle('capture-screen', async () => {
+  // 隐藏当前应用窗口
+  if (mainWindow) {
+    mainWindow.hide();
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
   const sources = await desktopCapturer.getSources({ 
     types: ['screen'],
     thumbnailSize: { width: 1920, height: 1080 }
   });
-  // 返回屏幕信息
+  
+  // 截图完成后恢复窗口显示
+  if (mainWindow) {
+    mainWindow.show();
+  }
+  
+  return { success: true, sources };
 });
 ```
 
@@ -91,15 +104,18 @@ npm run make
 
 ### 屏幕截图
 1. 点击"获取屏幕截图"按钮
-2. 系统将显示所有可用屏幕的缩略图
-3. 点击选择要查看的屏幕
-4. 点击"保存截图"将图片保存到本地
+2. 应用窗口会自动隐藏，确保截图内容纯净
+3. 系统将显示所有可用屏幕的缩略图
+4. 点击选择要查看的屏幕
+5. 点击"保存截图"将图片保存到本地
+6. 应用窗口会自动恢复显示
 
 ## 安全特性
 
 - **上下文隔离**: 使用`contextIsolation: true`确保渲染进程安全
 - **权限控制**: 通过`setDisplayMediaRequestHandler`控制屏幕访问权限
 - **API限制**: 只暴露必要的API给渲染进程
+- **窗口管理**: 智能隐藏/显示窗口，确保截图质量
 
 ## 开发指南
 
@@ -128,6 +144,9 @@ fast-ocr/
 
 **Q: 无法获取屏幕截图**
 A: 确保应用有屏幕录制权限，在系统偏好设置中允许应用访问屏幕。
+
+**Q: 截图时窗口没有隐藏**
+A: 检查应用是否有窗口管理权限，某些系统可能需要额外权限。
 
 **Q: 应用启动失败**
 A: 检查Node.js版本，确保所有依赖正确安装。

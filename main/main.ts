@@ -11,9 +11,11 @@ if (started) {
   app.quit();
 }
 
+let mainWindow: BrowserWindow | null = null;
+
 const createWindow = () => {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
@@ -46,6 +48,14 @@ const createWindow = () => {
 // 处理屏幕截图请求
 ipcMain.handle('capture-screen', async () => {
   try {
+    // 隐藏当前应用窗口
+    if (mainWindow) {
+      mainWindow.hide();
+      
+      // 等待一小段时间确保窗口完全隐藏
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
     const sources = await desktopCapturer.getSources({ 
       types: ['screen'],
       thumbnailSize: { width: 1920, height: 1080 }
@@ -56,7 +66,7 @@ ipcMain.handle('capture-screen', async () => {
     }
     
     // 返回第一个屏幕的信息
-    return {
+    const result = {
       success: true,
       sources: sources.map(source => ({
         id: source.id,
@@ -64,7 +74,19 @@ ipcMain.handle('capture-screen', async () => {
         thumbnail: source.thumbnail.toDataURL()
       }))
     };
+
+    // 截图完成后恢复窗口显示
+    if (mainWindow) {
+      mainWindow.show();
+    }
+
+    return result;
   } catch (error) {
+    // 即使截图失败也要恢复窗口显示
+    if (mainWindow) {
+      mainWindow.show();
+    }
+    
     return {
       success: false,
       error: error.message
