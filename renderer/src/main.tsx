@@ -1,10 +1,18 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
-import App from './App.tsx'
+import App from './App'
+import CaptureScreen from './components/CaptureScreen'
 
-createRoot(document.getElementById('root')!).render(
+const rootElement = document.getElementById('root')
+if (rootElement) createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/capture" element={<CaptureScreen />} />
+      </Routes>
+    </HashRouter>
   </StrictMode>,
 )

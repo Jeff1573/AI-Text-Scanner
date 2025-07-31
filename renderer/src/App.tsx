@@ -1,36 +1,50 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+
+  // 监听截图完成事件
+  useEffect(() => {
+    const removeListener = window.electronAPI.onScreenCaptureComplete((imagePath) => {
+      setCapturedImage(imagePath);
+    });
+
+    return () => {
+      removeListener();
+    };
+  }, []);
+
+  // 开始截图
+  const handleStartCapture = async () => {
+    try {
+      await window.electronAPI.startScreenCapture();
+    } catch (error) {
+      console.error('截图失败:', error);
+    }
+  };
 
   return (
-    <>
-      <div>
-        hello world
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
+    <div className="app-container">
+      <h1>快速屏幕截图工具</h1>
+      
+      <div className="actions">
+        <button className="capture-btn" onClick={handleStartCapture}>
+          开始截图
         </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+      
+      {capturedImage && (
+        <div className="preview-container">
+          <h2>最近截图:</h2>
+          <div className="image-preview">
+            <img src={`file://${capturedImage}`} alt="截图预览" />
+            <p className="image-path">{capturedImage}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
