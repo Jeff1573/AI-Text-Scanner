@@ -24,7 +24,6 @@ const createWindow = () => {
       nodeIntegration: false,
       contextIsolation: true,
     },
-    frame: false,
   });
 
   // 设置桌面捕获权限处理
@@ -36,7 +35,6 @@ const createWindow = () => {
   }, { useSystemPicker: true });
 
   // and load the index.html of the app.
-  console.log("MAIN_WINDOW_VITE_DEV_SERVER_URL", MAIN_WINDOW_VITE_DEV_SERVER_URL);
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
