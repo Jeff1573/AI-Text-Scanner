@@ -1,8 +1,8 @@
 {
-  "name": "fast-ocr",
-  "productName": "fast-ocr",
+  "name": "ai-ocr",
+  "productName": "ai-ocr",
   "version": "1.0.0",
-  "description": "Fast OCR application for text recognition",
+  "description": "AI OCR application for text recognition",
   "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",

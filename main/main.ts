@@ -19,6 +19,7 @@ const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    autoHideMenuBar: true, // 隐藏顶部菜单栏
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -64,6 +65,7 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
     x: 0,
     y: 0,
     fullscreen: true,
+    autoHideMenuBar: true, // 隐藏顶部菜单栏
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
