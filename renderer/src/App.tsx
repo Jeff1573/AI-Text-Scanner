@@ -25,6 +25,9 @@ declare global {
         selectedImageData?: string;
         error?: string;
       }>;
+      onSelectedImage: (callback: (data: { imageData: string; selection: { width: number; height: number } }) => void) => void;
+      removeSelectedImageListener: () => void;
+      sendSelectedImage: (data: { imageData: string; selection: { x: number; y: number; width: number; height: number } }) => void;
     };
   }
 }
@@ -38,6 +41,8 @@ interface ScreenSource {
 // 主应用组件
 function MainApp() {
   const [isCapturing, setIsCapturing] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImageInfo, setSelectedImageInfo] = useState<{ width: number; height: number } | null>(null);
 
   // 获取屏幕截图并直接在新窗口中显示
   const handleCaptureScreen = async () => {
@@ -61,6 +66,28 @@ function MainApp() {
     }
   };
 
+  // 监听选中图片数据
+  useEffect(() => {
+    const handleSelectedImage = (data: { imageData: string; selection: { width: number; height: number } }) => {
+      console.log('收到选中图片数据:', data);
+      setSelectedImage(data.imageData);
+      setSelectedImageInfo({ width: data.selection.width, height: data.selection.height });
+    };
+
+    // 注册监听器
+    window.electronAPI.onSelectedImage(handleSelectedImage);
+
+    return () => {
+      window.electronAPI.removeSelectedImageListener();
+    };
+  }, []);
+
+  // 清除选中图片
+  const handleClearSelectedImage = () => {
+    setSelectedImage(null);
+    setSelectedImageInfo(null);
+  };
+
   return (
     <div className="app">
       <h1>屏幕截图工具</h1>
@@ -77,7 +104,32 @@ function MainApp() {
 
       <div className="info">
         <p>点击按钮获取屏幕截图，将自动在新窗口中全屏显示</p>
+        <p>选择区域后，选中的图片将显示在主界面中</p>
       </div>
+
+      {/* 选中图片显示区域 */}
+      {selectedImage && (
+        <div className="selected-image-container">
+          <div className="selected-image-header">
+            <h3>选中的图片</h3>
+            <button onClick={handleClearSelectedImage} className="clear-btn">
+              清除
+            </button>
+          </div>
+          <div className="selected-image-content">
+            <img 
+              src={selectedImage} 
+              alt="选中的图片"
+              className="selected-image"
+            />
+            {selectedImageInfo && (
+              <div className="selected-image-info">
+                <p>尺寸: {selectedImageInfo.width} x {selectedImageInfo.height} 像素</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -210,7 +262,15 @@ function ScreenshotViewer() {
         
         if (result.success) {
           console.log('选中内容处理成功:', result);
-          alert(`已选择区域: ${selection.width}x${selection.height} 像素\n选中内容已处理`);
+          
+          // 发送选中图片数据到主界面
+          await window.electronAPI.sendSelectedImage({
+            imageData: selectedImageData,
+            selection: selection
+          });
+          
+          // 关闭当前窗口
+          window.close();
         } else {
           console.error('选中内容处理失败:', result.error);
           alert(`选中内容处理失败: ${result.error}`);
@@ -219,10 +279,6 @@ function ScreenshotViewer() {
         console.error('处理选中内容时出错:', error);
         alert(`处理选中内容时出错: ${error}`);
       }
-      
-      // 隐藏选择器
-      setShowSelector(false);
-      setSelection({ x: 0, y: 0, width: 0, height: 0 });
     };
     
     img.src = screenshotData.thumbnail;

@@ -38,6 +38,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 获取选中内容
   getSelectedContent: (imageData: string, selection: { x: number; y: number; width: number; height: number }) => {
     return ipcRenderer.invoke('get-selected-content', { imageData, selection });
+  },
+  
+  // 发送选中图片数据
+  sendSelectedImage: (data: { imageData: string; selection: { x: number; y: number; width: number; height: number } }) => {
+    return ipcRenderer.invoke('send-selected-image', data);
+  },
+  
+  // 监听选中图片数据
+  onSelectedImage: (callback: (data: { imageData: string; selection: { width: number; height: number } }) => void) => {
+    console.log('注册选中图片数据监听器');
+    ipcRenderer.on('selected-image-data', (event, data) => {
+      try {
+        callback(data);
+      } catch (error) {
+        console.error('选中图片回调函数执行失败:', error);
+      }
+    });
+  },
+  
+  // 移除选中图片数据监听器
+  removeSelectedImageListener: () => {
+    ipcRenderer.removeAllListeners('selected-image-data');
   }
 });
 
@@ -65,6 +87,12 @@ declare global {
         selectedImageData?: string;
         error?: string;
       }>;
+      sendSelectedImage: (data: { imageData: string; selection: { x: number; y: number; width: number; height: number } }) => Promise<{
+        success: boolean;
+        error?: string;
+      }>;
+      onSelectedImage: (callback: (data: { imageData: string; selection: { width: number; height: number } }) => void) => void;
+      removeSelectedImageListener: () => void;
     };
   }
 }
