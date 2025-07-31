@@ -124,6 +124,28 @@
   font-weight: 500;
 }
 
+.header-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.cancel-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
 .close-btn {
   background: #dc3545;
   color: white;
@@ -147,6 +169,7 @@
   align-items: center;
   padding: 1rem;
   overflow: hidden;
+  position: relative;
 }
 
 .screenshot-image {
@@ -155,6 +178,42 @@
   object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  /* 不允许选择 */
+  user-select: none;
+  /* 不触发鼠标事件 */
+  pointer-events: none;
+}
+
+/* 选择框样式 */
+.selection-box {
+  position: absolute;
+  border: 2px solid #007bff;
+  background-color: rgba(0, 123, 255, 0.2);
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}
+
+/* 选择提示样式 */
+.selection-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 999;
+  animation: fadeInOut 2s ease-in-out infinite;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
 }
 
 /* 响应式设计 */

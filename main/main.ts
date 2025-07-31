@@ -180,6 +180,28 @@ ipcMain.handle('create-screenshot-window', async (event, screenshotData) => {
   }
 });
 
+// 处理获取选中内容请求
+ipcMain.handle('get-selected-content', async (event, { imageData, selection }) => {
+  try {
+    console.log('收到获取选中内容请求:', { selection });
+    
+    // 这里可以添加处理选中内容的逻辑
+    // 比如保存到文件、发送到其他应用等
+    
+    return {
+      success: true,
+      selectedImageData: imageData,
+      selection: selection
+    };
+  } catch (error) {
+    console.error('获取选中内容失败:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+});
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.

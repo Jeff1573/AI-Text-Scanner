@@ -20,6 +20,11 @@ declare global {
       }>;
       onScreenshotData: (callback: (data: ScreenSource) => void) => void;
       removeScreenshotDataListener: () => void;
+      getSelectedContent: (imageData: string, selection: { x: number; y: number; width: number; height: number }) => Promise<{
+        success: boolean;
+        selectedImageData?: string;
+        error?: string;
+      }>;
     };
   }
 }
@@ -82,6 +87,10 @@ function ScreenshotViewer() {
   const [screenshotData, setScreenshotData] = useState<ScreenSource | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showSelector, setShowSelector] = useState(false);
+  const [selection, setSelection] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     console.log('ScreenshotViewer 组件挂载');
@@ -93,6 +102,8 @@ function ScreenshotViewer() {
       setScreenshotData(data);
       setLoading(false);
       setError(null);
+      // 显示截图后自动显示选择器
+      setTimeout(() => setShowSelector(true), 1000);
     };
 
     // 注册监听器
@@ -118,6 +129,110 @@ function ScreenshotViewer() {
 
   const handleClose = () => {
     window.close();
+  };
+
+  // 处理鼠标按下事件
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!showSelector) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setStartPos({ x, y });
+    setSelection({ x, y, width: 0, height: 0 });
+    setIsSelecting(true);
+  };
+
+  // 处理鼠标移动事件
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isSelecting || !showSelector) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const width = x - startPos.x;
+    const height = y - startPos.y;
+    
+    setSelection({
+      x: width < 0 ? x : startPos.x,
+      y: height < 0 ? y : startPos.y,
+      width: Math.abs(width),
+      height: Math.abs(height)
+    });
+  };
+
+  // 处理鼠标松开事件
+  const handleMouseUp = () => {
+    if (!isSelecting || !showSelector) return;
+    
+    setIsSelecting(false);
+    
+    // 如果选择区域太小，忽略
+    if (selection.width < 10 || selection.height < 10) {
+      setSelection({ x: 0, y: 0, width: 0, height: 0 });
+      return;
+    }
+    
+    console.log('选择区域:', selection);
+    // 这里可以添加获取选中内容的逻辑
+    handleGetSelectedContent();
+  };
+
+  // 获取选中内容
+  const handleGetSelectedContent = async () => {
+    if (!screenshotData) return;
+    
+    // 创建canvas来裁剪图片
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = async () => {
+      canvas.width = selection.width;
+      canvas.height = selection.height;
+      
+      // 绘制选中区域
+      ctx?.drawImage(
+        img,
+        selection.x, selection.y, selection.width, selection.height,
+        0, 0, selection.width, selection.height
+      );
+      
+      // 获取选中内容的数据URL
+      const selectedImageData = canvas.toDataURL('image/png');
+      console.log('选中内容数据:', selectedImageData);
+      
+      try {
+        // 调用主进程API处理选中内容
+        const result = await window.electronAPI.getSelectedContent(selectedImageData, selection);
+        
+        if (result.success) {
+          console.log('选中内容处理成功:', result);
+          alert(`已选择区域: ${selection.width}x${selection.height} 像素\n选中内容已处理`);
+        } else {
+          console.error('选中内容处理失败:', result.error);
+          alert(`选中内容处理失败: ${result.error}`);
+        }
+      } catch (error) {
+        console.error('处理选中内容时出错:', error);
+        alert(`处理选中内容时出错: ${error}`);
+      }
+      
+      // 隐藏选择器
+      setShowSelector(false);
+      setSelection({ x: 0, y: 0, width: 0, height: 0 });
+    };
+    
+    img.src = screenshotData.thumbnail;
+  };
+
+  // 取消选择
+  const handleCancelSelection = () => {
+    setShowSelector(false);
+    setSelection({ x: 0, y: 0, width: 0, height: 0 });
+    setIsSelecting(false);
   };
 
   if (loading) {
@@ -190,11 +305,24 @@ function ScreenshotViewer() {
     <div className="screenshot-viewer">
       <div className="screenshot-header">
         <h2>{screenshotData.name}</h2>
-        <button onClick={handleClose} className="close-btn">
-          关闭
-        </button>
+        <div className="header-controls">
+          {showSelector && (
+            <button onClick={handleCancelSelection} className="cancel-btn">
+              取消选择
+            </button>
+          )}
+          <button onClick={handleClose} className="close-btn">
+            关闭
+          </button>
+        </div>
       </div>
-      <div className="screenshot-content">
+      <div 
+        className="screenshot-content"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        style={{ cursor: showSelector ? 'crosshair' : 'default' }}
+      >
         <img 
           src={screenshotData.thumbnail} 
           alt={screenshotData.name}
@@ -202,6 +330,31 @@ function ScreenshotViewer() {
           onLoad={() => console.log('图片加载成功')}
           onError={(e) => console.error('图片加载失败:', e)}
         />
+        
+        {/* 选择框 */}
+        {showSelector && selection.width > 0 && selection.height > 0 && (
+          <div 
+            className="selection-box"
+            style={{
+              position: 'absolute',
+              left: selection.x,
+              top: selection.y,
+              width: selection.width,
+              height: selection.height,
+              border: '2px solid #007bff',
+              backgroundColor: 'rgba(0, 123, 255, 0.2)',
+              pointerEvents: 'none',
+              zIndex: 1000
+            }}
+          />
+        )}
+        
+        {/* 选择提示 */}
+        {showSelector && selection.width === 0 && selection.height === 0 && (
+          <div className="selection-hint">
+            拖拽鼠标选择区域
+          </div>
+        )}
       </div>
     </div>
   );

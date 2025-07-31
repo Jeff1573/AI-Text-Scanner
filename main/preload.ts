@@ -22,7 +22,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onScreenshotData: (callback: (data: ScreenSource) => void) => {
     console.log('注册截图数据监听器');
     ipcRenderer.on('screenshot-data', (event, data) => {
-      console.log('预加载脚本收到截图数据:', data);
       try {
         callback(data);
       } catch (error) {
@@ -34,6 +33,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 移除截图数据监听器
   removeScreenshotDataListener: () => {
     ipcRenderer.removeAllListeners('screenshot-data');
+  },
+  
+  // 获取选中内容
+  getSelectedContent: (imageData: string, selection: { x: number; y: number; width: number; height: number }) => {
+    return ipcRenderer.invoke('get-selected-content', { imageData, selection });
   }
 });
 
@@ -56,6 +60,11 @@ declare global {
       }>;
       onScreenshotData: (callback: (data: ScreenSource) => void) => void;
       removeScreenshotDataListener: () => void;
+      getSelectedContent: (imageData: string, selection: { x: number; y: number; width: number; height: number }) => Promise<{
+        success: boolean;
+        selectedImageData?: string;
+        error?: string;
+      }>;
     };
   }
 }
