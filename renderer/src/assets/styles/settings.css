@@ -137,4 +137,63 @@
   .btn {
     width: 100%;
   }
-} 
+}
+
+/* Antd 组件样式调整 - 保持antd默认样式，只做必要的调整 */
+/* .ant-collapse {
+  background: transparent;
+} */
+/* 
+.ant-collapse-item {
+  margin-bottom: 16px;
+} */
+
+/* .ant-collapse-header {
+  background: white;
+  border-radius: 8px 8px 0 0;
+  border: 1px solid #f0f0f0;
+  border-bottom: none;
+  padding: 16px 24px;
+  font-weight: 600;
+  color: #374151;
+} */
+
+/* .ant-collapse-content {
+  background: white;
+  border-radius: 0 0 8px 8px;
+  border: 1px solid #f0f0f0;
+  border-top: none;
+} */
+
+/* .ant-collapse-content-box {
+  padding: 24px;
+} */
+
+/* 表单样式调整 */
+/* .ant-form-item-label > label {
+  font-weight: 600;
+  color: #374151;
+} */
+
+/* 按钮样式调整 */
+/* .ant-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+} */
+
+/* .ant-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+} */
+
+/* 响应式设计 */
+/* @media (max-width: 768px) {
+  .ant-collapse-content-box {
+    padding: 16px;
+  }
+  
+  .ant-form-item {
+    margin-bottom: 16px;
+  }
+}  */

@@ -33,6 +33,7 @@
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "@vitejs/plugin-react": "^4.6.0",
+    "babel-plugin-react-compiler": "^19.1.0-rc.2",
     "electron": "37.2.4",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
@@ -42,6 +43,8 @@
     "vite": "^5.4.19"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.0.0",
+    "antd": "^5.26.7",
     "electron-squirrel-startup": "^1.0.1",
     "openai": "^5.11.0",
     "react": "^19.1.0",

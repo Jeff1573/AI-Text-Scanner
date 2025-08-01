@@ -42,7 +42,10 @@
 
 /* 内容区域 */
 .content-area {
-  max-width: 800px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 /* 滚动条样式 */
