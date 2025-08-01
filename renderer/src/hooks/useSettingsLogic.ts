@@ -33,9 +33,18 @@ export const useSettingsLogic = () => {
       newErrors.model = '请选择模型';
     }
 
+    // 验证自定义模型
+    if (formData.model === 'custom' && !formData.customModel.trim()) {
+      newErrors.customModel = '请输入自定义模型名称';
+    }
+
     // 设置错误信息
     Object.keys(newErrors).forEach(key => {
-      setFieldError(key as keyof SettingsFormData, newErrors[key as keyof SettingsFormData]!);
+      const fieldKey = key as keyof SettingsFormData;
+      const errorValue = newErrors[fieldKey];
+      if (errorValue) {
+        setFieldError(fieldKey, errorValue);
+      }
     });
 
     return Object.keys(newErrors).length === 0;

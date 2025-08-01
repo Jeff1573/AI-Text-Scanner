@@ -58,11 +58,28 @@ export const SettingsPage = () => {
               <option value="gpt-4o-mini">GPT-4o Mini</option>
               <option value="gpt-4-turbo">GPT-4 Turbo</option>
               <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+              <option value="custom">自定义模型</option>
             </select>
             {errors.model && (
               <div className="error-message">{errors.model}</div>
             )}
           </div>
+          
+          {formData.model === 'custom' && (
+            <div className="form-group">
+              <label className="form-label">自定义模型名称</label>
+              <input
+                type="text"
+                className={`form-input ${errors.customModel ? 'error' : ''}`}
+                placeholder="输入自定义模型名称，如：gpt-4-custom"
+                value={formData.customModel}
+                onChange={(e) => handleInputChange('customModel', e.target.value)}
+              />
+              {errors.customModel && (
+                <div className="error-message">{errors.customModel}</div>
+              )}
+            </div>
+          )}
           
           <div className="form-actions">
             <button

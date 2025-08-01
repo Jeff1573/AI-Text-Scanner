@@ -4,6 +4,7 @@ export interface SettingsFormData {
   apiUrl: string;
   apiKey: string;
   model: string;
+  customModel: string;
 }
 
 export const useSettingsState = () => {
@@ -11,7 +12,8 @@ export const useSettingsState = () => {
   const [formData, setFormData] = useState<SettingsFormData>({
     apiUrl: 'https://api.openai.com/v1',
     apiKey: '',
-    model: 'gpt-4o'
+    model: 'gpt-4o',
+    customModel: ''
   });
 
   // 表单验证状态
@@ -41,7 +43,8 @@ export const useSettingsState = () => {
     setFormData({
       apiUrl: 'https://api.openai.com/v1',
       apiKey: '',
-      model: 'gpt-4o'
+      model: 'gpt-4o',
+      customModel: ''
     });
     setErrors({});
   };
