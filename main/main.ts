@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
 import type { ScreenSource, ConfigProvider, Config } from './types';
+import { analyzeImageWithOpenAI, validateOpenAIConfig, getAvailableOpenAIModels, type APIConfig, type ImageAnalysisRequest } from './utils/openaiService';
 
 // Vite注入的变量声明
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -284,3 +285,80 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+
+// OpenAI API相关IPC处理器
+
+// 处理图片分析请求
+ipcMain.handle('analyze-image-openai', async (event, config: APIConfig, request: ImageAnalysisRequest) => {
+  try {
+    console.log('收到图片分析请求:', {
+      apiUrl: config.apiUrl,
+      model: config.model,
+      prompt: request.prompt
+    });
+
+    const result = await analyzeImageWithOpenAI(config, request);
+    
+    console.log('analyze-image-openai:', {
+      success: !result.error,
+      contentLength: result.content?.length || 0,
+      error: result.error
+    });
+
+    return result;
+  } catch (error) {
+    console.error('图片分析请求处理失败:', error);
+    return {
+      content: '',
+      error: error instanceof Error ? error.message : '未知错误'
+    };
+  }
+});
+
+// 验证OpenAI API配置
+ipcMain.handle('validate-openai-config', async (event, config: APIConfig) => {
+  try {
+    console.log('验证OpenAI API配置:', {
+      apiUrl: config.apiUrl,
+      hasApiKey: !!config.apiKey
+    });
+
+    const isValid = await validateOpenAIConfig(config);
+    
+    console.log('OpenAI API配置验证结果:', isValid);
+    
+    return { success: isValid };
+  } catch (error) {
+    console.error('OpenAI API配置验证失败:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : '未知错误' 
+    };
+  }
+});
+
+// 获取可用的OpenAI模型列表
+ipcMain.handle('get-openai-models', async (event, config: APIConfig) => {
+  try {
+    console.log('获取OpenAI模型列表:', {
+      apiUrl: config.apiUrl,
+      hasApiKey: !!config.apiKey
+    });
+
+    const models = await getAvailableOpenAIModels(config);
+    
+    console.log('获取到的模型列表:', models);
+    
+    return { 
+      success: true, 
+      models: models 
+    };
+  } catch (error) {
+    console.error('获取OpenAI模型列表失败:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : '未知错误',
+      models: []
+    };
+  }
+});

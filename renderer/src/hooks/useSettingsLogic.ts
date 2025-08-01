@@ -1,5 +1,6 @@
 import { useSettingsState } from './useSettingsState';
 import type { SettingsFormData } from '../types/settings';
+import type { APIConfig } from '../types/electron';
 
 export const useSettingsLogic = () => {
   const {
@@ -62,6 +63,38 @@ export const useSettingsLogic = () => {
     }
   };
 
+  // 验证API配置
+  const validateApiConfig = async (): Promise<boolean> => {
+    if (!validateForm()) {
+      return false;
+    }
+
+    try {
+      const apiConfig: APIConfig = {
+        apiKey: formData.apiKey,
+        apiUrl: formData.apiUrl,
+        model: formData.customModel || formData.model
+      };
+
+      const result = await window.electronAPI.validateOpenAIConfig(apiConfig);
+      console.log('validateOpenAIConfig result:', result);
+      if (!result.success) {
+        setFieldError('apiKey', `API配置验证失败: ${result.error || '未知错误'}`);
+        return false;
+      }
+
+      // 提示成功
+      alert('✅ API配置验证成功！您的OpenAI API配置已正确设置。');
+      console.log('API配置验证成功');
+      
+      return true;
+    } catch (error) {
+      console.error('API配置验证失败:', error);
+      setFieldError('apiKey', 'API配置验证失败，请检查网络连接');
+      return false;
+    }
+  };
+
   // 保存设置
   const handleSaveSettings = async () => {
     if (!validateForm()) {
@@ -72,12 +105,20 @@ export const useSettingsLogic = () => {
     clearErrors();
 
     try {
+      // 先验证API配置
+      const isValid = await validateApiConfig();
+      if (!isValid) {
+        setIsSaving(false);
+        return;
+      }
+
       // 调用Electron API保存配置到config.json
       const result = await window.electronAPI.saveConfig(formData);
       
       if (result.success) {
         console.log('配置保存成功');
-        // 可以在这里添加成功提示
+        // 提示成功
+        alert('✅ 配置保存成功！您的设置已成功保存。');
       } else {
         console.error('保存配置失败:', result.error);
         setFieldError('apiUrl', `保存失败: ${result.error}`);
@@ -95,6 +136,8 @@ export const useSettingsLogic = () => {
     resetFormData();
     clearErrors();
     console.log('设置已重置');
+    // 提示重置成功
+    alert('🔄 设置已重置为默认值！');
   };
 
   // 处理输入变化
@@ -110,6 +153,7 @@ export const useSettingsLogic = () => {
     handleInputChange,
     handleSaveSettings,
     handleResetSettings,
-    validateForm
+    validateForm,
+    validateApiConfig
   };
 }; 

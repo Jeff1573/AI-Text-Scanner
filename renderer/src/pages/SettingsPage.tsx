@@ -8,7 +8,8 @@ export const SettingsPage = () => {
     isLoading,
     handleInputChange,
     handleSaveSettings,
-    handleResetSettings
+    handleResetSettings,
+    validateApiConfig
   } = useSettingsLogic();
 
   // 显示加载状态
@@ -108,6 +109,13 @@ export const SettingsPage = () => {
               disabled={isSaving}
             >
               {isSaving ? '保存中...' : '保存设置'}
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={validateApiConfig}
+              disabled={isSaving}
+            >
+              验证配置
             </button>
             <button
               className="btn btn-secondary"

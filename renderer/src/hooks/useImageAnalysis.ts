@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { SettingsFormData } from '../types/settings';
-import { sendImageToOpenAI, type OpenAIResponse } from '../utils/openaiApi';
+import type { APIConfig, ImageAnalysisRequest, OpenAIResponse } from '../types/electron';
 
 // 图片分析状态接口
 export interface ImageAnalysisState {
@@ -27,7 +27,7 @@ export const useImageAnalysis = () => {
   const analyzeImage = useCallback(async (
     config: SettingsFormData,
     imageData: string,
-    prompt = '请分析这张截图的内容，包括文字、图像和布局信息'
+    prompt = 'Analyze the image and return the text content of the image, typeset the text according to the image content, only return the text, do not return redundant content.'
   ) => {
     setState(prev => ({
       ...prev,
@@ -39,12 +39,25 @@ export const useImageAnalysis = () => {
 
     try {
       console.log('开始分析图片...');
-      const result = await sendImageToOpenAI(config, {
+      
+      // 构建API配置
+      const apiConfig: APIConfig = {
+        apiKey: config.apiKey,
+        apiUrl: config.apiUrl,
+        model: config.customModel || config.model
+      };
+
+      // 构建请求参数
+      const request: ImageAnalysisRequest = {
         imageData,
         prompt,
         maxTokens: 1500,
         temperature: 0.3
-      });
+      };
+
+      // 调用preload的API
+      const result: OpenAIResponse = await window.electronAPI.analyzeImageOpenAI(apiConfig, request);
+      
       console.log('result', result);
 
       if (result.error) {

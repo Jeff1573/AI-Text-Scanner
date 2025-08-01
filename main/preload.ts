@@ -3,6 +3,21 @@
 
 import { contextBridge, ipcRenderer } from 'electron';
 
+// 类型定义
+interface APIConfig {
+  apiKey: string;
+  apiUrl: string;
+  model?: string;
+  customModel?: string;
+}
+
+interface ImageAnalysisRequest {
+  imageData: string;
+  prompt: string;
+  maxTokens?: number;
+  temperature?: number;
+}
+
 // 暴露安全的API给渲染进程
 contextBridge.exposeInMainWorld('electronAPI', {
   // 获取屏幕截图
@@ -34,4 +49,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // 加载配置
   loadConfig: () => ipcRenderer.invoke('load-config'),
+  
+  // 分析图片 - OpenAI
+  analyzeImageOpenAI: (config: APIConfig, request: ImageAnalysisRequest) => 
+    ipcRenderer.invoke('analyze-image-openai', config, request),
+  
+  // 验证OpenAI API配置
+  validateOpenAIConfig: (config: APIConfig) => 
+    ipcRenderer.invoke('validate-openai-config', config),
+  
+  // 获取可用的OpenAI模型列表
+  getOpenAIModels: (config: APIConfig) => 
+    ipcRenderer.invoke('get-openai-models', config),
 });

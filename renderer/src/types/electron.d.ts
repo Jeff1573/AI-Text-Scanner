@@ -6,6 +6,30 @@ export interface ScreenSource {
   thumbnail: string;
 }
 
+export interface APIConfig {
+  apiKey: string;
+  apiUrl: string;
+  model?: string;
+  customModel?: string;
+}
+
+export interface ImageAnalysisRequest {
+  imageData: string;
+  prompt: string;
+  maxTokens?: number;
+  temperature?: number;
+}
+
+export interface OpenAIResponse {
+  content: string;
+  error?: string;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
+
 export interface ElectronAPI {
   captureScreen: (options?: Record<string, unknown>) => Promise<{
     success: boolean;
@@ -31,6 +55,9 @@ export interface ElectronAPI {
     config: { apiUrl: string; apiKey: string; model: string; customModel: string } | null;
     error?: string;
   }>;
+  analyzeImageOpenAI: (config: APIConfig, request: ImageAnalysisRequest) => Promise<OpenAIResponse>;
+  validateOpenAIConfig: (config: APIConfig) => Promise<{ success: boolean; error?: string }>;
+  getOpenAIModels: (config: APIConfig) => Promise<{ success: boolean; models: string[]; error?: string }>;
 }
 
 declare global {

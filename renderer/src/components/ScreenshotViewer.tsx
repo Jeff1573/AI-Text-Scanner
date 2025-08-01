@@ -35,7 +35,6 @@ export const ScreenshotViewer = () => {
 
   // 图片分析状态
   const {
-    isAnalyzing,
     analysisResult,
     analysisError,
     usage,
