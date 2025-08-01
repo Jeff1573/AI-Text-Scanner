@@ -8,6 +8,7 @@ import { ScreenshotContent } from "./ScreenshotContent";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
 import { NoDataState } from "./NoDataState";
+import "../assets/styles/screenshot-viewer.css";
 
 export const ScreenshotViewer = () => {
   const {

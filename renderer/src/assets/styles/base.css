@@ -1,0 +1,35 @@
+/* 基础样式 */
+#root {
+  max-width: none;
+  margin: 0;
+  text-align: left;
+  width: 100%;
+  height: 100%;
+}
+
+/* 全局字体和颜色设置 */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
+  line-height: 1.6;
+}
+
+/* 信息提示区域样式 */
+.info {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e9ecef;
+  max-width: 600px;
+  margin: 0 auto 32px auto;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.info p {
+  color: #666;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin: 0;
+} 

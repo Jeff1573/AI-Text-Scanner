@@ -1,3 +1,5 @@
+import "../assets/styles/image-display.css";
+
 interface SelectedImageInfo {
   width: number;
   height: number;
@@ -17,14 +19,13 @@ export const SelectedImageDisplay = ({
   if (!selectedImage) return null;
 
   return (
-    <div className="selected-image-container">
+    <div className="selected-image-content">
       <div className="selected-image-header">
-        <h3>选中的图片</h3>
         <button onClick={onClear} className="clear-btn">
           清除
         </button>
       </div>
-      <div className="selected-image-content">
+      <div className="selected-image-wrapper">
         <img
           src={selectedImage}
           alt="选中的图片"

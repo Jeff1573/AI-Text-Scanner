@@ -1,0 +1,66 @@
+/* 应用容器 - figma风格 */
+.app-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 主内容区域 */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #ffffff;
+}
+
+/* 页面 */
+.page {
+  display: none;
+  padding: 32px;
+  min-height: 100%;
+}
+
+.page.active {
+  display: block;
+}
+
+/* 页面头部 */
+.page-header {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.page-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.page-header p {
+  color: #64748b;
+  font-size: 16px;
+}
+
+/* 内容区域 */
+.content-area {
+  max-width: 800px;
+}
+
+/* 滚动条样式 */
+.main-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.main-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.main-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.main-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+} 
