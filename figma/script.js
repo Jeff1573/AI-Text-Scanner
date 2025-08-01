@@ -2,6 +2,27 @@
 document.addEventListener('DOMContentLoaded', function() {
     const menuItems = document.querySelectorAll('.menu-item');
     const pages = document.querySelectorAll('.page');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+
+    // 侧边栏切换功能
+    if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('collapsed');
+            
+            // 保存状态到本地存储
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            localStorage.setItem('sidebarCollapsed', isCollapsed);
+            
+            console.log('侧边栏状态切换:', isCollapsed ? '已折叠' : '已展开');
+        });
+        
+        // 恢复上次的侧边栏状态
+        const savedState = localStorage.getItem('sidebarCollapsed');
+        if (savedState === 'true') {
+            sidebar.classList.add('collapsed');
+        }
+    }
 
     // 为每个菜单项添加点击事件
     menuItems.forEach(item => {

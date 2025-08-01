@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { MainApp } from "./components/MainApp";
 import { ScreenshotViewer } from "./components/ScreenshotViewer";
-import "./App.css";
 
 // 路由组件
 function App() {

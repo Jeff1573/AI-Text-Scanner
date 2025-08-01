@@ -15,6 +15,8 @@ export const MainApp = () => {
     selectedImageInfo,
     setSelectedImageInfo,
     clearSelectedImage,
+    isSidebarCollapsed,
+    toggleSidebar,
   } = useMainAppState();
 
   const { handleCaptureScreen } = useMainAppLogic();
@@ -28,10 +30,12 @@ export const MainApp = () => {
   return (
     <div className="app-container">
       {/* 左侧菜单 */}
-      <div className="sidebar">
-        <div className="logo">
-          <div className="logo-icon">📷</div>
-          <div className="logo-text">Fast OCR</div>
+      <div className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-header">
+          <div className="logo">
+            <div className="logo-icon">📷</div>
+            <div className="logo-text">Fast OCR</div>
+          </div>
         </div>
         
         <nav className="menu">
@@ -42,6 +46,13 @@ export const MainApp = () => {
           <div className="menu-item">
             <div className="menu-icon">⚙️</div>
             <div className="menu-text">设置</div>
+          </div>
+          
+          {/* 侧边栏切换按钮放在菜单底部 */}
+          <div className="menu-toggle-container">
+            <button className="sidebar-toggle" onClick={toggleSidebar}>
+              <span className="toggle-icon">◀</span>
+            </button>
           </div>
         </nav>
       </div>
