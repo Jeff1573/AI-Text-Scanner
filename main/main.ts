@@ -43,7 +43,7 @@ const createWindow = () => {
   }
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
 };
 
 // 创建截图展示窗口
@@ -74,7 +74,7 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
   });
 
   // 打开开发者工具用于调试
-  screenshotWindow.webContents.openDevTools();
+  // screenshotWindow.webContents.openDevTools();
 
   // 加载截图展示页面
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -93,7 +93,7 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
     // 延迟一点时间确保组件已经挂载
     setTimeout(() => {
       if (screenshotWindow && !screenshotWindow.isDestroyed()) {
-        console.log('发送截图数据到新窗口:', screenshotData);
+        // console.log('发送截图数据到新窗口:', screenshotData);
         screenshotWindow.webContents.send('screenshot-data', screenshotData);
       }
     }, 500);
@@ -169,7 +169,7 @@ ipcMain.handle('capture-screen', async () => {
 // 处理创建截图展示窗口请求
 ipcMain.handle('create-screenshot-window', async (event, screenshotData) => {
   try {
-    console.log('收到创建截图窗口请求，数据:', screenshotData);
+    console.log('received create screenshot window request, data:');
     createScreenshotWindow(screenshotData);
     return { success: true };
   } catch (error) {
@@ -181,27 +181,7 @@ ipcMain.handle('create-screenshot-window', async (event, screenshotData) => {
   }
 });
 
-// 处理获取选中内容请求
-ipcMain.handle('get-selected-content', async (event, { imageData, selection }) => {
-  try {
-    console.log('收到获取选中内容请求:', { selection });
-    
-    // 这里可以添加处理选中内容的逻辑
-    // 比如保存到文件、发送到其他应用等
-    
-    return {
-      success: true,
-      selectedImageData: imageData,
-      selection: selection
-    };
-  } catch (error) {
-    console.error('获取选中内容失败:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-});
+
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.

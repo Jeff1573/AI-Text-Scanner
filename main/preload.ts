@@ -28,8 +28,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('screenshot-data');
   },
   
-  // 获取选中内容
-  getSelectedContent: (imageData: string, selection: { x: number; y: number; width: number; height: number }) => {
-    return ipcRenderer.invoke('get-selected-content', { imageData, selection });
-  }
+
 });

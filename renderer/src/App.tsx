@@ -214,53 +214,38 @@ function ScreenshotViewer() {
   // 获取选中内容
   const handleGetSelectedContent = async () => {
     if (!screenshotData) return;
-    
+
     // 创建canvas来裁剪图片
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    
+
     img.onload = async () => {
       canvas.width = selection.width;
       canvas.height = selection.height;
-      
+
       // 绘制选中区域
       ctx?.drawImage(
         img,
         selection.x, selection.y, selection.width, selection.height,
         0, 0, selection.width, selection.height
       );
-      
+
       // 获取选中内容的数据URL
       const selectedImageData = canvas.toDataURL('image/png');
       console.log('选中内容数据:', selectedImageData);
-      
-      try {
-        // 调用主进程API处理选中内容
-        const result = await window.electronAPI.getSelectedContent(selectedImageData, selection);
-        
-        if (result.success) {
-          console.log('选中内容处理成功:', result);
-          
-          // 保存选中图片数据到localStorage
-          localStorage.setItem('selectedImageData', selectedImageData);
-          localStorage.setItem('selectedImageInfo', JSON.stringify({
-            width: selection.width,
-            height: selection.height
-          }));
-          
-          // 关闭当前窗口
-          window.close();
-        } else {
-          console.error('选中内容处理失败:', result.error);
-          alert(`选中内容处理失败: ${result.error}`);
-        }
-      } catch (error) {
-        console.error('处理选中内容时出错:', error);
-        alert(`处理选中内容时出错: ${error}`);
-      }
+
+      // 保存选中图片数据到localStorage
+      localStorage.setItem('selectedImageData', selectedImageData);
+      localStorage.setItem('selectedImageInfo', JSON.stringify({
+        width: selection.width,
+        height: selection.height
+      }));
+
+      // 关闭当前窗口
+      window.close();
     };
-    
+
     img.src = screenshotData.thumbnail;
   };
 

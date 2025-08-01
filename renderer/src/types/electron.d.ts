@@ -22,11 +22,7 @@ export interface ElectronAPI {
   }>;
   onScreenshotData: (callback: (data: ScreenSource) => void) => void;
   removeScreenshotDataListener: () => void;
-  getSelectedContent: (imageData: string, selection: { x: number; y: number; width: number; height: number }) => Promise<{
-    success: boolean;
-    selectedImageData?: string;
-    error?: string;
-  }>;
+
 }
 
 declare global {
