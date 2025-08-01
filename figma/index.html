@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast OCR - UI原型</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧菜单 -->
+        <div class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">📷</div>
+                <div class="logo-text">Fast OCR</div>
+            </div>
+            
+            <nav class="menu">
+                <div class="menu-item active" data-page="home">
+                    <div class="menu-icon">🏠</div>
+                    <div class="menu-text">首页</div>
+                </div>
+                <div class="menu-item" data-page="settings">
+                    <div class="menu-icon">⚙️</div>
+                    <div class="menu-text">设置</div>
+                </div>
+            </nav>
+        </div>
+
+        <!-- 主内容区域 -->
+        <div class="main-content">
+            <!-- 首页 -->
+            <div class="page active" id="home-page">
+                <div class="page-header">
+                    <h1>首页</h1>
+                    <p>快速截图并识别文字内容</p>
+                </div>
+                
+                <div class="content-area">
+                    <div class="screenshot-section">
+                        <div class="screenshot-button">
+                            <div class="button-icon">📸</div>
+                            <div class="button-text">截图识别</div>
+                        </div>
+                        <div class="button-description">
+                            点击按钮开始截图，选择区域后自动识别文字
+                        </div>
+                    </div>
+                    
+                    <div class="image-display-section">
+                        <div class="section-title">选择的图片</div>
+                        <div class="image-placeholder">
+                            <div class="placeholder-icon">🖼️</div>
+                            <div class="placeholder-text">暂无选择的图片</div>
+                            <div class="placeholder-hint">截图后将在此处显示</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 设置页面 -->
+            <div class="page" id="settings-page">
+                <div class="page-header">
+                    <h1>设置</h1>
+                    <p>配置OpenAI API参数</p>
+                </div>
+                
+                <div class="content-area">
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label class="form-label">API地址</label>
+                            <input type="text" class="form-input" placeholder="https://api.openai.com/v1" value="https://api.openai.com/v1">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">API密钥</label>
+                            <input type="password" class="form-input" placeholder="输入您的OpenAI API密钥">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">模型选择</label>
+                            <select class="form-select">
+                                <option value="gpt-4o">GPT-4o</option>
+                                <option value="gpt-4o-mini">GPT-4o Mini</option>
+                                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button class="btn btn-primary">保存设置</button>
+                            <button class="btn btn-secondary">重置</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
