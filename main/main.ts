@@ -42,6 +42,20 @@ const createWindow = () => {
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
   }
 
+  // 开发模式下添加F12键监听，用于打开开发者工具
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    // 监听键盘事件
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      // 检查是否按下了F12键
+      if (input.key === 'F12') {
+        // 阻止默认行为
+        event.preventDefault();
+        // 打开开发者工具
+        mainWindow?.webContents.openDevTools();
+      }
+    });
+  }
+
   // Open the DevTools.
   // mainWindow.webContents.openDevTools();
 };

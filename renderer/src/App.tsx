@@ -167,11 +167,19 @@ function ScreenshotViewer() {
     if (!showSelector) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const imgElement = document.querySelector('.screenshot-image') as HTMLImageElement;
+    if (!imgElement) return;
     
-    setStartPos({ x, y });
-    setSelection({ x, y, width: 0, height: 0 });
+    const imgRect = imgElement.getBoundingClientRect();
+    const x = e.clientX - imgRect.left;
+    const y = e.clientY - imgRect.top;
+    
+    // 确保坐标在图片范围内
+    const clampedX = Math.max(0, Math.min(x, imgRect.width));
+    const clampedY = Math.max(0, Math.min(y, imgRect.height));
+    
+    setStartPos({ x: clampedX, y: clampedY });
+    setSelection({ x: clampedX, y: clampedY, width: 0, height: 0 });
     setIsSelecting(true);
   };
 
@@ -179,16 +187,23 @@ function ScreenshotViewer() {
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isSelecting || !showSelector) return;
     
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const imgElement = document.querySelector('.screenshot-image') as HTMLImageElement;
+    if (!imgElement) return;
     
-    const width = x - startPos.x;
-    const height = y - startPos.y;
+    const imgRect = imgElement.getBoundingClientRect();
+    const x = e.clientX - imgRect.left;
+    const y = e.clientY - imgRect.top;
+    
+    // 确保坐标在图片范围内
+    const clampedX = Math.max(0, Math.min(x, imgRect.width));
+    const clampedY = Math.max(0, Math.min(y, imgRect.height));
+    
+    const width = clampedX - startPos.x;
+    const height = clampedY - startPos.y;
     
     setSelection({
-      x: width < 0 ? x : startPos.x,
-      y: height < 0 ? y : startPos.y,
+      x: width < 0 ? clampedX : startPos.x,
+      y: height < 0 ? clampedY : startPos.y,
       width: Math.abs(width),
       height: Math.abs(height)
     });
@@ -221,14 +236,46 @@ function ScreenshotViewer() {
     const img = new Image();
 
     img.onload = async () => {
-      canvas.width = selection.width;
-      canvas.height = selection.height;
+      // 获取图片在页面中的实际显示尺寸
+      const imgElement = document.querySelector('.screenshot-image') as HTMLImageElement;
+      if (!imgElement) return;
+
+      const displayRect = imgElement.getBoundingClientRect();
+      const originalWidth = img.naturalWidth;
+      const originalHeight = img.naturalHeight;
+      const displayWidth = displayRect.width;
+      const displayHeight = displayRect.height;
+
+      // 计算缩放比例
+      const scaleX = originalWidth / displayWidth;
+      const scaleY = originalHeight / displayHeight;
+
+      // 将选择坐标转换为原始图片坐标
+      const originalX = Math.round(selection.x * scaleX);
+      const originalY = Math.round(selection.y * scaleY);
+      const originalWidth_crop = Math.round(selection.width * scaleX);
+      const originalHeight_crop = Math.round(selection.height * scaleY);
+
+      // 确保裁剪区域不超出图片边界
+      const finalX = Math.max(0, Math.min(originalX, originalWidth - 1));
+      const finalY = Math.max(0, Math.min(originalY, originalHeight - 1));
+      const finalWidth = Math.min(originalWidth_crop, originalWidth - finalX);
+      const finalHeight = Math.min(originalHeight_crop, originalHeight - finalY);
+
+      console.log('原始图片尺寸:', originalWidth, 'x', originalHeight);
+      console.log('显示尺寸:', displayWidth, 'x', displayHeight);
+      console.log('缩放比例:', scaleX, scaleY);
+      console.log('选择区域(显示坐标):', selection);
+      console.log('选择区域(原始坐标):', { x: finalX, y: finalY, width: finalWidth, height: finalHeight });
+
+      canvas.width = finalWidth;
+      canvas.height = finalHeight;
 
       // 绘制选中区域
       ctx?.drawImage(
         img,
-        selection.x, selection.y, selection.width, selection.height,
-        0, 0, selection.width, selection.height
+        finalX, finalY, finalWidth, finalHeight,
+        0, 0, finalWidth, finalHeight
       );
 
       // 获取选中内容的数据URL
@@ -238,8 +285,8 @@ function ScreenshotViewer() {
       // 保存选中图片数据到localStorage
       localStorage.setItem('selectedImageData', selectedImageData);
       localStorage.setItem('selectedImageInfo', JSON.stringify({
-        width: selection.width,
-        height: selection.height
+        width: finalWidth,
+        height: finalHeight
       }));
 
       // 关闭当前窗口
@@ -344,31 +391,35 @@ function ScreenshotViewer() {
         onMouseUp={handleMouseUp}
         style={{ cursor: showSelector ? 'crosshair' : 'default' }}
       >
-        <img 
-          src={screenshotData.thumbnail} 
-          alt={screenshotData.name}
-          className="screenshot-image"
-          onLoad={() => console.log('图片加载成功')}
-          onError={(e) => console.error('图片加载失败:', e)}
-        />
-        
-        {/* 选择框 */}
-        {showSelector && selection.width > 0 && selection.height > 0 && (
-          <div 
-            className="selection-box"
-            style={{
-              position: 'absolute',
-              left: selection.x,
-              top: selection.y,
-              width: selection.width,
-              height: selection.height,
-              border: '2px solid #007bff',
-              backgroundColor: 'rgba(0, 123, 255, 0.2)',
-              pointerEvents: 'none',
-              zIndex: 1000
-            }}
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <img 
+            src={screenshotData.thumbnail} 
+            alt={screenshotData.name}
+            className="screenshot-image"
+            onLoad={() => console.log('图片加载成功')}
+            onError={(e) => console.error('图片加载失败:', e)}
+            style={{ maxWidth: '100%', height: 'auto' }}
           />
-        )}
+          
+          {/* 选择框 */}
+          {showSelector && selection.width > 0 && selection.height > 0 && (
+            <div 
+              className="selection-box"
+              style={{
+                position: 'absolute',
+                left: selection.x,
+                top: selection.y,
+                width: selection.width,
+                height: selection.height,
+                border: '2px solid #007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                pointerEvents: 'none',
+                zIndex: 1000,
+                boxSizing: 'border-box'
+              }}
+            />
+          )}
+        </div>
         
         {/* 选择提示 */}
         {showSelector && selection.width === 0 && selection.height === 0 && (
