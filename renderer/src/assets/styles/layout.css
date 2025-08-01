@@ -14,13 +14,9 @@
 
 /* 页面 */
 .page {
-  display: none;
+  display: block;
   padding: 32px;
   min-height: 100%;
-}
-
-.page.active {
-  display: block;
 }
 
 /* 页面头部 */

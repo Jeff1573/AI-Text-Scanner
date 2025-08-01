@@ -1,4 +1,5 @@
 export { MainApp } from "./MainApp";
+export { Layout } from "./Layout";
 export { ScreenshotViewer } from "./ScreenshotViewer";
 export { CaptureButton } from "./CaptureButton";
 export { InfoSection } from "./InfoSection";
