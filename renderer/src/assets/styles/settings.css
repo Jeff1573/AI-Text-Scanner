@@ -176,16 +176,73 @@
 } */
 
 /* 按钮样式调整 */
-/* .ant-btn-primary {
+.ant-btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-} */
+}
 
-/* .ant-btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-} */
+/* 自定义保存按钮样式 - 完全覆盖antd默认样式 */
+.save-settings-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: white !important;
+  font-weight: 600 !important;
+  padding: 12px 24px !important;
+  font-size: 14px !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+  transition: all 0.3s ease !important;
+  /* height: auto !important; */
+  /* line-height: 1.5 !important; */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  min-width: 120px !important;
+}
+
+.save-settings-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4) !important;
+  color: white !important;
+}
+
+.save-settings-btn:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+}
+
+.save-settings-btn:focus {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
+  outline: none !important;
+}
+
+.save-settings-btn.ant-btn-loading {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: white !important;
+}
+
+.save-settings-btn:disabled {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%) !important;
+  color: #d1d5db !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: 0 2px 4px rgba(156, 163, 175, 0.2) !important;
+}
+
+.save-settings-btn .anticon {
+  font-size: 16px !important;
+  margin-right: 4px !important;
+}
+
+/* 其他按钮样式 */
+.ant-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
 
 /* 响应式设计 */
 /* @media (max-width: 768px) {

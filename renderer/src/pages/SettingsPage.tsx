@@ -139,6 +139,7 @@ export const SettingsPage = () => {
                 onClick={handleSave}
                 loading={isSaving}
                 size="large"
+                className="save-settings-btn"
               >
                 保存设置
               </Button>
