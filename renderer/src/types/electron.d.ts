@@ -58,6 +58,9 @@ export interface ElectronAPI {
   analyzeImageOpenAI: (config: APIConfig, request: ImageAnalysisRequest) => Promise<OpenAIResponse>;
   validateOpenAIConfig: (config: APIConfig) => Promise<{ success: boolean; error?: string }>;
   getOpenAIModels: (config: APIConfig) => Promise<{ success: boolean; models: string[]; error?: string }>;
+  windowMinimize: () => Promise<void>;
+  windowMaximize: () => Promise<void>;
+  windowClose: () => Promise<void>;
 }
 
 declare global {

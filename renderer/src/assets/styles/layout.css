@@ -10,6 +10,8 @@
   flex: 1;
   overflow-y: auto;
   background-color: #ffffff;
+  margin-top: 32px; /* 为标题栏留出空间 */
+  height: calc(100vh - 32px); /* 减去标题栏高度 */
 }
 
 /* 页面 */

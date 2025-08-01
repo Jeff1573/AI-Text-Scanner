@@ -2,6 +2,7 @@
 @import './base.css';
 @import './layout.css';
 @import './sidebar.css';
+@import './titlebar.css';
 @import './capture-button.css';
 @import './image-display.css';
 @import './screenshot-viewer.css';

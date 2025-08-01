@@ -61,4 +61,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 获取可用的OpenAI模型列表
   getOpenAIModels: (config: APIConfig) => 
     ipcRenderer.invoke('get-openai-models', config),
+  
+  // 窗口控制功能
+  windowMinimize: () => ipcRenderer.invoke('window-minimize'),
+  windowMaximize: () => ipcRenderer.invoke('window-maximize'),
+  windowClose: () => ipcRenderer.invoke('window-close'),
 });

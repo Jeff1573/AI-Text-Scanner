@@ -27,6 +27,9 @@
 
 .button-icon {
   font-size: 24px;
+  font-weight: 600;
+  height: 24px;
+  width: 24px;
 }
 
 .button-text {

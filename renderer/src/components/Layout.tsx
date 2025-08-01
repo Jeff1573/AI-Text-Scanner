@@ -1,5 +1,6 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useMainAppState } from '../hooks/useMainAppState';
+import { TitleBar } from './TitleBar';
 import '../assets/styles/index.css';
 
 export const Layout = () => {
@@ -35,14 +36,17 @@ export const Layout = () => {
 
   return (
     <div className="app-container">
+      {/* 自定义标题栏 */}
+      <TitleBar />
+      
       {/* 左侧菜单 */}
       <div className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
-        <div className="sidebar-header">
+        {/* <div className="sidebar-header">
           <div className="logo">
             <div className="logo-icon">📷</div>
             <div className="logo-text">Fast OCR</div>
           </div>
-        </div>
+        </div> */}
         
         <nav className="menu">
           {menuItems.map((item) => (

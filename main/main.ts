@@ -22,6 +22,8 @@ const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    frame: false, // 隐藏默认标题栏
+    titleBarStyle: 'hidden', // 隐藏标题栏
     autoHideMenuBar: true, // 隐藏顶部菜单栏
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -92,7 +94,7 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
 
 
   // 打开开发者工具用于调试
-  screenshotWindow.webContents.openDevTools();
+  // screenshotWindow.webContents.openDevTools();
 
   // 加载截图展示页面
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
@@ -360,5 +362,28 @@ ipcMain.handle('get-openai-models', async (event, config: APIConfig) => {
       error: error instanceof Error ? error.message : '未知错误',
       models: []
     };
+  }
+});
+
+// 窗口控制功能IPC处理器
+ipcMain.handle('window-minimize', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.minimize();
+  }
+});
+
+ipcMain.handle('window-maximize', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+});
+
+ipcMain.handle('window-close', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.close();
   }
 });
