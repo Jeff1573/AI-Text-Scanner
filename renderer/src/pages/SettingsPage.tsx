@@ -5,10 +5,30 @@ export const SettingsPage = () => {
     formData,
     errors,
     isSaving,
+    isLoading,
     handleInputChange,
     handleSaveSettings,
     handleResetSettings
   } = useSettingsLogic();
+
+  // 显示加载状态
+  if (isLoading) {
+    return (
+      <div className="page" id="settings-page">
+        <div className="page-header">
+          <h1>设置</h1>
+          <p>配置OpenAI API参数</p>
+        </div>
+        
+        <div className="content-area">
+          <div className="loading-state">
+            <div className="loading-spinner"></div>
+            <p>正在加载配置...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page" id="settings-page">

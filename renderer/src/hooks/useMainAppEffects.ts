@@ -1,9 +1,5 @@
 import { useEffect } from "react";
-
-interface SelectedImageInfo {
-  width: number;
-  height: number;
-}
+import type { SelectedImageInfo } from "../types/common";
 
 export const useMainAppEffects = (
   setSelectedImage: (image: string | null) => void,

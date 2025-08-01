@@ -1,16 +1,4 @@
-interface Selection {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-interface CropResult {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+import type { Selection, CropResult } from '../types/common';
 
 export const calculateCropCoordinates = (
   selection: Selection,

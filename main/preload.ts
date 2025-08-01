@@ -28,5 +28,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.removeAllListeners('screenshot-data');
   },
   
-
+  // 保存配置
+  saveConfig: (config: { apiUrl: string; apiKey: string; model: string; customModel: string }) => 
+    ipcRenderer.invoke('save-config', config),
+  
+  // 加载配置
+  loadConfig: () => ipcRenderer.invoke('load-config'),
 });

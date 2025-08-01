@@ -1,6 +1,8 @@
 import { app, BrowserWindow, desktopCapturer, session, ipcMain, screen } from 'electron';
 import path from 'node:path';
+import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
+import type { ScreenSource, ConfigProvider, Config } from './types';
 
 // Vite注入的变量声明
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -124,12 +126,7 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
   });
 };
 
-// 添加ScreenSource类型定义
-interface ScreenSource {
-  id: string;
-  name: string;
-  thumbnail: string;
-}
+// 类型定义已移至 main/types.ts
 
 // 处理屏幕截图请求
 ipcMain.handle('capture-screen', async () => {
@@ -191,6 +188,71 @@ ipcMain.handle('create-screenshot-window', async (event, screenshotData) => {
     return {
       success: false,
       error: error.message
+    };
+  }
+});
+
+// 获取配置文件路径
+const getConfigPath = () => {
+  const userDataPath = app.getPath('userData');
+  return path.join(userDataPath, 'config.json');
+};
+
+// 保存配置到文件
+ipcMain.handle('save-config', async (event, config: ConfigProvider) => {
+  try {
+    const configPath = getConfigPath();
+    const configData: Config = {
+      provider: [config]
+    };
+    
+    // 确保目录存在
+    const configDir = path.dirname(configPath);
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+    
+    // 写入配置文件
+    fs.writeFileSync(configPath, JSON.stringify(configData, null, 2), 'utf8');
+    console.log('配置保存成功:', configPath);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('保存配置失败:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+});
+
+// 加载配置从文件
+ipcMain.handle('load-config', async () => {
+  try {
+    const configPath = getConfigPath();
+    
+    if (!fs.existsSync(configPath)) {
+      console.log('配置文件不存在，返回默认配置');
+      return {
+        success: true,
+        config: null
+      };
+    }
+    
+    const configData = fs.readFileSync(configPath, 'utf8');
+    const config: Config = JSON.parse(configData);
+    
+    console.log('配置加载成功:', config);
+    return {
+      success: true,
+      config: config.provider[0] || null
+    };
+  } catch (error) {
+    console.error('加载配置失败:', error);
+    return {
+      success: false,
+      error: error.message,
+      config: null
     };
   }
 });

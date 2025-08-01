@@ -1,11 +1,5 @@
-import { useState } from 'react';
-
-export interface SettingsFormData {
-  apiUrl: string;
-  apiKey: string;
-  model: string;
-  customModel: string;
-}
+import { useState, useEffect } from 'react';
+import type { SettingsFormData } from '../types/settings';
 
 export const useSettingsState = () => {
   // 表单数据状态
@@ -21,6 +15,9 @@ export const useSettingsState = () => {
 
   // 保存状态
   const [isSaving, setIsSaving] = useState(false);
+  
+  // 加载状态
+  const [isLoading, setIsLoading] = useState(true);
 
   // 更新表单数据
   const updateFormData = (field: keyof SettingsFormData, value: string) => {
@@ -62,14 +59,40 @@ export const useSettingsState = () => {
     setErrors({});
   };
 
+  // 加载配置
+  const loadConfig = async () => {
+    try {
+      setIsLoading(true);
+      const result = await window.electronAPI.loadConfig();
+      
+      if (result.success && result.config) {
+        setFormData(result.config);
+        console.log('配置加载成功:', result.config);
+      } else {
+        console.log('使用默认配置');
+      }
+    } catch (error) {
+      console.error('加载配置失败:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 组件挂载时加载配置
+  useEffect(() => {
+    loadConfig();
+  }, []);
+
   return {
     formData,
     errors,
     isSaving,
+    isLoading,
     updateFormData,
     resetFormData,
     setFieldError,
     clearErrors,
-    setIsSaving
+    setIsSaving,
+    loadConfig
   };
 }; 

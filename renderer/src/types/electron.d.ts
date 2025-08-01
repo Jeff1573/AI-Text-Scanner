@@ -22,7 +22,15 @@ export interface ElectronAPI {
   }>;
   onScreenshotData: (callback: (data: ScreenSource) => void) => void;
   removeScreenshotDataListener: () => void;
-
+  saveConfig: (config: { apiUrl: string; apiKey: string; model: string; customModel: string }) => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+  loadConfig: () => Promise<{
+    success: boolean;
+    config: { apiUrl: string; apiKey: string; model: string; customModel: string } | null;
+    error?: string;
+  }>;
 }
 
 declare global {

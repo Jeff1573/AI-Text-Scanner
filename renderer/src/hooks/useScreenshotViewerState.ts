@@ -1,17 +1,6 @@
 import { useState } from "react";
 import type { ScreenSource } from "../types/electron";
-
-interface Selection {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-interface StartPos {
-  x: number;
-  y: number;
-}
+import type { Selection, StartPos } from "../types/common";
 
 export const useScreenshotViewerState = () => {
   const [screenshotData, setScreenshotData] = useState<ScreenSource | null>(null);

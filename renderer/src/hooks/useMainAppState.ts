@@ -1,9 +1,5 @@
 import { useState, useEffect } from "react";
-
-interface SelectedImageInfo {
-  width: number;
-  height: number;
-}
+import type { SelectedImageInfo } from "../types/common";
 
 export const useMainAppState = () => {
   const [isCapturing, setIsCapturing] = useState(false);

@@ -1,10 +1,12 @@
-import { useSettingsState, SettingsFormData } from './useSettingsState';
+import { useSettingsState } from './useSettingsState';
+import type { SettingsFormData } from '../types/settings';
 
 export const useSettingsLogic = () => {
   const {
     formData,
     errors,
     isSaving,
+    isLoading,
     updateFormData,
     resetFormData,
     setFieldError,
@@ -70,15 +72,16 @@ export const useSettingsLogic = () => {
     clearErrors();
 
     try {
-      // 这里可以添加实际的保存逻辑
-      // 例如调用Electron的IPC接口保存到本地存储
-      console.log('保存设置:', formData);
+      // 调用Electron API保存配置到config.json
+      const result = await window.electronAPI.saveConfig(formData);
       
-      // 模拟保存延迟
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // 保存成功后的处理
-      console.log('设置保存成功');
+      if (result.success) {
+        console.log('配置保存成功');
+        // 可以在这里添加成功提示
+      } else {
+        console.error('保存配置失败:', result.error);
+        setFieldError('apiUrl', `保存失败: ${result.error}`);
+      }
     } catch (error) {
       console.error('保存设置失败:', error);
       setFieldError('apiUrl', '保存失败，请重试');
@@ -103,6 +106,7 @@ export const useSettingsLogic = () => {
     formData,
     errors,
     isSaving,
+    isLoading,
     handleInputChange,
     handleSaveSettings,
     handleResetSettings,

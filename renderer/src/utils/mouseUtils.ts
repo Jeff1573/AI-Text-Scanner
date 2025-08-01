@@ -1,14 +1,4 @@
-interface Position {
-  x: number;
-  y: number;
-}
-
-interface Selection {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+import type { Position, Selection } from '../types/common';
 
 export const getImageElement = (): HTMLImageElement | null => {
   return document.querySelector(".screenshot-image") as HTMLImageElement;
