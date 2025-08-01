@@ -1,6 +1,8 @@
 import { useCallback } from "react";
 import { useScreenshotViewerState } from "../hooks/useScreenshotViewerState";
 import { useScreenshotViewerEffects } from "../hooks/useScreenshotViewerEffects";
+import { useImageAnalysis } from "../hooks/useImageAnalysis";
+import { useSettingsState } from "../hooks/useSettingsState";
 import { calculateCropCoordinates, cropImage, saveSelectedImage } from "../utils/imageUtils";
 import { getImageElement, getClampedPosition, calculateSelection, isValidSelection } from "../utils/mouseUtils";
 import { ScreenshotHeader } from "./ScreenshotHeader";
@@ -8,6 +10,7 @@ import { ScreenshotContent } from "./ScreenshotContent";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
 import { NoDataState } from "./NoDataState";
+import { AnalysisResult } from "./AnalysisResult";
 import "../assets/styles/screenshot-viewer.css";
 
 export const ScreenshotViewer = () => {
@@ -30,6 +33,20 @@ export const ScreenshotViewer = () => {
     cancelSelection,
   } = useScreenshotViewerState();
 
+  // 图片分析状态
+  const {
+    isAnalyzing,
+    analysisResult,
+    analysisError,
+    usage,
+    analyzeImage,
+    clearAnalysis,
+    clearError
+  } = useImageAnalysis();
+
+  // 设置状态
+  const { formData: settings } = useSettingsState();
+
   useScreenshotViewerEffects(
     setScreenshotData,
     setLoading,
@@ -37,6 +54,16 @@ export const ScreenshotViewer = () => {
     setShowSelector,
     loading
   );
+
+  // 处理分析结果关闭
+  const handleAnalysisClose = useCallback(() => {
+    clearAnalysis();
+  }, [clearAnalysis]);
+
+  // 处理分析重试
+  const handleAnalysisRetry = useCallback(() => {
+    clearError();
+  }, [clearError]);
 
   const handleClose = () => {
     window.close();
@@ -116,28 +143,37 @@ export const ScreenshotViewer = () => {
         const selectedImageData = await cropImage(screenshotData.thumbnail, cropCoords);
         console.log("选中内容数据:", selectedImageData);
 
+        // 保存选中的图片
         saveSelectedImage(selectedImageData, cropCoords.width, cropCoords.height);
 
-        // 关闭当前窗口
-        window.close();
+        // 如果配置了API，则进行图片分析
+        if (settings.apiKey && settings.apiUrl) {
+          console.log("开始分析选中的图片...");
+          await analyzeImage(settings, selectedImageData);
+          // 分析完成后不关闭窗口，让用户查看结果
+        } else {
+          console.log("未配置API，跳过图片分析");
+          // 未配置API时关闭窗口
+          window.close();
+        }
       } catch (error) {
         console.error("裁剪图片失败:", error);
       }
     };
 
     img.src = screenshotData.thumbnail;
-  }, [screenshotData, selection]);
+  }, [screenshotData, selection, settings, analyzeImage]);
 
   if (loading) {
     return <LoadingState />;
   }
 
   if (error) {
-    return <ErrorState error={error} onClose={handleClose} />;
+    return <ErrorState error={error} />;
   }
 
   if (!screenshotData) {
-    return <NoDataState onClose={handleClose} />;
+    return <NoDataState />;
   }
 
   return (
@@ -156,6 +192,17 @@ export const ScreenshotViewer = () => {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
       />
+      
+      {/* 分析结果弹窗 */}
+      {(analysisResult || analysisError) && (
+        <AnalysisResult
+          result={analysisResult}
+          error={analysisError}
+          usage={usage}
+          onClose={handleAnalysisClose}
+          onRetry={analysisError ? handleAnalysisRetry : undefined}
+        />
+      )}
     </div>
   );
 }; 

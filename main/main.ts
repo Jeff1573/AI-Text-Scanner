@@ -89,8 +89,9 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
     },
   });
 
+
   // 打开开发者工具用于调试
-  // screenshotWindow.webContents.openDevTools();
+  screenshotWindow.webContents.openDevTools();
 
   // 加载截图展示页面
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {

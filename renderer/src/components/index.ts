@@ -8,4 +8,5 @@ export { ScreenshotHeader } from "./ScreenshotHeader";
 export { ScreenshotContent } from "./ScreenshotContent";
 export { LoadingState } from "./LoadingState";
 export { ErrorState } from "./ErrorState";
-export { NoDataState } from "./NoDataState"; 
+export { NoDataState } from "./NoDataState";
+export { AnalysisResult } from "./AnalysisResult"; 
