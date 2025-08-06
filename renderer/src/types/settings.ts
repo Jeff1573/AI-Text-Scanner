@@ -6,4 +6,6 @@ export interface SettingsFormData {
   apiKey: string;
   model: string;
   customModel: string;
+  sourceLang: string; // 原文语言
+  targetLang: string; // 翻译语言
 } 

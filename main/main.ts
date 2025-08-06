@@ -286,6 +286,7 @@ const getConfigPath = () => {
 // 保存配置到文件
 ipcMain.handle("save-config", async (event, config: ConfigProvider) => {
   try {
+    console.log("save-config", config);
     const configPath = getConfigPath();
     const configData: Config = {
       provider: [config],

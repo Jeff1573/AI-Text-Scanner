@@ -13,6 +13,8 @@ export interface ConfigProvider {
   apiKey: string;
   model: string;
   customModel: string;
+  sourceLang: string;
+  targetLang: string;
 }
 
 // 配置接口

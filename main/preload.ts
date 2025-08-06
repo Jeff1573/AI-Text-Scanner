@@ -11,6 +11,15 @@ interface APIConfig {
   customModel?: string;
 }
 
+interface SettingsConfig {
+  apiUrl: string;
+  apiKey: string;
+  model: string;
+  customModel: string;
+  sourceLang: string;
+  targetLang: string;
+}
+
 interface ImageAnalysisRequest {
   imageData: string;
   prompt: string;
@@ -44,7 +53,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   
   // 保存配置
-  saveConfig: (config: { apiUrl: string; apiKey: string; model: string; customModel: string }) => 
+  saveConfig: (config: SettingsConfig) => 
     ipcRenderer.invoke('save-config', config),
   
   // 加载配置

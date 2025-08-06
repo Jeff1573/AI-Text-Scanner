@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import type { SettingsFormData } from '../types/settings';
 
+const defaultFormData = {
+  apiUrl: 'https://api.openai.com/v1',
+  apiKey: '',
+  model: 'gpt-4o',
+  customModel: '',
+  sourceLang: 'en',
+  targetLang: 'zh'
+}
+
 export const useSettingsState = () => {
   // 表单数据状态
-  const [formData, setFormData] = useState<SettingsFormData>({
-    apiUrl: 'https://api.openai.com/v1',
-    apiKey: '',
-    model: 'gpt-4o',
-    customModel: ''
-  });
+  const [formData, setFormData] = useState<SettingsFormData>(defaultFormData);
 
   // 表单验证状态
   const [errors, setErrors] = useState<Partial<SettingsFormData>>({});
@@ -41,7 +45,9 @@ export const useSettingsState = () => {
       apiUrl: 'https://api.openai.com/v1',
       apiKey: '',
       model: 'gpt-4o',
-      customModel: ''
+      customModel: '',
+      sourceLang: 'en',
+      targetLang: 'zh'
     });
     setErrors({});
   };
@@ -64,9 +70,8 @@ export const useSettingsState = () => {
     try {
       setIsLoading(true);
       const result = await window.electronAPI.loadConfig();
-      
       if (result.success && result.config) {
-        setFormData(result.config);
+        setFormData({...defaultFormData, ...result.config});
         console.log('配置加载成功:', result.config);
       } else {
         console.log('使用默认配置');

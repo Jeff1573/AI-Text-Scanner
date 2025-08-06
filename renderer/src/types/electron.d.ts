@@ -52,7 +52,7 @@ export interface ElectronAPI {
   }>;
   loadConfig: () => Promise<{
     success: boolean;
-    config: { apiUrl: string; apiKey: string; model: string; customModel: string } | null;
+    config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string } | null;
     error?: string;
   }>;
   analyzeImageOpenAI: (config: APIConfig, request: ImageAnalysisRequest) => Promise<OpenAIResponse>;

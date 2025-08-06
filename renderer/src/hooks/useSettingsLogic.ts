@@ -113,6 +113,7 @@ export const useSettingsLogic = () => {
       }
 
       // 调用Electron API保存配置到config.json
+      console.log('formData', formData)
       const result = await window.electronAPI.saveConfig(formData);
       
       if (result.success) {

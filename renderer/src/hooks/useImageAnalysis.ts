@@ -32,13 +32,11 @@ export const useImageAnalysis = () => {
     async (
       config: SettingsFormData,
       imageData: string,
-      prompt = `
-    1. Analyze the image and return the text content of the image, type the text according to the image content, obtain only the text, and do not have redundant content.
-    2. Translate the returned content, Translate language to Simplified Chinese
-    3. Put the identified original text and translated text into a json
-    4. Just return this json
-    `
+      prompt?: string
     ) => {
+      const dynamicPrompt =
+        prompt ||
+        `1. 请分析图片内容，提取图片中的文本内容，严格按图片内容逐字输出原文（原文语言：${config.sourceLang}）。\n2. 将上述原文翻译为${config.targetLang}。\n3. 以如下JSON格式返回：{"original": 原文, "translated": 译文}。\n4. 只返回JSON，不要有多余内容。`;
       setState((prev) => ({
         ...prev,
         isAnalyzing: true,
@@ -60,7 +58,7 @@ export const useImageAnalysis = () => {
         // 构建请求参数
         const request: ImageAnalysisRequest = {
           imageData,
-          prompt,
+          prompt: dynamicPrompt,
           maxTokens: 1500,
           temperature: 0.3,
         };

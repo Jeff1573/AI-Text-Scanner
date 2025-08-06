@@ -130,44 +130,51 @@ export const SettingsPage = () => {
               />
             </Form.Item>
           )}
-
-          <Form.Item style={{ marginTop: "24px" }}>
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-              <Button
-                type="primary"
-                icon={<SaveOutlined />}
-                onClick={handleSave}
-                loading={isSaving}
-                size="large"
-                className="save-settings-btn"
-              >
-                保存设置
-              </Button>
-              <Button
-                icon={<CheckCircleOutlined />}
-                onClick={handleValidate}
-                disabled={isSaving}
-                size="large"
-              >
-                验证配置
-              </Button>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={handleReset}
-                disabled={isSaving}
-                size="large"
-              >
-                重置
-              </Button>
-            </div>
-          </Form.Item>
         </Form>
       )
     },
     {
       key: '2',
       label: '翻译设置',
-      children: <p>翻译</p>,
+      children: (
+        <Form layout="vertical" style={{ padding: "16px 0" }}>
+          <Form.Item label="原文语言">
+            <Select
+              value={formData.sourceLang}
+              onChange={value => handleInputChange('sourceLang', value)}
+              size="large"
+              defaultValue="en"
+            >
+              <Select.Option value="en">英文</Select.Option>
+              <Select.Option value="auto">自动识别</Select.Option>
+              <Select.Option value="zh">中文</Select.Option>
+              <Select.Option value="ja">日语</Select.Option>
+              <Select.Option value="ko">韩语</Select.Option>
+              <Select.Option value="fr">法语</Select.Option>
+              <Select.Option value="de">德语</Select.Option>
+              <Select.Option value="ru">俄语</Select.Option>
+              <Select.Option value="es">西班牙语</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item label="翻译语言">
+            <Select
+              value={formData.targetLang}
+              onChange={value => handleInputChange('targetLang', value)}
+              size="large"
+              defaultValue="zh"
+            >
+              <Select.Option value="zh">中文</Select.Option>
+              <Select.Option value="en">英文</Select.Option>
+              <Select.Option value="ja">日语</Select.Option>
+              <Select.Option value="ko">韩语</Select.Option>
+              <Select.Option value="fr">法语</Select.Option>
+              <Select.Option value="de">德语</Select.Option>
+              <Select.Option value="ru">俄语</Select.Option>
+              <Select.Option value="es">西班牙语</Select.Option>
+            </Select>
+          </Form.Item>
+        </Form>
+      ),
     },
   ];
 
@@ -179,6 +186,34 @@ export const SettingsPage = () => {
 
       <div className="content-area">
         <Collapse items={items} defaultActiveKey={["1"]} />
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "flex-end", marginTop: 32 }}>
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            onClick={handleSave}
+            loading={isSaving}
+            size="large"
+            className="save-settings-btn"
+          >
+            保存设置
+          </Button>
+          <Button
+            icon={<CheckCircleOutlined />}
+            onClick={handleValidate}
+            disabled={isSaving}
+            size="large"
+          >
+            验证配置
+          </Button>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={handleReset}
+            disabled={isSaving}
+            size="large"
+          >
+            重置
+          </Button>
+        </div>
       </div>
     </div>
   );
