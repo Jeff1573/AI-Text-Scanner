@@ -2,6 +2,7 @@ import { createHashRouter } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { HomePage } from '../pages/HomePage';
 import { SettingsPage } from '../pages/SettingsPage';
+import { ScreenshotViewer } from '../components';
 
 export const router = createHashRouter([
   {
@@ -16,6 +17,10 @@ export const router = createHashRouter([
         path: 'settings',
         element: <SettingsPage />,
       },
+      {
+        path: 'screenshot',
+        element: <ScreenshotViewer />,
+      }
     ],
   },
 ]); 

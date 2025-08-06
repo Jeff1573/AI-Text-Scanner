@@ -23,6 +23,13 @@
   animation: pulse 1.5s ease-in-out infinite;
 }
 
+.loading-text {
+  color: #fff;
+  font-size: 1.5rem;
+  margin-top: 1rem;
+}
+
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
