@@ -8,6 +8,7 @@ export const ResultPage = () => {
   useEffect(() => {
     // 监听主进程传递的识别结果
     window.electronAPI.onResultData((data: string) => {
+      console.log('data', data)
       setResult(data);
     });
     return () => {

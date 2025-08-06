@@ -448,24 +448,27 @@ ipcMain.handle("get-openai-models", async (event, config: APIConfig) => {
 });
 
 // 窗口控制功能IPC处理器
-ipcMain.handle("window-minimize", () => {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.minimize();
+ipcMain.handle("window-minimize", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win && !win.isDestroyed()) {
+    win.minimize();
   }
 });
 
-ipcMain.handle("window-maximize", () => {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    if (mainWindow.isMaximized()) {
-      mainWindow.unmaximize();
+ipcMain.handle("window-maximize", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win && !win.isDestroyed()) {
+    if (win.isMaximized()) {
+      win.unmaximize();
     } else {
-      mainWindow.maximize();
+      win.maximize();
     }
   }
 });
 
-ipcMain.handle("window-close", () => {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.close();
+ipcMain.handle("window-close", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win && !win.isDestroyed()) {
+    win.close();
   }
 });
