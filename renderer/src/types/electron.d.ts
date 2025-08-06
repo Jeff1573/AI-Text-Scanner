@@ -61,6 +61,9 @@ export interface ElectronAPI {
   windowMinimize: () => Promise<void>;
   windowMaximize: () => Promise<void>;
   windowClose: () => Promise<void>;
+  openResultWindow: (resultContent: string) => Promise<{ success: boolean; error?: string }>;
+  onResultData: (callback: (data: string) => void) => void;
+  removeResultDataListener: () => void;
 }
 
 declare global {

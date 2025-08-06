@@ -66,4 +66,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   windowMinimize: () => ipcRenderer.invoke('window-minimize'),
   windowMaximize: () => ipcRenderer.invoke('window-maximize'),
   windowClose: () => ipcRenderer.invoke('window-close'),
+
+  // 新增：打开结果窗口
+  openResultWindow: (resultContent: string) => ipcRenderer.invoke('open-result-window', resultContent),
+  // 新增：监听结果窗口数据
+  onResultData: (callback: (data: string) => void) => {
+    ipcRenderer.on('result-data', (event, data) => callback(data));
+  },
+  // 新增：移除结果窗口数据监听
+  removeResultDataListener: () => {
+    ipcRenderer.removeAllListeners('result-data');
+  },
 });

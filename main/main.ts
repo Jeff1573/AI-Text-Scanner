@@ -1,9 +1,22 @@
-import { app, BrowserWindow, desktopCapturer, session, ipcMain, screen } from 'electron';
-import path from 'node:path';
-import fs from 'node:fs';
-import started from 'electron-squirrel-startup';
-import type { ScreenSource, ConfigProvider, Config } from './types';
-import { analyzeImageWithOpenAI, validateOpenAIConfig, getAvailableOpenAIModels, type APIConfig, type ImageAnalysisRequest } from './utils/openaiService';
+import {
+  app,
+  BrowserWindow,
+  desktopCapturer,
+  session,
+  ipcMain,
+  screen,
+} from "electron";
+import path from "node:path";
+import fs from "node:fs";
+import started from "electron-squirrel-startup";
+import type { ScreenSource, ConfigProvider, Config } from "./types";
+import {
+  analyzeImageWithOpenAI,
+  validateOpenAIConfig,
+  getAvailableOpenAIModels,
+  type APIConfig,
+  type ImageAnalysisRequest,
+} from "./utils/openaiService";
 
 // Vite注入的变量声明
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -16,6 +29,8 @@ if (started) {
 
 let mainWindow: BrowserWindow | null = null;
 let screenshotWindow: BrowserWindow | null = null;
+// 新增：结果窗口
+let resultWindow: BrowserWindow | null = null;
 
 const createWindow = () => {
   // Create the browser window.
@@ -23,36 +38,41 @@ const createWindow = () => {
     width: 800,
     height: 600,
     frame: false, // 隐藏默认标题栏
-    titleBarStyle: 'hidden', // 隐藏标题栏
+    titleBarStyle: "hidden", // 隐藏标题栏
     autoHideMenuBar: true, // 隐藏顶部菜单栏
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
     },
   });
 
   // 设置桌面捕获权限处理
-  session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-    desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-      // 授权访问第一个找到的屏幕
-      callback({ video: sources[0] });
-    });
-  }, { useSystemPicker: true });
+  session.defaultSession.setDisplayMediaRequestHandler(
+    (request, callback) => {
+      desktopCapturer.getSources({ types: ["screen"] }).then((sources) => {
+        // 授权访问第一个找到的屏幕
+        callback({ video: sources[0] });
+      });
+    },
+    { useSystemPicker: true }
+  );
 
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
-    mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
+    mainWindow.loadFile(
+      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
+    );
   }
 
   // 开发模式下添加F12键监听，用于打开开发者工具
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     // 监听键盘事件
-    mainWindow.webContents.on('before-input-event', (event, input) => {
+    mainWindow.webContents.on("before-input-event", (event, input) => {
       // 检查是否按下了F12键
-      if (input.key === 'F12') {
+      if (input.key === "F12") {
         // 阻止默认行为
         event.preventDefault();
         // 打开开发者工具
@@ -67,8 +87,8 @@ const createWindow = () => {
 
 // 创建截图展示窗口
 const createScreenshotWindow = (screenshotData: ScreenSource) => {
-  console.log('创建截图窗口，数据:', screenshotData);
-  
+  console.log("创建截图窗口，数据:", screenshotData);
+
   // 关闭已存在的截图窗口
   if (screenshotWindow) {
     screenshotWindow.close();
@@ -86,12 +106,11 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
     fullscreen: true,
     autoHideMenuBar: true, // 隐藏顶部菜单栏
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
     },
   });
-
 
   // 打开开发者工具用于调试
   // screenshotWindow.webContents.openDevTools();
@@ -99,67 +118,129 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
   // 加载截图展示页面
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     const url = `${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/screenshot`;
-    console.log('加载URL:', url);
+    console.log("加载URL:", url);
     screenshotWindow.loadURL(url);
   } else {
-    screenshotWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`), {
-      hash: '/screenshot'
-    });
+    screenshotWindow.loadFile(
+      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+      {
+        hash: "/screenshot",
+      }
+    );
   }
 
   // 传递截图数据到新窗口 - 改进时机
-  screenshotWindow.webContents.on('did-finish-load', () => {
-    console.log('窗口加载完成，准备发送数据');
+  screenshotWindow.webContents.on("did-finish-load", () => {
+    console.log("窗口加载完成，准备发送数据");
     // 延迟一点时间确保组件已经挂载
     setTimeout(() => {
       if (screenshotWindow && !screenshotWindow.isDestroyed()) {
         // console.log('发送截图数据到新窗口:', screenshotData);
-        screenshotWindow.webContents.send('screenshot-data', screenshotData);
+        screenshotWindow.webContents.send("screenshot-data", screenshotData);
       }
     }, 500);
   });
 
   // 添加错误处理
-  screenshotWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-    console.error('窗口加载失败:', errorCode, errorDescription);
-  });
+  screenshotWindow.webContents.on(
+    "did-fail-load",
+    (event, errorCode, errorDescription) => {
+      console.error("窗口加载失败:", errorCode, errorDescription);
+    }
+  );
 
   // 窗口关闭时清理引用
-  screenshotWindow.on('closed', () => {
+  screenshotWindow.on("closed", () => {
     screenshotWindow = null;
   });
 };
 
+// 新增：创建结果窗口函数
+const createResultWindow = (resultContent: string) => {
+  if (resultWindow) {
+    resultWindow.close();
+  }
+  resultWindow = new BrowserWindow({
+    width: 600,
+    height: 400,
+    alwaysOnTop: true,
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+    frame: false, // 隐藏默认标题栏
+    titleBarStyle: "hidden", // 隐藏标题栏
+  });
+
+  // 加载结果页面（可用hash区分）
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    resultWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/result`);
+    resultWindow.webContents.openDevTools();
+  } else {
+    resultWindow.loadFile(
+      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+      {
+        hash: "/result",
+      }
+    );
+  }
+
+  // 传递识别结果
+  resultWindow.webContents.on("did-finish-load", () => {
+    setTimeout(() => {
+      if (resultWindow && !resultWindow.isDestroyed()) {
+        resultWindow.webContents.send("result-data", resultContent);
+      }
+    }, 300);
+  });
+
+  resultWindow.on("closed", () => {
+    resultWindow = null;
+  });
+};
+
+// 新增：IPC handler
+ipcMain.handle("open-result-window", async (event, resultContent) => {
+  try {
+    createResultWindow(resultContent);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
 // 类型定义已移至 main/types.ts
 
 // 处理屏幕截图请求
-ipcMain.handle('capture-screen', async () => {
+ipcMain.handle("capture-screen", async () => {
   try {
     // 隐藏当前应用窗口
     if (mainWindow) {
       mainWindow.hide();
-      
+
       // 等待一小段时间确保窗口完全隐藏
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    const sources = await desktopCapturer.getSources({ 
-      types: ['screen'],
-      thumbnailSize: { width: 1920, height: 1080 }
+    const sources = await desktopCapturer.getSources({
+      types: ["screen"],
+      thumbnailSize: { width: 1920, height: 1080 },
     });
-    
+
     if (sources.length === 0) {
-      throw new Error('没有找到可用的屏幕');
+      throw new Error("没有找到可用的屏幕");
     }
-    
+
     // 返回第一个屏幕的信息
     const result = {
       success: true,
-      sources: sources.map(source => ({
+      sources: sources.map((source) => ({
         id: source.id,
         name: source.name,
-        thumbnail: source.thumbnail.toDataURL()
-      }))
+        thumbnail: source.thumbnail.toDataURL(),
+      })),
     };
 
     // 截图完成后恢复窗口显示
@@ -173,111 +254,109 @@ ipcMain.handle('capture-screen', async () => {
     if (mainWindow) {
       mainWindow.show();
     }
-    
+
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 });
 
 // 处理创建截图展示窗口请求
-ipcMain.handle('create-screenshot-window', async (event, screenshotData) => {
+ipcMain.handle("create-screenshot-window", async (event, screenshotData) => {
   try {
-    console.log('received create screenshot window request, data:');
+    console.log("received create screenshot window request, data:");
     createScreenshotWindow(screenshotData);
     return { success: true };
   } catch (error) {
-    console.error('创建截图窗口失败:', error);
+    console.error("创建截图窗口失败:", error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 });
 
 // 获取配置文件路径
 const getConfigPath = () => {
-  const userDataPath = app.getPath('userData');
-  return path.join(userDataPath, 'config.json');
+  const userDataPath = app.getPath("userData");
+  return path.join(userDataPath, "config.json");
 };
 
 // 保存配置到文件
-ipcMain.handle('save-config', async (event, config: ConfigProvider) => {
+ipcMain.handle("save-config", async (event, config: ConfigProvider) => {
   try {
     const configPath = getConfigPath();
     const configData: Config = {
-      provider: [config]
+      provider: [config],
     };
-    
+
     // 确保目录存在
     const configDir = path.dirname(configPath);
     if (!fs.existsSync(configDir)) {
       fs.mkdirSync(configDir, { recursive: true });
     }
-    
+
     // 写入配置文件
-    fs.writeFileSync(configPath, JSON.stringify(configData, null, 2), 'utf8');
-    console.log('配置保存成功:', configPath);
-    
+    fs.writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
+    console.log("配置保存成功:", configPath);
+
     return { success: true };
   } catch (error) {
-    console.error('保存配置失败:', error);
+    console.error("保存配置失败:", error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 });
 
 // 加载配置从文件
-ipcMain.handle('load-config', async () => {
+ipcMain.handle("load-config", async () => {
   try {
     const configPath = getConfigPath();
-    
+
     if (!fs.existsSync(configPath)) {
-      console.log('配置文件不存在，返回默认配置');
+      console.log("配置文件不存在，返回默认配置");
       return {
         success: true,
-        config: null
+        config: null,
       };
     }
-    
-    const configData = fs.readFileSync(configPath, 'utf8');
+
+    const configData = fs.readFileSync(configPath, "utf8");
     const config: Config = JSON.parse(configData);
-    
-    console.log('配置加载成功:', config);
+
+    console.log("配置加载成功:", config);
     return {
       success: true,
-      config: config.provider[0] || null
+      config: config.provider[0] || null,
     };
   } catch (error) {
-    console.error('加载配置失败:', error);
+    console.error("加载配置失败:", error);
     return {
       success: false,
       error: error.message,
-      config: null
+      config: null,
     };
   }
 });
-
-
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
+app.on("ready", createWindow);
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
     app.quit();
   }
 });
 
-app.on('activate', () => {
+app.on("activate", () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
@@ -291,88 +370,91 @@ app.on('activate', () => {
 // OpenAI API相关IPC处理器
 
 // 处理图片分析请求
-ipcMain.handle('analyze-image-openai', async (event, config: APIConfig, request: ImageAnalysisRequest) => {
-  try {
-    console.log('收到图片分析请求:', {
-      apiUrl: config.apiUrl,
-      model: config.model,
-      prompt: request.prompt
-    });
+ipcMain.handle(
+  "analyze-image-openai",
+  async (event, config: APIConfig, request: ImageAnalysisRequest) => {
+    try {
+      console.log("收到图片分析请求:", {
+        apiUrl: config.apiUrl,
+        model: config.model,
+        prompt: request.prompt,
+      });
 
-    const result = await analyzeImageWithOpenAI(config, request);
-    
-    console.log('analyze-image-openai:', {
-      success: !result.error,
-      contentLength: result.content?.length || 0,
-      error: result.error
-    });
+      const result = await analyzeImageWithOpenAI(config, request);
 
-    return result;
-  } catch (error) {
-    console.error('图片分析请求处理失败:', error);
-    return {
-      content: '',
-      error: error instanceof Error ? error.message : '未知错误'
-    };
+      console.log("analyze-image-openai:", {
+        success: !result.error,
+        contentLength: result.content?.length || 0,
+        error: result.error,
+      });
+
+      return result;
+    } catch (error) {
+      console.error("图片分析请求处理失败:", error);
+      return {
+        content: "",
+        error: error instanceof Error ? error.message : "未知错误",
+      };
+    }
   }
-});
+);
 
 // 验证OpenAI API配置
-ipcMain.handle('validate-openai-config', async (event, config: APIConfig) => {
+ipcMain.handle("validate-openai-config", async (event, config: APIConfig) => {
   try {
-    console.log('验证OpenAI API配置:', {
+    console.log("验证OpenAI API配置:", {
       apiUrl: config.apiUrl,
-      hasApiKey: !!config.apiKey
+      hasApiKey: !!config.apiKey,
     });
 
     const isValid = await validateOpenAIConfig(config);
-    
-    console.log('OpenAI API配置验证结果:', isValid);
-    
+
+    console.log("OpenAI API配置验证结果:", isValid);
+
     return { success: isValid };
   } catch (error) {
-    console.error('OpenAI API配置验证失败:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : '未知错误' 
+    console.error("OpenAI API配置验证失败:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "未知错误",
     };
   }
 });
 
 // 获取可用的OpenAI模型列表
-ipcMain.handle('get-openai-models', async (event, config: APIConfig) => {
+ipcMain.handle("get-openai-models", async (event, config: APIConfig) => {
   try {
-    console.log('获取OpenAI模型列表:', {
+    console.log("获取OpenAI模型列表:", {
       apiUrl: config.apiUrl,
-      hasApiKey: !!config.apiKey
+      hasApiKey: !!config.apiKey,
     });
 
     const models = await getAvailableOpenAIModels(config);
-    
-    console.log('获取到的模型列表:', models);
-    
-    return { 
-      success: true, 
-      models: models 
+
+    console.log("获取到的模型列表:", models);
+
+    return {
+      success: true,
+      models: models,
     };
   } catch (error) {
-    console.error('获取OpenAI模型列表失败:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : '未知错误',
-      models: []
+    console.error("获取OpenAI模型列表失败:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "未知错误",
+      models: [],
     };
   }
 });
 
 // 窗口控制功能IPC处理器
-ipcMain.handle('window-minimize', () => {
+ipcMain.handle("window-minimize", () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.minimize();
   }
 });
 
-ipcMain.handle('window-maximize', () => {
+ipcMain.handle("window-maximize", () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     if (mainWindow.isMaximized()) {
       mainWindow.unmaximize();
@@ -382,7 +464,7 @@ ipcMain.handle('window-maximize', () => {
   }
 });
 
-ipcMain.handle('window-close', () => {
+ipcMain.handle("window-close", () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.close();
   }
