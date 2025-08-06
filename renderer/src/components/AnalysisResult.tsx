@@ -18,7 +18,7 @@ export const AnalysisResult = ({
   error, 
   usage, 
   onClose, 
-  onRetry 
+  onRetry
 }: AnalysisResultProps) => {
   const handleCopy = useCallback(() => {
     if (result) {
@@ -26,9 +26,11 @@ export const AnalysisResult = ({
     }
   }, [result]);
 
+  const containerClass = `analysis-result ${error ? 'error' : ''}`;
+
   if (error) {
     return (
-      <div className="analysis-result error">
+      <div className={containerClass}>
         <div className="analysis-header">
           <h3>分析失败</h3>
           <button className="close-btn" onClick={onClose}>×</button>
@@ -53,7 +55,7 @@ export const AnalysisResult = ({
   }
 
   return (
-    <div className="analysis-result">
+    <div className={containerClass}>
       <div className="analysis-header">
         <h3>AI 分析结果</h3>
         <div className="header-actions">

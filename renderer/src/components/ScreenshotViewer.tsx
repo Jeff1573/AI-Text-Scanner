@@ -37,6 +37,7 @@ export const ScreenshotViewer = () => {
   const {
     analysisResult,
     analysisError,
+    isAnalyzing,
     usage,
     analyzeImage,
     clearAnalysis,
@@ -149,7 +150,7 @@ export const ScreenshotViewer = () => {
         if (settings.apiKey && settings.apiUrl) {
           console.log("开始分析选中的图片...");
           await analyzeImage(settings, selectedImageData);
-          // 分析完成后不关闭窗口，让用户查看结果
+          // 分析完成后保持截图界面显示，结果以弹窗形式显示
         } else {
           console.log("未配置API，跳过图片分析");
           // 未配置API时关闭窗口
@@ -173,6 +174,21 @@ export const ScreenshotViewer = () => {
 
   if (!screenshotData) {
     return <NoDataState />;
+  }
+
+  // 如果正在分析，显示识别提示
+  if (isAnalyzing) {
+    return (
+      <div className="screenshot-viewer">
+        <div className="analysis-loading-overlay">
+          <div className="analysis-loading-content">
+            <div className="loading-spinner"></div>
+            <h3>正在识别中...</h3>
+            <p>请稍候，AI正在分析您选择的区域</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
