@@ -1,0 +1,33 @@
+[33mcommit d4c8197b6a491eefbf2be678a827f28c34250cb5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdev[m[33m, [m[1;31morigin/dev[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: jf <https://gitlab.hunantianxing.com/>
+Date:   Thu Aug 7 10:11:45 2025 +0800
+
+    feat(translation): 在结果页面添加语言选择和自动翻译功能
+    
+    主要变更：
+    - **结果页面**:
+      - 新增源语言和目标语言下拉选择器。
+      - 添加语言切换按钮。
+      - 实现自动翻译功能，在原文或语言设置变更时触发。
+      - 优化UI，在翻译过程中显示加载状态。
+    
+    - **主进程**:
+      - 新增        ranslateText 服务，用于调用 OpenAI API。
+      - 通过 ipcMain 暴露翻译接口。
+    
+    - **类型定义**:
+      - 更新 ElectronAPI 接口，添加         ranslate 方法。
+      - 添加 TranslateRequest 接口。
+    
+    - **样式**:
+      - 创建 language-selector.css，为新组件提供样式。
+
+ main/main.ts                                     |  21 [32m++++[m
+ main/preload.ts                                  |  12 [32m+[m[31m-[m
+ main/utils/openaiService.ts                      |  63 [32m+++++++++++[m
+ renderer/src/assets/styles/language-selector.css |  46 [32m++++++++[m
+ renderer/src/assets/styles/result-page.css       |   1 [32m+[m
+ renderer/src/pages/ResultPage.tsx                | 136 [32m+++++++++++++++++++++[m[31m--[m
+ renderer/src/types/electron.d.ts                 |   7 [32m++[m
+ renderer/src/utils/translate.ts                  |  23 [32m++++[m
+ 8 files changed, 300 insertions(+), 9 deletions(-)
