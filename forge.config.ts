@@ -6,10 +6,12 @@ import { MakerRpm } from '@electron-forge/maker-rpm';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import { join } from 'path'
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    icon: join(__dirname, "./main/static/tray-icon.svg")
   },
   rebuildConfig: {},
   makers: [new MakerSquirrel({}), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],

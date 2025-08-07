@@ -36,7 +36,7 @@ export const useImageAnalysis = () => {
     ) => {
       const dynamicPrompt =
         prompt ||
-        `1. 请分析图片内容，提取图片中的文本内容，严格按图片内容逐字输出原文（原文语言：${config.sourceLang}）。\n2. 将上述原文翻译为${config.targetLang}。\n3. 以如下JSON格式返回：{"original": 原文, "translated": 译文}。\n4. 只返回JSON，不要有多余内容。`;
+        `请分析图片内容，提取图片中的文本内容，严格按图片内容逐字输出原文`;
       setState((prev) => ({
         ...prev,
         isAnalyzing: true,

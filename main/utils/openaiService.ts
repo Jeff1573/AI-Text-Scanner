@@ -221,30 +221,23 @@ export async function translateText(
       baseURL: config.apiUrl,
     });
 
-    console.log(`translate config`, config)
-    console.log(`translate request`, request)
-    const system_prompt = `
-    你是一位专业的翻译助手，擅长根据上下文理解原文的用语风格（情感、语气），并且准确地在 ${request.targetLang} 中再现这种风格。
-    ## 翻译要求
-    1. 语言风格：根据**原文内容和上下文**，灵活采用不同风格。如文档采用严谨风格、论坛采用口语化风格、嘲讽采用阴阳怪气风格等。
-    2. 用词选择：不要生硬地逐词直译，而是采用 ${request.targetLang} 的地道用词（如成语、网络用语）。
-    3. 句法选择：不要追求逐句翻译，应该调整语句大小和语序，使之更符合 ${request.targetLang} 表达习惯。
-    4. 标点用法：去除原文中的标点符号，驼峰命名或其他结构根据内容可拆开翻译。
-    5. 格式保留：只翻译原文中的文本内容，无法翻译的内容需要保持**原样**，对于翻译内容也不要额外添加格式。
-    `;
+    console.log(`translate config`, config);
+    console.log(`translate request`, request);
+    const system_prompt = `你是一个多语言翻译机器人。用户会指定要翻译成什么语言，或者让你直接翻译。如果用户没有指定目标语言，就默认翻译成中文。只返回翻译结果。`;
 
+    console.log("system_prompt", system_prompt);
     const response = await openai.chat.completions.create({
       model: config.customModel || config.model,
       messages: [
         { role: "system", content: system_prompt },
         {
           role: "user",
-          content: request.text,
-        },
+          content: `翻译成${request.targetLang}：${request.text}`,
+        }
       ],
     });
 
-    console.log(`translate response`, response.choices[0].message.content)
+    console.log(`translate response`, response.choices[0].message.content);
     return {
       content: response.choices[0].message.content || "",
     };

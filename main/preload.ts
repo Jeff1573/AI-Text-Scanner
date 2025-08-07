@@ -96,6 +96,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeResultDataListener: () => {
     ipcRenderer.removeAllListeners('result-data');
   },
+  // 新增：获取剪贴板内容
+  getClipboardText: () => ipcRenderer.invoke('get-clipboard-text'),
   
   // 新增：监听打开ResultPage事件
   onOpenResultPage: (callback: () => void) => {

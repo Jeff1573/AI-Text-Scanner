@@ -72,6 +72,7 @@ export interface ElectronAPI {
   onResultData: (callback: (data: string) => void) => void;
   removeResultDataListener: () => void;
   onOpenResultPage: (callback: () => void) => void;
+  getClipboardText: () => Promise<{ success: boolean; text: string; error?: string }>;
   removeOpenResultPageListener: () => void;
   onOpenScreenshotViewer: (callback: (data: ScreenSource) => void) => void;
   removeOpenScreenshotViewerListener: () => void;

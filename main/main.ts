@@ -9,6 +9,7 @@ import {
   Tray,
   Menu,
   nativeImage,
+  clipboard,
 } from "electron";
 import path from "node:path";
 import fs from "node:fs";
@@ -166,12 +167,14 @@ const createTray = () => {
       label: '快捷翻译',
       accelerator: 'CmdOrCtrl+Shift+T',
       click: () => {
-        if (!mainWindow) {
-          createWindow();
-        }
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('open-result-page');
-        }
+        console.log('托盘菜单快捷翻译被点击');
+        // 获取剪贴板内容作为默认内容
+        const clipboardText = clipboard.readText();
+        // 如果剪贴板有内容，将其作为原文，否则使用空内容
+        const defaultContent = clipboardText
+          ? JSON.stringify({ original: clipboardText, translated: "" })
+          : '{"original": "", "translated": ""}';
+        createResultWindow(defaultContent);
       }
     },
     { type: 'separator' },
@@ -297,19 +300,19 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
 
 // 注册全局快捷键
 const registerGlobalShortcuts = () => {
-  // 注册 Ctrl+Shift+R 快捷键来打开ResultPage
+  // 注册 CommandOrControl+Shift+T 快捷键来直接打开结果窗口
   const ret1 = globalShortcut.register('CommandOrControl+Shift+T', () => {
-    console.log('全局快捷键被触发，准备打开ResultPage');
-    
-    // 如果主窗口不存在，先创建它
-    if (!mainWindow) {
-      createWindow();
-    }
-    
-    // 通过IPC通知渲染进程打开ResultPage
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('open-result-page');
-    }
+    console.log('全局快捷键被触发，准备直接打开结果窗口');
+
+    // 获取剪贴板内容作为默认内容
+    const clipboardText = clipboard.readText();
+    // 如果剪贴板有内容，将其作为原文，否则使用空内容
+    const defaultContent = clipboardText
+      ? JSON.stringify({ original: clipboardText, translated: "" })
+      : '{"original": "", "translated": ""}';
+
+    // 直接调用 createResultWindow 函数
+    createResultWindow(defaultContent);
   });
 
   // 注册 Ctrl+Shift+S 快捷键来启动截图功能
@@ -401,7 +404,7 @@ const createResultWindow = (resultContent: string) => {
   // 加载结果页面（可用hash区分）
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     resultWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/result`);
-    resultWindow.webContents.openDevTools();
+    // resultWindow.webContents.openDevTools();
   } else {
     resultWindow.loadFile(
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
@@ -432,6 +435,16 @@ ipcMain.handle("open-result-window", async (event, resultContent) => {
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
+  }
+});
+
+// 新增：获取剪贴板内容的 IPC handler
+ipcMain.handle("get-clipboard-text", async () => {
+  try {
+    const text = clipboard.readText();
+    return { success: true, text };
+  } catch (error) {
+    return { success: false, error: error.message, text: "" };
   }
 });
 
@@ -631,7 +644,7 @@ ipcMain.handle(
   "analyze-image-openai",
   async (event, config: APIConfig, request: ImageAnalysisRequest) => {
     try {
-      console.log("收到图片分析请求:", {
+      console.log("receive image data:", {
         apiUrl: config.apiUrl,
         model: config.model,
         prompt: request.prompt,
