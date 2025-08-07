@@ -5,6 +5,7 @@ import {
   session,
   ipcMain,
   screen,
+  globalShortcut,
 } from "electron";
 import path from "node:path";
 import fs from "node:fs";
@@ -155,6 +156,30 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
   screenshotWindow.on("closed", () => {
     screenshotWindow = null;
   });
+};
+
+// 注册全局快捷键
+const registerGlobalShortcuts = () => {
+  // 注册 Ctrl+Shift+R 快捷键来打开ResultPage
+  const ret = globalShortcut.register('CommandOrControl+Shift+R', () => {
+    console.log('全局快捷键被触发，准备打开ResultPage');
+    
+    // 如果主窗口不存在，先创建它
+    if (!mainWindow) {
+      createWindow();
+    }
+    
+    // 通过IPC通知渲染进程打开ResultPage
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('open-result-page');
+    }
+  });
+
+  if (!ret) {
+    console.log('全局快捷键注册失败');
+  } else {
+    console.log('全局快捷键注册成功: CommandOrControl+Shift+R');
+  }
 };
 
 // 新增：创建结果窗口函数
@@ -348,7 +373,12 @@ ipcMain.handle("load-config", async () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on("ready", createWindow);
+app.on("ready", () => {
+  createWindow();
+  
+  // 注册全局快捷键
+  registerGlobalShortcuts();
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
@@ -357,6 +387,11 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
+});
+
+// 应用退出时注销全局快捷键
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
 });
 
 app.on("activate", () => {

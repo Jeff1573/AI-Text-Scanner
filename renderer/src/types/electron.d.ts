@@ -71,6 +71,8 @@ export interface ElectronAPI {
   openResultWindow: (resultContent: string) => Promise<{ success: boolean; error?: string }>;
   onResultData: (callback: (data: string) => void) => void;
   removeResultDataListener: () => void;
+  onOpenResultPage: (callback: () => void) => void;
+  removeOpenResultPageListener: () => void;
 }
 
 declare global {

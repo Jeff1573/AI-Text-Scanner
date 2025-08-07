@@ -1,27 +1,28 @@
-# Fast OCR - 屏幕截图工具
+# Fast OCR - AI文字识别应用
 
-一个基于 Electron 的桌面应用程序，提供简单高效的屏幕截图和区域选择功能。
+一个基于Electron和React的AI文字识别应用，支持截图识别和文本翻译功能。
 
 ## 功能特性
 
-- 🖥️ **一键截图** - 快速获取屏幕截图
-- 🎯 **区域选择** - 拖拽选择任意区域
-- 🖼️ **图片管理** - 显示选中图片和尺寸信息
-- 🎨 **现代化界面** - 简洁美观的用户界面
+- 🖼️ 屏幕截图文字识别
+- 🌐 多语言文本翻译
+- ⚙️ 可配置的AI API设置
+- 🎨 现代化的用户界面
+- ⌨️ 全局快捷键支持
 
-## 技术栈
+## 全局快捷键
 
-- **Electron** - 跨平台桌面应用框架
-- **React** - 用户界面库
-- **TypeScript** - 类型安全的 JavaScript
-- **Vite** - 快速构建工具
+应用支持以下全局快捷键：
 
-## 快速开始
+- **Ctrl+Shift+R** (Windows/Linux) 或 **Cmd+Shift+R** (macOS): 快速打开结果页面
 
-### 环境要求
+### 使用方法
 
-- Node.js 18+
-- npm 或 yarn
+1. 启动应用后，全局快捷键会自动注册
+2. 在任何时候按下快捷键组合即可快速打开ResultPage界面
+3. 即使应用窗口最小化，快捷键仍然有效
+
+## 开发环境设置
 
 ### 安装依赖
 
@@ -29,7 +30,7 @@
 npm install
 ```
 
-### 开发模式运行
+### 启动开发服务器
 
 ```bash
 npm start
@@ -38,32 +39,41 @@ npm start
 ### 构建应用
 
 ```bash
-# 打包应用
-npm run package
-
-# 制作安装包
 npm run make
 ```
 
-## 使用说明
+## 技术栈
 
-1. **截图** - 点击"获取屏幕截图"按钮
-2. **选择区域** - 在截图窗口中拖拽选择区域
-3. **查看结果** - 选中的图片会显示在主界面中
+- **前端**: React 19, TypeScript, Vite
+- **桌面应用**: Electron 37
+- **UI组件**: Ant Design
+- **AI服务**: OpenAI API
+- **路由**: React Router DOM
 
 ## 项目结构
 
 ```
 fast-ocr/
-├── main/                 # 主进程代码
-├── renderer/             # 渲染进程代码
-│   └── src/
-│       ├── components/   # React 组件
-│       ├── hooks/        # 自定义 Hooks
-│       ├── pages/        # 页面组件
-│       └── types/        # 类型定义
-└── package.json
+├── main/                 # Electron主进程
+├── renderer/            # 渲染进程(React应用)
+│   ├── src/
+│   │   ├── components/  # React组件
+│   │   ├── hooks/       # 自定义Hooks
+│   │   ├── pages/       # 页面组件
+│   │   ├── routes/      # 路由配置
+│   │   └── utils/       # 工具函数
+│   └── public/          # 静态资源
+└── figma/              # Figma设计文件
 ```
+
+## 配置说明
+
+应用支持自定义OpenAI API配置：
+
+1. 打开设置页面
+2. 输入你的OpenAI API密钥和端点URL
+3. 选择适合的模型
+4. 保存配置
 
 ## 许可证
 

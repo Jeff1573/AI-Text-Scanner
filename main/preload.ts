@@ -96,4 +96,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeResultDataListener: () => {
     ipcRenderer.removeAllListeners('result-data');
   },
+  
+  // 新增：监听打开ResultPage事件
+  onOpenResultPage: (callback: () => void) => {
+    ipcRenderer.on('open-result-page', () => {
+      try {
+        callback();
+      } catch (error) {
+        console.error('打开ResultPage回调函数执行失败:', error);
+      }
+    });
+  },
+  
+  // 新增：移除打开ResultPage事件监听
+  removeOpenResultPageListener: () => {
+    ipcRenderer.removeAllListeners('open-result-page');
+  },
 });
