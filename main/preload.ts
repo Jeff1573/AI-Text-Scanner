@@ -128,4 +128,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeOpenScreenshotViewerListener: () => {
     ipcRenderer.removeAllListeners('open-screenshot-viewer');
   },
+  
+  // 托盘相关API
+  hideToTray: () => ipcRenderer.invoke('hide-to-tray'),
+  showFromTray: () => ipcRenderer.invoke('show-from-tray'),
+  isTrayAvailable: () => ipcRenderer.invoke('is-tray-available'),
+  
+  // 监听打开设置页面事件
+  onOpenSettingsPage: (callback: () => void) => {
+    ipcRenderer.on('open-settings-page', () => {
+      try {
+        callback();
+      } catch (error) {
+        console.error('打开设置页面回调函数执行失败:', error);
+      }
+    });
+  },
+  
+  // 移除打开设置页面事件监听
+  removeOpenSettingsPageListener: () => {
+    ipcRenderer.removeAllListeners('open-settings-page');
+  },
 });

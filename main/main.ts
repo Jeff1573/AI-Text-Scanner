@@ -6,6 +6,9 @@ import {
   ipcMain,
   screen,
   globalShortcut,
+  Tray,
+  Menu,
+  nativeImage,
 } from "electron";
 import path from "node:path";
 import fs from "node:fs";
@@ -34,6 +37,8 @@ let mainWindow: BrowserWindow | null = null;
 let screenshotWindow: BrowserWindow | null = null;
 // 新增：结果窗口
 let resultWindow: BrowserWindow | null = null;
+// 新增：系统托盘
+let tray: Tray | null = null;
 
 const createWindow = () => {
   // Create the browser window.
@@ -86,6 +91,138 @@ const createWindow = () => {
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools();
+};
+
+// 创建系统托盘
+const createTray = () => {
+  // 创建托盘图标
+  // 使用一个简单的纯色图标
+  const iconPath = path.join(__dirname, './static/tray-icon.svg');
+  console.log('iconPath', path.join(__dirname));
+  const icon = nativeImage.createFromPath(iconPath);
+  
+  // 创建托盘实例
+  tray = new Tray(icon);
+  tray.setToolTip('Fast OCR - AI文字识别工具');
+  
+  // 创建托盘菜单
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: '显示主窗口',
+      click: () => {
+        if (mainWindow) {
+          if (mainWindow.isVisible()) {
+            mainWindow.focus();
+          } else {
+            mainWindow.show();
+          }
+        } else {
+          createWindow();
+        }
+      }
+    },
+    {
+      label: '截图识别',
+      accelerator: 'CmdOrCtrl+Shift+S',
+      click: async () => {
+        try {
+          // 隐藏当前应用窗口
+          if (mainWindow) {
+            mainWindow.hide();
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+
+          const sources = await desktopCapturer.getSources({
+            types: ["screen"],
+            thumbnailSize: { width: 1920, height: 1080 },
+          });
+
+          if (sources.length === 0) {
+            throw new Error("没有找到可用的屏幕");
+          }
+
+          const screenshotData = {
+            id: sources[0].id,
+            name: sources[0].name,
+            thumbnail: sources[0].thumbnail.toDataURL(),
+          };
+
+          // 截图完成后恢复窗口显示
+          if (mainWindow) {
+            mainWindow.show();
+            mainWindow.setAlwaysOnTop(true);
+            mainWindow.maximize();
+            mainWindow.webContents.send('open-screenshot-viewer', screenshotData);
+          }
+        } catch (error) {
+          console.error('截图过程中发生错误:', error);
+          if (mainWindow) {
+            mainWindow.show();
+          }
+        }
+      }
+    },
+    {
+      label: '快捷翻译',
+      accelerator: 'CmdOrCtrl+Shift+T',
+      click: () => {
+        if (!mainWindow) {
+          createWindow();
+        }
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('open-result-page');
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: '设置',
+      click: () => {
+        if (!mainWindow) {
+          createWindow();
+        }
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('open-settings-page');
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: '退出',
+      click: () => {
+        app.quit();
+      }
+    }
+  ]);
+  
+  // 设置托盘菜单
+  tray.setContextMenu(contextMenu);
+  
+  // 托盘图标点击事件
+  tray.on('click', () => {
+    if (mainWindow) {
+      if (mainWindow.isVisible()) {
+        mainWindow.focus();
+      } else {
+        mainWindow.show();
+      }
+    } else {
+      createWindow();
+    }
+  });
+  
+  // 托盘图标双击事件
+  tray.on('double-click', () => {
+    if (mainWindow) {
+      if (mainWindow.isVisible()) {
+        mainWindow.focus();
+      } else {
+        mainWindow.show();
+      }
+    } else {
+      createWindow();
+    }
+  });
 };
 
 // 创建截图展示窗口
@@ -161,7 +298,7 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
 // 注册全局快捷键
 const registerGlobalShortcuts = () => {
   // 注册 Ctrl+Shift+R 快捷键来打开ResultPage
-  const ret1 = globalShortcut.register('CommandOrControl+Shift+R', () => {
+  const ret1 = globalShortcut.register('CommandOrControl+Shift+T', () => {
     console.log('全局快捷键被触发，准备打开ResultPage');
     
     // 如果主窗口不存在，先创建它
@@ -232,7 +369,7 @@ const registerGlobalShortcuts = () => {
   if (!ret1) {
     console.log('ResultPage全局快捷键注册失败');
   } else {
-    console.log('ResultPage全局快捷键注册成功: CommandOrControl+Shift+R');
+    console.log('ResultPage全局快捷键注册成功: CommandOrControl+Shift+T');
   }
 
   if (!ret2) {
@@ -436,16 +573,19 @@ ipcMain.handle("load-config", async () => {
 app.on("ready", () => {
   createWindow();
   
+  // 创建系统托盘
+  createTray();
+  
   // 注册全局快捷键
   registerGlobalShortcuts();
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+// 当所有窗口关闭时，不退出应用，而是隐藏到托盘
 app.on("window-all-closed", () => {
+  // 在Windows和Linux上，隐藏窗口而不是退出应用
   if (process.platform !== "darwin") {
-    app.quit();
+    // 不调用app.quit()，让应用继续在托盘中运行
+    return;
   }
 });
 
@@ -588,4 +728,28 @@ ipcMain.handle("window-close", (event) => {
   if (win && !win.isDestroyed()) {
     win.close();
   }
+});
+
+// 托盘相关IPC处理器
+ipcMain.handle("hide-to-tray", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win && !win.isDestroyed()) {
+    win.hide();
+  }
+});
+
+ipcMain.handle("show-from-tray", () => {
+  if (mainWindow) {
+    if (mainWindow.isVisible()) {
+      mainWindow.focus();
+    } else {
+      mainWindow.show();
+    }
+  } else {
+    createWindow();
+  }
+});
+
+ipcMain.handle("is-tray-available", () => {
+  return true; // 现代系统都支持托盘
 });

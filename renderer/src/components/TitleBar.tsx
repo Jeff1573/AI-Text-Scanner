@@ -1,7 +1,10 @@
 import React from 'react';
+import { useTrayContext } from '../contexts/TrayContext';
 import '../assets/styles/titlebar.css';
 
 export const TitleBar: React.FC = () => {
+  const { hideToTray, isTrayAvailable } = useTrayContext();
+
   const handleMinimize = () => {
     window.electronAPI.windowMinimize();
   };
@@ -10,8 +13,14 @@ export const TitleBar: React.FC = () => {
     window.electronAPI.windowMaximize();
   };
 
-  const handleClose = () => {
-    window.electronAPI.windowClose();
+  const handleClose = async () => {
+    if (isTrayAvailable) {
+      // 如果托盘可用，最小化到托盘
+      await hideToTray();
+    } else {
+      // 如果托盘不可用，直接关闭窗口
+      window.electronAPI.windowClose();
+    }
   };
 
   return (

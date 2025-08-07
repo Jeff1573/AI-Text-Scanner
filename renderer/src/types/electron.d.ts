@@ -75,6 +75,12 @@ export interface ElectronAPI {
   removeOpenResultPageListener: () => void;
   onOpenScreenshotViewer: (callback: (data: ScreenSource) => void) => void;
   removeOpenScreenshotViewerListener: () => void;
+  // 托盘相关API
+  hideToTray: () => Promise<void>;
+  showFromTray: () => Promise<void>;
+  isTrayAvailable: () => Promise<boolean>;
+  onOpenSettingsPage: (callback: () => void) => void;
+  removeOpenSettingsPageListener: () => void;
 }
 
 declare global {
