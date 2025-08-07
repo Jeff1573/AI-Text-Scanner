@@ -112,4 +112,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeOpenResultPageListener: () => {
     ipcRenderer.removeAllListeners('open-result-page');
   },
+  
+  // 新增：监听打开ScreenshotViewer事件
+  onOpenScreenshotViewer: (callback: (data: { id: string; name: string; thumbnail: string }) => void) => {
+    ipcRenderer.on('open-screenshot-viewer', (event, data) => {
+      try {
+        callback(data);
+      } catch (error) {
+        console.error('打开ScreenshotViewer回调函数执行失败:', error);
+      }
+    });
+  },
+  
+  // 新增：移除打开ScreenshotViewer事件监听
+  removeOpenScreenshotViewerListener: () => {
+    ipcRenderer.removeAllListeners('open-screenshot-viewer');
+  },
 });

@@ -73,6 +73,8 @@ export interface ElectronAPI {
   removeResultDataListener: () => void;
   onOpenResultPage: (callback: () => void) => void;
   removeOpenResultPageListener: () => void;
+  onOpenScreenshotViewer: (callback: (data: ScreenSource) => void) => void;
+  removeOpenScreenshotViewerListener: () => void;
 }
 
 declare global {

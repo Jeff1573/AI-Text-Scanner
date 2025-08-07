@@ -161,7 +161,7 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
 // 注册全局快捷键
 const registerGlobalShortcuts = () => {
   // 注册 Ctrl+Shift+R 快捷键来打开ResultPage
-  const ret = globalShortcut.register('CommandOrControl+Shift+R', () => {
+  const ret1 = globalShortcut.register('CommandOrControl+Shift+R', () => {
     console.log('全局快捷键被触发，准备打开ResultPage');
     
     // 如果主窗口不存在，先创建它
@@ -175,10 +175,70 @@ const registerGlobalShortcuts = () => {
     }
   });
 
-  if (!ret) {
-    console.log('全局快捷键注册失败');
+  // 注册 Ctrl+Shift+S 快捷键来启动截图功能
+  const ret2 = globalShortcut.register('CommandOrControl+Shift+S', async () => {
+    console.log('全局快捷键被触发，准备启动截图功能');
+    
+    // 如果主窗口不存在，先创建它
+    if (!mainWindow) {
+      createWindow();
+    }
+    
+    // 执行截图
+    try {
+      // 隐藏当前应用窗口
+      if (mainWindow) {
+        mainWindow.hide();
+        // 等待一小段时间确保窗口完全隐藏
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      const sources = await desktopCapturer.getSources({
+        types: ["screen"],
+        thumbnailSize: { width: 1920, height: 1080 },
+      });
+
+      if (sources.length === 0) {
+        throw new Error("没有找到可用的屏幕");
+      }
+
+      const screenshotData = {
+        id: sources[0].id,
+        name: sources[0].name,
+        thumbnail: sources[0].thumbnail.toDataURL(),
+      };
+
+      // 截图完成后恢复窗口显示
+      if (mainWindow) {
+        mainWindow.show();
+      }
+
+      // 通过IPC通知渲染进程启动截图查看器
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.setAlwaysOnTop(true);
+        // 窗口最大化
+        mainWindow.maximize();
+        mainWindow.webContents.send('open-screenshot-viewer', screenshotData);
+      }
+    } catch (error) {
+      console.error('截图过程中发生错误:', error);
+      // 即使截图失败也要恢复窗口显示
+      if (mainWindow) {
+        mainWindow.show();
+      }
+    }
+  });
+
+  if (!ret1) {
+    console.log('ResultPage全局快捷键注册失败');
   } else {
-    console.log('全局快捷键注册成功: CommandOrControl+Shift+R');
+    console.log('ResultPage全局快捷键注册成功: CommandOrControl+Shift+R');
+  }
+
+  if (!ret2) {
+    console.log('ScreenshotViewer全局快捷键注册失败');
+  } else {
+    console.log('ScreenshotViewer全局快捷键注册成功: CommandOrControl+Shift+S');
   }
 };
 
