@@ -14,8 +14,10 @@ import {
   analyzeImageWithOpenAI,
   validateOpenAIConfig,
   getAvailableOpenAIModels,
+  translateText,
   type APIConfig,
   type ImageAnalysisRequest,
+  type TranslateRequest,
 } from "./utils/openaiService";
 
 // Vite注入的变量声明
@@ -369,6 +371,25 @@ app.on("activate", () => {
 // code. You can also put them in separate files and import them here.
 
 // OpenAI API相关IPC处理器
+
+// 处理翻译请求
+ipcMain.handle(
+  "translate-text",
+  async (event, config: APIConfig, request: TranslateRequest) => {
+    try {
+      console.log("收到文本翻译请求:", request);
+      const result = await translateText(config, request);
+      console.log("文本翻译结果:", result);
+      return result;
+    } catch (error) {
+      console.error("文本翻译请求处理失败:", error);
+      return {
+        content: "",
+        error: error instanceof Error ? error.message : "未知错误",
+      };
+    }
+  }
+);
 
 // 处理图片分析请求
 ipcMain.handle(

@@ -20,6 +20,12 @@ export interface ImageAnalysisRequest {
   temperature?: number;
 }
 
+export interface TranslateRequest {
+  text: string;
+  sourceLang: string;
+  targetLang: string;
+}
+
 export interface OpenAIResponse {
   content: string;
   error?: string;
@@ -58,6 +64,7 @@ export interface ElectronAPI {
   analyzeImageOpenAI: (config: APIConfig, request: ImageAnalysisRequest) => Promise<OpenAIResponse>;
   validateOpenAIConfig: (config: APIConfig) => Promise<{ success: boolean; error?: string }>;
   getOpenAIModels: (config: APIConfig) => Promise<{ success: boolean; models: string[]; error?: string }>;
+  translate: (config: APIConfig, request: TranslateRequest) => Promise<OpenAIResponse>;
   windowMinimize: () => Promise<void>;
   windowMaximize: () => Promise<void>;
   windowClose: () => Promise<void>;

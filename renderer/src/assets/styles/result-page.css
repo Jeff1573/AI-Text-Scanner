@@ -14,6 +14,7 @@
   padding: 20px;
   gap: 20px;
   overflow: hidden; /* Prevents container from overflowing */
+  margin-top: 20px;
 }
 
 .text-area-container {

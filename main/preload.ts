@@ -27,6 +27,12 @@ interface ImageAnalysisRequest {
   temperature?: number;
 }
 
+interface TranslateRequest {
+  text: string;
+  sourceLang: string;
+  targetLang: string;
+}
+
 // 暴露安全的API给渲染进程
 contextBridge.exposeInMainWorld('electronAPI', {
   // 获取屏幕截图
@@ -68,8 +74,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('validate-openai-config', config),
   
   // 获取可用的OpenAI模型列表
-  getOpenAIModels: (config: APIConfig) => 
+  getOpenAIModels: (config: APIConfig) =>
     ipcRenderer.invoke('get-openai-models', config),
+
+  // 翻译文本
+  translate: (config: APIConfig, request: TranslateRequest) =>
+    ipcRenderer.invoke('translate-text', config, request),
   
   // 窗口控制功能
   windowMinimize: () => ipcRenderer.invoke('window-minimize'),
