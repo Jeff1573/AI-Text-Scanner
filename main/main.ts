@@ -40,6 +40,27 @@ let screenshotWindow: BrowserWindow | null = null;
 let resultWindow: BrowserWindow | null = null;
 // 新增：系统托盘
 let tray: Tray | null = null;
+// 记录当前已注册的快捷键，便于更新
+let currentHotkeys: { resultHotkey: string; screenshotHotkey: string } = {
+  resultHotkey: 'CommandOrControl+Shift+T',
+  screenshotHotkey: 'CommandOrControl+Shift+S'
+};
+
+const DEFAULT_HOTKEYS = { ...currentHotkeys };
+
+// 读取磁盘中的配置（同步）
+const loadConfigFromDisk = (): ConfigProvider | null => {
+  try {
+    const userDataPath = app.getPath('userData');
+    const configPath = path.join(userDataPath, 'config.json');
+    if (!fs.existsSync(configPath)) return null;
+    const configData = fs.readFileSync(configPath, 'utf8');
+    const parsed: Config = JSON.parse(configData);
+    return parsed.provider?.[0] ?? null;
+  } catch {
+    return null;
+  }
+};
 
 const createWindow = () => {
   // Create the browser window.
@@ -96,6 +117,12 @@ const createWindow = () => {
 
 // 创建系统托盘
 const createTray = () => {
+  // 从配置读取热键以展示在菜单加速器
+  const cfg = loadConfigFromDisk();
+  const hotkeys = cfg ? {
+    resultHotkey: cfg.resultHotkey || DEFAULT_HOTKEYS.resultHotkey,
+    screenshotHotkey: cfg.screenshotHotkey || DEFAULT_HOTKEYS.screenshotHotkey
+  } : DEFAULT_HOTKEYS;
   // 创建托盘图标
   // 使用一个简单的纯色图标
   const iconPath = path.join(__dirname, './static/tray-icon.svg');
@@ -124,7 +151,7 @@ const createTray = () => {
     },
     {
       label: '截图识别',
-      accelerator: 'CmdOrCtrl+Shift+S',
+      accelerator: hotkeys.screenshotHotkey.replace('CommandOrControl', 'CmdOrCtrl'),
       click: async () => {
         try {
           // 隐藏当前应用窗口
@@ -165,7 +192,7 @@ const createTray = () => {
     },
     {
       label: '快捷翻译',
-      accelerator: 'CmdOrCtrl+Shift+T',
+      accelerator: hotkeys.resultHotkey.replace('CommandOrControl', 'CmdOrCtrl'),
       click: () => {
         console.log('托盘菜单快捷翻译被点击');
         // 获取剪贴板内容作为默认内容
@@ -298,10 +325,16 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
   });
 };
 
-// 注册全局快捷键
-const registerGlobalShortcuts = () => {
-  // 注册 CommandOrControl+Shift+T 快捷键来直接打开结果窗口
-  const ret1 = globalShortcut.register('CommandOrControl+Shift+T', () => {
+// 注册全局快捷键（根据传入配置）
+const registerGlobalShortcuts = (hotkeys: { resultHotkey: string; screenshotHotkey: string }) => {
+  // 先注销已存在快捷键，避免重复
+  globalShortcut.unregisterAll();
+  currentHotkeys = hotkeys;
+
+  const { resultHotkey, screenshotHotkey } = hotkeys;
+
+  // 打开结果窗口
+  const ret1 = globalShortcut.register(resultHotkey, () => {
     console.log('全局快捷键被触发，准备直接打开结果窗口');
 
     // 获取剪贴板内容作为默认内容
@@ -315,8 +348,8 @@ const registerGlobalShortcuts = () => {
     createResultWindow(defaultContent);
   });
 
-  // 注册 Ctrl+Shift+S 快捷键来启动截图功能
-  const ret2 = globalShortcut.register('CommandOrControl+Shift+S', async () => {
+  // 截图识别
+  const ret2 = globalShortcut.register(screenshotHotkey, async () => {
     console.log('全局快捷键被触发，准备启动截图功能');
     
     // 如果主窗口不存在，先创建它
@@ -372,14 +405,32 @@ const registerGlobalShortcuts = () => {
   if (!ret1) {
     console.log('ResultPage全局快捷键注册失败');
   } else {
-    console.log('ResultPage全局快捷键注册成功: CommandOrControl+Shift+T');
+    console.log(`ResultPage全局快捷键注册成功: ${resultHotkey}`);
   }
 
   if (!ret2) {
     console.log('ScreenshotViewer全局快捷键注册失败');
   } else {
-    console.log('ScreenshotViewer全局快捷键注册成功: CommandOrControl+Shift+S');
+    console.log(`ScreenshotViewer全局快捷键注册成功: ${screenshotHotkey}`);
   }
+  return { resultRegistered: !!ret1, screenshotRegistered: !!ret2 };
+};
+
+// 从配置更新快捷键与托盘菜单
+const applyHotkeysFromConfig = () => {
+  const cfg = loadConfigFromDisk();
+  const hotkeys = {
+    resultHotkey: cfg?.resultHotkey || DEFAULT_HOTKEYS.resultHotkey,
+    screenshotHotkey: cfg?.screenshotHotkey || DEFAULT_HOTKEYS.screenshotHotkey,
+  };
+  const status = registerGlobalShortcuts(hotkeys);
+  // 重建托盘菜单以更新加速器显示
+  if (tray) {
+    tray.destroy();
+    tray = null;
+  }
+  createTray();
+  return { hotkeys, status };
 };
 
 // 新增：创建结果窗口函数
@@ -539,7 +590,14 @@ ipcMain.handle("save-config", async (event, config: ConfigProvider) => {
     fs.writeFileSync(configPath, JSON.stringify(configData, null, 2), "utf8");
     console.log("配置保存成功:", configPath);
 
-    return { success: true };
+    // 保存成功后应用新的快捷键并刷新托盘菜单
+    try {
+      const applied = applyHotkeysFromConfig();
+      return { success: true, hotkeyStatus: applied.status, hotkeys: applied.hotkeys };
+    } catch (e) {
+      console.error('应用快捷键配置失败:', e);
+      return { success: true, hotkeyStatus: { resultRegistered: false, screenshotRegistered: false } };
+    }
   } catch (error) {
     console.error("保存配置失败:", error);
     return {
@@ -548,6 +606,8 @@ ipcMain.handle("save-config", async (event, config: ConfigProvider) => {
     };
   }
 });
+
+// 监听渲染进程请求：保存设置后应用快捷键（可选，当前通过读取磁盘实现，无需额外IPC）
 
 // 加载配置从文件
 ipcMain.handle("load-config", async () => {
@@ -590,7 +650,7 @@ app.on("ready", () => {
   createTray();
   
   // 注册全局快捷键
-  registerGlobalShortcuts();
+  applyHotkeysFromConfig();
 });
 
 // 当所有窗口关闭时，不退出应用，而是隐藏到托盘

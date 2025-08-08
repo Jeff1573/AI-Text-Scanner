@@ -18,6 +18,9 @@ interface SettingsConfig {
   customModel: string;
   sourceLang: string;
   targetLang: string;
+  // 新增：全局快捷键配置
+  resultHotkey: string;
+  screenshotHotkey: string;
 }
 
 interface ImageAnalysisRequest {

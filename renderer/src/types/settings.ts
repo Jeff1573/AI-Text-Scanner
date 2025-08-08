@@ -8,4 +8,7 @@ export interface SettingsFormData {
   customModel: string;
   sourceLang: string; // 原文语言
   targetLang: string; // 翻译语言
+  // 新增：全局快捷键配置
+  resultHotkey: string; // 打开结果窗口快捷键
+  screenshotHotkey: string; // 截图识别快捷键
 } 

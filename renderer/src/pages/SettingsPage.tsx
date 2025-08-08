@@ -40,8 +40,12 @@ export const SettingsPage = () => {
 
   const handleSave = async () => {
     try {
-      await handleSaveSettings();
-      message.success("设置保存成功！");
+      const ok = await handleSaveSettings();
+      if (ok) {
+        message.success("设置保存成功！");
+      } else {
+        message.error("保存失败，请检查表单项或控制台日志");
+      }
     } catch (error) {
       message.error("保存失败，请检查配置");
     }
@@ -59,6 +63,78 @@ export const SettingsPage = () => {
   const handleReset = () => {
     handleResetSettings();
     message.info("设置已重置");
+  };
+
+  // 将键盘事件转换为 Electron Accelerator 字符串
+  const toAccelerator = (e: React.KeyboardEvent<HTMLInputElement>): string | null => {
+    const parts: string[] = [];
+    const isMac = navigator.platform.toLowerCase().includes('mac');
+    if (e.ctrlKey || e.metaKey) {
+      parts.push('CommandOrControl');
+    }
+    if (e.altKey) parts.push('Alt');
+    if (e.shiftKey) parts.push('Shift');
+    // Super/Win 键
+    if ((!isMac && e.getModifierState && e.getModifierState('OS')) || (isMac && e.metaKey && !e.ctrlKey)) {
+      // 已用 CommandOrControl 表示 ctrl/cmd，这里仅在 Windows 上尝试 Super
+      if (!parts.includes('CommandOrControl')) parts.push('Super');
+    }
+
+    const key = e.key;
+    // 忽略仅按修饰键的情况
+    const isOnlyModifier = ['Shift', 'Control', 'Alt', 'Meta'].includes(key);
+    if (isOnlyModifier) return null;
+
+    // 归一化主键
+    let mainKey = '';
+    if (/^F([1-9]|1[0-9]|2[0-4])$/i.test(key)) {
+      mainKey = key.toUpperCase();
+    } else if (/^[a-z]$/i.test(key)) {
+      mainKey = key.toUpperCase();
+    } else if (/^[0-9]$/.test(key)) {
+      mainKey = key;
+    } else {
+      const map: Record<string, string> = {
+        ' ': 'Space',
+        Spacebar: 'Space',
+        Tab: 'Tab',
+        Backspace: 'Backspace',
+        Delete: 'Delete',
+        Insert: 'Insert',
+        Enter: 'Return',
+        Return: 'Return',
+        Escape: 'Escape',
+        Esc: 'Escape',
+        ArrowUp: 'Up',
+        ArrowDown: 'Down',
+        ArrowLeft: 'Left',
+        ArrowRight: 'Right',
+        Home: 'Home',
+        End: 'End',
+        PageUp: 'PageUp',
+        PageDown: 'PageDown',
+      };
+      if (map[key]) {
+        mainKey = map[key];
+      } else {
+        // 其它不常见按键不处理
+        return null;
+      }
+    }
+    parts.push(mainKey);
+    return parts.join('+');
+  };
+
+  const handleHotkeyKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    field: 'resultHotkey' | 'screenshotHotkey'
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const acc = toAccelerator(e);
+    if (acc) {
+      handleInputChange(field, acc);
+    }
   };
 
   const items: CollapseProps['items'] = [
@@ -175,6 +251,35 @@ export const SettingsPage = () => {
           </Form.Item>
         </Form>
       ),
+    },
+    {
+      key: '3',
+      label: '快捷键设置',
+      children: (
+        <Form layout="vertical" style={{ padding: '16px 0' }}>
+          <Form.Item label="打开结果窗口快捷键" validateStatus={errors.resultHotkey ? 'error' : ''} help={errors.resultHotkey}>
+            <Input
+              placeholder="例如：CommandOrControl+Shift+T"
+              value={formData.resultHotkey}
+              onChange={(e) => handleInputChange('resultHotkey', e.target.value)}
+              onKeyDown={(e) => handleHotkeyKeyDown(e, 'resultHotkey')}
+              size="large"
+            />
+          </Form.Item>
+          <Form.Item label="截图识别快捷键" validateStatus={errors.screenshotHotkey ? 'error' : ''} help={errors.screenshotHotkey}>
+            <Input
+              placeholder="例如：CommandOrControl+Shift+S"
+              value={formData.screenshotHotkey}
+              onChange={(e) => handleInputChange('screenshotHotkey', e.target.value)}
+              onKeyDown={(e) => handleHotkeyKeyDown(e, 'screenshotHotkey')}
+              size="large"
+            />
+          </Form.Item>
+          <div style={{ color: '#888' }}>
+            支持 Electron 加速器格式，例如：CommandOrControl、Alt、Shift、Super 等组合。
+          </div>
+        </Form>
+      )
     },
   ];
 

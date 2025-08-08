@@ -7,7 +7,10 @@ const defaultFormData = {
   model: 'gpt-4o',
   customModel: '',
   sourceLang: 'en',
-  targetLang: 'zh'
+  targetLang: 'zh',
+  // 新增：默认快捷键
+  resultHotkey: 'CommandOrControl+Shift+T',
+  screenshotHotkey: 'CommandOrControl+Shift+S'
 }
 
 export const useSettingsState = () => {
@@ -47,7 +50,9 @@ export const useSettingsState = () => {
       model: 'gpt-4o',
       customModel: '',
       sourceLang: 'en',
-      targetLang: 'zh'
+      targetLang: 'zh',
+      resultHotkey: 'CommandOrControl+Shift+T',
+      screenshotHotkey: 'CommandOrControl+Shift+S'
     });
     setErrors({});
   };

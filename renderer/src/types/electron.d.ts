@@ -52,13 +52,13 @@ export interface ElectronAPI {
   }>;
   onScreenshotData: (callback: (data: ScreenSource) => void) => void;
   removeScreenshotDataListener: () => void;
-  saveConfig: (config: { apiUrl: string; apiKey: string; model: string; customModel: string }) => Promise<{
+  saveConfig: (config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string }) => Promise<{
     success: boolean;
     error?: string;
   }>;
   loadConfig: () => Promise<{
     success: boolean;
-    config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string } | null;
+    config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string } | null;
     error?: string;
   }>;
   analyzeImageOpenAI: (config: APIConfig, request: ImageAnalysisRequest) => Promise<OpenAIResponse>;
