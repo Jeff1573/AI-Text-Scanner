@@ -10,7 +10,7 @@ import { join } from 'path'
 
 const config: ForgeConfig = {
   packagerConfig: {
-    asar: false,
+    asar: true,
   },
   rebuildConfig: {},
   makers: [new MakerSquirrel({}), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],

@@ -27,7 +27,6 @@ import {
 
 // Vite注入的变量声明
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
-declare const MAIN_WINDOW_VITE_NAME: string;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -93,7 +92,7 @@ const createWindow = () => {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
     mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
+      path.join(__dirname, `../renderer/index.html`)
     );
   }
 
@@ -128,8 +127,19 @@ const createTray = () => {
     : DEFAULT_HOTKEYS;
   // 创建托盘图标
   // 使用一个简单的纯色图标
-  const iconPath = path.join(__dirname, "./static/tray-icon.svg");
-  console.log("iconPath", path.join(__dirname));
+  // 在开发环境和生产环境中使用不同的路径解析策略
+  let iconPath: string;
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    // 开发环境：直接使用源码目录
+    iconPath = path.join(__dirname, "../main/static/tray-icon.svg");
+  } else {
+    // 生产环境：使用构建后的路径
+    iconPath = path.join(__dirname, "./static/tray-icon.svg");
+  }
+
+  console.log("iconPath", iconPath);
+  console.log("iconPath exists:", fs.existsSync(iconPath));
+
   const icon = nativeImage.createFromPath(iconPath);
 
   // 创建托盘实例
@@ -302,7 +312,7 @@ const ensureScreenshotWindow = () => {
     screenshotWindow.loadURL(url);
   } else {
     screenshotWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+      path.join(__dirname, `../renderer/index.html`),
       { hash: "/screenshot" }
     );
   }
@@ -469,7 +479,7 @@ const createResultWindow = (resultContent: string) => {
     // resultWindow.webContents.openDevTools();
   } else {
     resultWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+      path.join(__dirname, `../renderer/index.html`),
       {
         hash: "/result",
       }
