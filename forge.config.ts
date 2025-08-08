@@ -10,8 +10,7 @@ import { join } from 'path'
 
 const config: ForgeConfig = {
   packagerConfig: {
-    asar: true,
-    icon: join(__dirname, "./main/static/tray-icon.svg")
+    asar: false,
   },
   rebuildConfig: {},
   makers: [new MakerSquirrel({}), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],

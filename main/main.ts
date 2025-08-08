@@ -42,8 +42,8 @@ let resultWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 // 记录当前已注册的快捷键，便于更新
 let currentHotkeys: { resultHotkey: string; screenshotHotkey: string } = {
-  resultHotkey: 'CommandOrControl+Shift+T',
-  screenshotHotkey: 'CommandOrControl+Shift+S'
+  resultHotkey: "CommandOrControl+Shift+T",
+  screenshotHotkey: "CommandOrControl+Shift+S",
 };
 
 const DEFAULT_HOTKEYS = { ...currentHotkeys };
@@ -51,10 +51,10 @@ const DEFAULT_HOTKEYS = { ...currentHotkeys };
 // 读取磁盘中的配置（同步）
 const loadConfigFromDisk = (): ConfigProvider | null => {
   try {
-    const userDataPath = app.getPath('userData');
-    const configPath = path.join(userDataPath, 'config.json');
+    const userDataPath = app.getPath("userData");
+    const configPath = path.join(userDataPath, "config.json");
     if (!fs.existsSync(configPath)) return null;
-    const configData = fs.readFileSync(configPath, 'utf8');
+    const configData = fs.readFileSync(configPath, "utf8");
     const parsed: Config = JSON.parse(configData);
     return parsed.provider?.[0] ?? null;
   } catch {
@@ -98,18 +98,18 @@ const createWindow = () => {
   }
 
   // 开发模式下添加F12键监听，用于打开开发者工具
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    // 监听键盘事件
-    mainWindow.webContents.on("before-input-event", (event, input) => {
-      // 检查是否按下了F12键
-      if (input.key === "F12") {
-        // 阻止默认行为
-        event.preventDefault();
-        // 打开开发者工具
-        mainWindow?.webContents.openDevTools();
-      }
-    });
-  }
+  // if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+  // 监听键盘事件
+  mainWindow.webContents.on("before-input-event", (event, input) => {
+    // 检查是否按下了F12键
+    if (input.key === "F12") {
+      // 阻止默认行为
+      event.preventDefault();
+      // 打开开发者工具
+      mainWindow?.webContents.openDevTools();
+    }
+  });
+  // }
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools();
@@ -119,24 +119,27 @@ const createWindow = () => {
 const createTray = () => {
   // 从配置读取热键以展示在菜单加速器
   const cfg = loadConfigFromDisk();
-  const hotkeys = cfg ? {
-    resultHotkey: cfg.resultHotkey || DEFAULT_HOTKEYS.resultHotkey,
-    screenshotHotkey: cfg.screenshotHotkey || DEFAULT_HOTKEYS.screenshotHotkey
-  } : DEFAULT_HOTKEYS;
+  const hotkeys = cfg
+    ? {
+        resultHotkey: cfg.resultHotkey || DEFAULT_HOTKEYS.resultHotkey,
+        screenshotHotkey:
+          cfg.screenshotHotkey || DEFAULT_HOTKEYS.screenshotHotkey,
+      }
+    : DEFAULT_HOTKEYS;
   // 创建托盘图标
   // 使用一个简单的纯色图标
-  const iconPath = path.join(__dirname, './static/tray-icon.svg');
-  console.log('iconPath', path.join(__dirname));
+  const iconPath = path.join(__dirname, "./static/tray-icon.svg");
+  console.log("iconPath", path.join(__dirname));
   const icon = nativeImage.createFromPath(iconPath);
-  
+
   // 创建托盘实例
   tray = new Tray(icon);
-  tray.setToolTip('Fast OCR - AI文字识别工具');
-  
+  tray.setToolTip("Fast OCR - AI文字识别工具");
+
   // 创建托盘菜单
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: '显示主窗口',
+      label: "显示主窗口",
       click: () => {
         if (mainWindow) {
           if (mainWindow.isVisible()) {
@@ -147,11 +150,14 @@ const createTray = () => {
         } else {
           createWindow();
         }
-      }
+      },
     },
     {
-      label: '截图识别',
-      accelerator: hotkeys.screenshotHotkey.replace('CommandOrControl', 'CmdOrCtrl'),
+      label: "截图识别",
+      accelerator: hotkeys.screenshotHotkey.replace(
+        "CommandOrControl",
+        "CmdOrCtrl"
+      ),
       click: async () => {
         try {
           // 隐藏当前应用窗口
@@ -180,21 +186,27 @@ const createTray = () => {
             mainWindow.show();
             mainWindow.setAlwaysOnTop(true);
             mainWindow.maximize();
-            mainWindow.webContents.send('open-screenshot-viewer', screenshotData);
+            mainWindow.webContents.send(
+              "open-screenshot-viewer",
+              screenshotData
+            );
           }
         } catch (error) {
-          console.error('截图过程中发生错误:', error);
+          console.error("截图过程中发生错误:", error);
           if (mainWindow) {
             mainWindow.show();
           }
         }
-      }
+      },
     },
     {
-      label: '快捷翻译',
-      accelerator: hotkeys.resultHotkey.replace('CommandOrControl', 'CmdOrCtrl'),
+      label: "快捷翻译",
+      accelerator: hotkeys.resultHotkey.replace(
+        "CommandOrControl",
+        "CmdOrCtrl"
+      ),
       click: () => {
-        console.log('托盘菜单快捷翻译被点击');
+        console.log("托盘菜单快捷翻译被点击");
         // 获取剪贴板内容作为默认内容
         const clipboardText = clipboard.readText();
         // 如果剪贴板有内容，将其作为原文，否则使用空内容
@@ -202,34 +214,34 @@ const createTray = () => {
           ? JSON.stringify({ original: clipboardText, translated: "" })
           : '{"original": "", "translated": ""}';
         createResultWindow(defaultContent);
-      }
+      },
     },
-    { type: 'separator' },
+    { type: "separator" },
     {
-      label: '设置',
+      label: "设置",
       click: () => {
         if (!mainWindow) {
           createWindow();
         }
         if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('open-settings-page');
+          mainWindow.webContents.send("open-settings-page");
         }
-      }
+      },
     },
-    { type: 'separator' },
+    { type: "separator" },
     {
-      label: '退出',
+      label: "退出",
       click: () => {
         app.quit();
-      }
-    }
+      },
+    },
   ]);
-  
+
   // 设置托盘菜单
   tray.setContextMenu(contextMenu);
-  
+
   // 托盘图标点击事件
-  tray.on('click', () => {
+  tray.on("click", () => {
     if (mainWindow) {
       if (mainWindow.isVisible()) {
         mainWindow.focus();
@@ -240,9 +252,9 @@ const createTray = () => {
       createWindow();
     }
   });
-  
+
   // 托盘图标双击事件
-  tray.on('double-click', () => {
+  tray.on("double-click", () => {
     if (mainWindow) {
       if (mainWindow.isVisible()) {
         mainWindow.focus();
@@ -296,7 +308,7 @@ const ensureScreenshotWindow = () => {
   }
 
   // 接收渲染进程就绪信号后再显示窗口（进一步避免白屏）
-  ipcMain.on('screenshot-image-ready', () => {
+  ipcMain.on("screenshot-image-ready", () => {
     if (screenshotWindow && !screenshotWindow.isDestroyed()) {
       if (!screenshotWindow.isVisible()) {
         screenshotWindow.show();
@@ -306,9 +318,12 @@ const ensureScreenshotWindow = () => {
   });
 
   // 错误处理和清理
-  screenshotWindow.webContents.on("did-fail-load", (event, errorCode, errorDescription) => {
-    console.error("窗口加载失败:", errorCode, errorDescription);
-  });
+  screenshotWindow.webContents.on(
+    "did-fail-load",
+    (event, errorCode, errorDescription) => {
+      console.error("窗口加载失败:", errorCode, errorDescription);
+    }
+  );
   screenshotWindow.on("closed", () => {
     screenshotWindow = null;
   });
@@ -334,7 +349,10 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
 };
 
 // 注册全局快捷键（根据传入配置）
-const registerGlobalShortcuts = (hotkeys: { resultHotkey: string; screenshotHotkey: string }) => {
+const registerGlobalShortcuts = (hotkeys: {
+  resultHotkey: string;
+  screenshotHotkey: string;
+}) => {
   // 先注销已存在快捷键，避免重复
   globalShortcut.unregisterAll();
   currentHotkeys = hotkeys;
@@ -343,7 +361,7 @@ const registerGlobalShortcuts = (hotkeys: { resultHotkey: string; screenshotHotk
 
   // 打开结果窗口
   const ret1 = globalShortcut.register(resultHotkey, () => {
-    console.log('全局快捷键被触发，准备直接打开结果窗口');
+    console.log("全局快捷键被触发，准备直接打开结果窗口");
 
     // 获取剪贴板内容作为默认内容
     const clipboardText = clipboard.readText();
@@ -358,7 +376,7 @@ const registerGlobalShortcuts = (hotkeys: { resultHotkey: string; screenshotHotk
 
   // 截图识别
   const ret2 = globalShortcut.register(screenshotHotkey, async () => {
-    console.log('全局快捷键被触发，准备启动截图功能');
+    console.log("全局快捷键被触发，准备启动截图功能");
 
     // 执行截图
     try {
@@ -387,7 +405,7 @@ const registerGlobalShortcuts = (hotkeys: { resultHotkey: string; screenshotHotk
       // 使用已预热窗口，先发数据后显示
       createScreenshotWindow(screenshotData);
     } catch (error) {
-      console.error('截图过程中发生错误:', error);
+      console.error("截图过程中发生错误:", error);
       // 即使截图失败也要恢复窗口显示
       if (mainWindow) {
         mainWindow.show();
@@ -396,13 +414,13 @@ const registerGlobalShortcuts = (hotkeys: { resultHotkey: string; screenshotHotk
   });
 
   if (!ret1) {
-    console.log('ResultPage全局快捷键注册失败');
+    console.log("ResultPage全局快捷键注册失败");
   } else {
     console.log(`ResultPage全局快捷键注册成功: ${resultHotkey}`);
   }
 
   if (!ret2) {
-    console.log('ScreenshotViewer全局快捷键注册失败');
+    console.log("ScreenshotViewer全局快捷键注册失败");
   } else {
     console.log(`ScreenshotViewer全局快捷键注册成功: ${screenshotHotkey}`);
   }
@@ -586,10 +604,17 @@ ipcMain.handle("save-config", async (event, config: ConfigProvider) => {
     // 保存成功后应用新的快捷键并刷新托盘菜单
     try {
       const applied = applyHotkeysFromConfig();
-      return { success: true, hotkeyStatus: applied.status, hotkeys: applied.hotkeys };
+      return {
+        success: true,
+        hotkeyStatus: applied.status,
+        hotkeys: applied.hotkeys,
+      };
     } catch (e) {
-      console.error('应用快捷键配置失败:', e);
-      return { success: true, hotkeyStatus: { resultRegistered: false, screenshotRegistered: false } };
+      console.error("应用快捷键配置失败:", e);
+      return {
+        success: true,
+        hotkeyStatus: { resultRegistered: false, screenshotRegistered: false },
+      };
     }
   } catch (error) {
     console.error("保存配置失败:", error);
@@ -638,13 +663,13 @@ ipcMain.handle("load-config", async () => {
 // Some APIs can only be used after this event occurs.
 app.on("ready", () => {
   createWindow();
-  
+
   // 创建系统托盘
   createTray();
-  
+
   // 预热截图窗口
   ensureScreenshotWindow();
-  
+
   // 注册全局快捷键
   applyHotkeysFromConfig();
 });
