@@ -61,6 +61,11 @@ export interface ElectronAPI {
     config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string } | null;
     error?: string;
   }>;
+  getLatestConfig: (withDefaults?: boolean) => Promise<{
+    success: boolean;
+    config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string } | null;
+    error?: string;
+  }>;
   getLatestConfigWithDefaults: (withDefaults?: boolean) => Promise<{
     success: boolean;
     config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string } | null;

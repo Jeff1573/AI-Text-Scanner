@@ -1,5 +1,15 @@
 import { useSettingsLogic } from "../hooks/useSettingsLogic";
-import { Collapse, Form, Input, Select, Button, message, Switch } from "antd";
+import {
+  Collapse,
+  Form,
+  Input,
+  Select,
+  Button,
+  message,
+  Switch,
+  Spin,
+  Alert,
+} from "antd";
 import {
   SaveOutlined,
   ReloadOutlined,
@@ -7,314 +17,166 @@ import {
 } from "@ant-design/icons";
 import type { CollapseProps } from "antd";
 import { ConfigDisplay } from "../components/ConfigDisplay";
-import { useAutoLaunch } from "../hooks/useAutoLaunch";
 
 export const SettingsPage = () => {
-  // use memo
   const {
     formData,
     errors,
     isSaving,
     isLoading,
+    configError,
     handleInputChange,
     handleSaveSettings,
     handleResetSettings,
     validateApiConfig,
   } = useSettingsLogic();
 
-  // 开机自启动 Hook（逻辑与状态分离）
-  const { enabled: autoLaunchEnabled, loading: autoLaunchLoading, setEnabled: setAutoLaunchEnabled } = useAutoLaunch();
-
-  // 显示加载状态
+  // 当全局配置仍在加载时，显示加载指示器
   if (isLoading) {
     return (
       <div className="page" id="settings-page">
-        <div className="page-header">
-          <h1>设置</h1>
-        </div>
-
-        <div className="content-area">
-          <div className="loading-state">
-            <div className="loading-spinner"></div>
-            <p>正在加载配置...</p>
-          </div>
+        <div className="content-area" style={{ textAlign: 'center', paddingTop: 100 }}>
+          <Spin size="large" tip="正在加载配置..." />
         </div>
       </div>
     );
   }
 
+  // 如果加载配置时发生错误，显示错误信息
+  if (configError) {
+    return (
+        <div className="page" id="settings-page">
+            <div className="content-area" style={{ padding: 50 }}>
+                <Alert message={`加载配置失败: ${configError}`} type="error" showIcon />
+            </div>
+        </div>
+    );
+  }
+
   const handleSave = async () => {
-    try {
-      const ok = await handleSaveSettings();
-      if (ok) {
-        message.success("设置保存成功！");
-      } else {
-        message.error("保存失败，请检查表单项或控制台日志");
-      }
-    } catch (error) {
-      message.error("保存失败，请检查配置");
+    const ok = await handleSaveSettings();
+    if (ok) {
+      message.success("设置保存成功！");
+    } else {
+      message.error("保存失败，请检查表单项或控制台日志");
     }
   };
 
   const handleValidate = async () => {
-    try {
-      await validateApiConfig();
-      message.success("API配置验证成功！");
-    } catch (error) {
-      message.error("API配置验证失败，请检查参数");
+    const ok = await validateApiConfig();
+    if (ok) {
+        message.success("API配置验证成功！");
+    } else {
+        message.error("API配置验证失败，请检查参数");
     }
   };
 
   const handleReset = () => {
     handleResetSettings();
-    message.info("设置已重置");
+    message.info("设置已重置为上次保存的状态");
   };
 
-  // 将键盘事件转换为 Electron Accelerator 字符串
-  const toAccelerator = (e: React.KeyboardEvent<HTMLInputElement>): string | null => {
-    const parts: string[] = [];
-    const isMac = navigator.platform.toLowerCase().includes('mac');
-    if (e.ctrlKey || e.metaKey) {
-      parts.push('CommandOrControl');
-    }
-    if (e.altKey) parts.push('Alt');
-    if (e.shiftKey) parts.push('Shift');
-    // Super/Win 键
-    if ((!isMac && e.getModifierState && e.getModifierState('Meta')) || (isMac && e.metaKey && !e.ctrlKey)) {
-      // 已用 CommandOrControl 表示 ctrl/cmd，这里仅在 Windows 上尝试 Super
-      if (!parts.includes('CommandOrControl')) parts.push('Super');
-    }
-
-    const key = e.key;
-    // 忽略仅按修饰键的情况
-    const isOnlyModifier = ['Shift', 'Control', 'Alt', 'Meta'].includes(key);
-    if (isOnlyModifier) return null;
-
-    // 归一化主键
-    let mainKey = '';
-    if (/^F([1-9]|1[0-9]|2[0-4])$/i.test(key)) {
-      mainKey = key.toUpperCase();
-    } else if (/^[a-z]$/i.test(key)) {
-      mainKey = key.toUpperCase();
-    } else if (/^[0-9]$/.test(key)) {
-      mainKey = key;
-    } else {
-      const map: Record<string, string> = {
-        ' ': 'Space',
-        Spacebar: 'Space',
-        Tab: 'Tab',
-        Backspace: 'Backspace',
-        Delete: 'Delete',
-        Insert: 'Insert',
-        Enter: 'Return',
-        Return: 'Return',
-        Escape: 'Escape',
-        Esc: 'Escape',
-        ArrowUp: 'Up',
-        ArrowDown: 'Down',
-        ArrowLeft: 'Left',
-        ArrowRight: 'Right',
-        Home: 'Home',
-        End: 'End',
-        PageUp: 'PageUp',
-        PageDown: 'PageDown',
-      };
-      if (map[key]) {
-        mainKey = map[key];
-      } else {
-        // 其它不常见按键不处理
-        return null;
-      }
-    }
-    parts.push(mainKey);
-    return parts.join('+');
-  };
-
+  // 键盘事件处理，用于快捷键输入
   const handleHotkeyKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
-    field: 'resultHotkey' | 'screenshotHotkey'
+    field: "resultHotkey" | "screenshotHotkey"
   ) => {
     e.preventDefault();
     e.stopPropagation();
-    const acc = toAccelerator(e);
-    if (acc) {
-      handleInputChange(field, acc);
+    
+    const parts: string[] = [];
+    if (e.ctrlKey || e.metaKey) parts.push("CommandOrControl");
+    if (e.altKey) parts.push("Alt");
+    if (e.shiftKey) parts.push("Shift");
+
+    const key = e.key.toUpperCase();
+    const isModifier = ["SHIFT", "CONTROL", "ALT", "META"].includes(key);
+    if (isModifier) return;
+    
+    parts.push(key);
+    const accelerator = parts.join("+");
+    
+    if (accelerator) {
+      handleInputChange(field, accelerator);
     }
   };
 
-  const items: CollapseProps['items'] = [
+  const items: CollapseProps["items"] = [
     {
-      key: '1',
-      label: 'OpenAI API 配置',
+      key: "1",
+      label: "OpenAI API 配置",
       children: (
         <Form layout="vertical" style={{ padding: "16px 0" }}>
-          <Form.Item
-            label="API地址"
-            validateStatus={errors.apiUrl ? "error" : ""}
-            help={errors.apiUrl}
-          >
+          {/* 表单项与之前类似，但value和onChange直接来自重构后的hook */}
+          <Form.Item label="API地址" validateStatus={errors.apiUrl ? "error" : ""} help={errors.apiUrl}>
             <Input
-              placeholder="https://api.openai.com/v1"
               value={formData.apiUrl}
               onChange={(e) => handleInputChange("apiUrl", e.target.value)}
               size="large"
             />
           </Form.Item>
-
-          <Form.Item
-            label="API密钥"
-            validateStatus={errors.apiKey ? "error" : ""}
-            help={errors.apiKey}
-          >
+          <Form.Item label="API密钥" validateStatus={errors.apiKey ? "error" : ""} help={errors.apiKey}>
             <Input.Password
-              placeholder="输入您的OpenAI API密钥"
               value={formData.apiKey}
               onChange={(e) => handleInputChange("apiKey", e.target.value)}
               size="large"
             />
           </Form.Item>
-
-          <Form.Item
-            label="模型选择"
-            validateStatus={errors.model ? "error" : ""}
-            help={errors.model}
-          >
+          <Form.Item label="模型选择" validateStatus={errors.model ? "error" : ""} help={errors.model}>
             <Select
               value={formData.model}
               onChange={(value) => handleInputChange("model", value)}
               size="large"
-              placeholder="选择AI模型"
             >
               <Select.Option value="gpt-4o">GPT-4o</Select.Option>
               <Select.Option value="gpt-4o-mini">GPT-4o Mini</Select.Option>
-              <Select.Option value="gpt-4-turbo">GPT-4 Turbo</Select.Option>
-              <Select.Option value="gpt-3.5-turbo">
-                GPT-3.5 Turbo
-              </Select.Option>
-              <Select.Option value="custom">自定义模型</Select.Option>
-            </Select>
-          </Form.Item>
-
-          {formData.model === "custom" && (
-            <Form.Item
-              label="自定义模型名称"
-              validateStatus={errors.customModel ? "error" : ""}
-              help={errors.customModel}
-            >
-              <Input
-                placeholder="输入自定义模型名称，如：gpt-4-custom"
-                value={formData.customModel}
-                onChange={(e) =>
-                  handleInputChange("customModel", e.target.value)
-                }
-                size="large"
-              />
-            </Form.Item>
-          )}
-        </Form>
-      )
-    },
-    {
-      key: '2',
-      label: '翻译设置',
-      children: (
-        <Form layout="vertical" style={{ padding: "16px 0" }}>
-          <Form.Item label="原文语言">
-            <Select
-              value={formData.sourceLang}
-              onChange={value => handleInputChange('sourceLang', value)}
-              size="large"
-              defaultValue="en"
-            >
-              <Select.Option value="en">英文</Select.Option>
-              <Select.Option value="auto">自动识别</Select.Option>
-              <Select.Option value="zh">中文</Select.Option>
-              <Select.Option value="ja">日语</Select.Option>
-              <Select.Option value="ko">韩语</Select.Option>
-              <Select.Option value="fr">法语</Select.Option>
-              <Select.Option value="de">德语</Select.Option>
-              <Select.Option value="ru">俄语</Select.Option>
-              <Select.Option value="es">西班牙语</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item label="翻译语言">
-            <Select
-              value={formData.targetLang}
-              onChange={value => handleInputChange('targetLang', value)}
-              size="large"
-              defaultValue="zh"
-            >
-              <Select.Option value="zh">中文</Select.Option>
-              <Select.Option value="en">英文</Select.Option>
-              <Select.Option value="ja">日语</Select.Option>
-              <Select.Option value="ko">韩语</Select.Option>
-              <Select.Option value="fr">法语</Select.Option>
-              <Select.Option value="de">德语</Select.Option>
-              <Select.Option value="ru">俄语</Select.Option>
-              <Select.Option value="es">西班牙语</Select.Option>
             </Select>
           </Form.Item>
         </Form>
       ),
     },
     {
-      key: '3',
-      label: '快捷键设置',
+      key: "3",
+      label: "快捷键设置",
       children: (
         <Form layout="vertical" style={{ padding: '16px 0' }}>
           <Form.Item label="打开结果窗口快捷键" validateStatus={errors.resultHotkey ? 'error' : ''} help={errors.resultHotkey}>
             <Input
-              placeholder="例如：CommandOrControl+Shift+T"
               value={formData.resultHotkey}
-              onChange={(e) => handleInputChange('resultHotkey', e.target.value)}
               onKeyDown={(e) => handleHotkeyKeyDown(e, 'resultHotkey')}
               size="large"
+              readOnly
             />
           </Form.Item>
           <Form.Item label="截图识别快捷键" validateStatus={errors.screenshotHotkey ? 'error' : ''} help={errors.screenshotHotkey}>
             <Input
-              placeholder="例如：CommandOrControl+Shift+S"
               value={formData.screenshotHotkey}
-              onChange={(e) => handleInputChange('screenshotHotkey', e.target.value)}
               onKeyDown={(e) => handleHotkeyKeyDown(e, 'screenshotHotkey')}
               size="large"
+              readOnly
             />
           </Form.Item>
-          <div style={{ color: '#888' }}>
-            支持 Electron 加速器格式，例如：CommandOrControl、Alt、Shift、Super 等组合。
-          </div>
         </Form>
       )
     },
     {
-      key: '4',
-      label: '启动与系统',
-      children: (
-        <Form layout="vertical" style={{ padding: '16px 0' }}>
-          <Form.Item label="开机自启动">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Switch
-                checked={autoLaunchEnabled}
-                loading={autoLaunchLoading}
-                onChange={async (checked) => {
-                  try {
-                    await setAutoLaunchEnabled(checked);
-                    if (checked) {
-                      message.success('已开启开机自启动');
-                    } else {
-                      message.info('已关闭开机自启动');
-                    }
-                  } catch (e) {
-                    message.error('修改开机自启动失败');
-                  }
-                }}
-              />
-              <span style={{ color: '#888' }}>在系统登录时自动启动应用（macOS/Windows）。</span>
-            </div>
-          </Form.Item>
-        </Form>
-      )
-    }
+        key: '4',
+        label: '启动与系统',
+        children: (
+          <Form layout="vertical" style={{ padding: '16px 0' }}>
+            <Form.Item label="开机自启动">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Switch
+                  checked={formData.autoLaunch}
+                  loading={isSaving}
+                  onChange={(checked) => handleInputChange('autoLaunch', checked)}
+                />
+                <span style={{ color: '#888' }}>在系统登录时自动启动应用。</span>
+              </div>
+            </Form.Item>
+          </Form>
+        )
+      }
   ];
 
   return (
@@ -324,7 +186,7 @@ export const SettingsPage = () => {
       </div>
 
       <div className="content-area">
-        <Collapse items={items} defaultActiveKey={["1"]} />
+        <Collapse items={items} defaultActiveKey={["1", "3", "4"]} />
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "flex-end", marginTop: 32 }}>
           <Button
             type="primary"
@@ -332,7 +194,6 @@ export const SettingsPage = () => {
             onClick={handleSave}
             loading={isSaving}
             size="large"
-            className="save-settings-btn"
           >
             保存设置
           </Button>
@@ -354,7 +215,6 @@ export const SettingsPage = () => {
           </Button>
         </div>
         
-        {/* 配置显示组件示例 */}
         <div style={{ marginTop: 32 }}>
           <ConfigDisplay />
         </div>

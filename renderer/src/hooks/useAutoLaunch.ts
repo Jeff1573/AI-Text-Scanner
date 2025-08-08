@@ -1,56 +1,31 @@
-import { useCallback, useEffect, useState } from 'react';
-
-interface GetLoginItemSettingsResult {
-  success: boolean;
-  openAtLogin?: boolean;
-  error?: string;
-}
+import { useCallback } from 'react';
+import { useConfigStore } from '../stores/configStore';
 
 export const useAutoLaunch = () => {
-  const [enabled, setEnabledState] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | undefined>(undefined);
+  // 从Zustand store直接获取autoLaunch状态和更新函数
+  const autoLaunchEnabled = useConfigStore(state => state.config.autoLaunch);
+  const setGlobalConfig = useConfigStore(state => state.setConfig);
+  const isLoading = useConfigStore(state => state.isLoading);
+  const globalConfig = useConfigStore(state => state.config);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(undefined);
-    try {
-      const res = (await window.electronAPI.getLoginItemSettings()) as GetLoginItemSettingsResult & { raw?: unknown };
-      if (res?.success) {
-        setEnabledState(!!res.openAtLogin);
-      } else {
-        setError(res?.error || '获取开机自启动状态失败');
+  // 设置开机自启动的函数
+  const setAutoLaunchEnabled = useCallback(async (enabled: boolean) => {
+    // 调用Electron API来实际更改系统设置
+    const result = await window.electronAPI.setLoginItemSettings(enabled);
+    if (result.success) {
+      // 如果系统设置成功，则更新Zustand store中的全局配置
+      if (globalConfig) {
+        await setGlobalConfig({ ...globalConfig, autoLaunch: enabled });
       }
-    } catch (e: any) {
-      setError(e?.message || '获取开机自启动状态失败');
-    } finally {
-      setLoading(false);
+    } else {
+      // 如果失败，可以抛出错误或进行其他错误处理
+      throw new Error(result.error || '设置开机自启动失败');
     }
-  }, []);
+  }, [globalConfig, setGlobalConfig]);
 
-  const setEnabled = useCallback(async (next: boolean) => {
-    setLoading(true);
-    setError(undefined);
-    try {
-      const res = (await window.electronAPI.setLoginItemSettings(next)) as GetLoginItemSettingsResult;
-      if (res?.success) {
-        setEnabledState(!!res.openAtLogin);
-      } else {
-        setError(res?.error || '设置开机自启动失败');
-        throw new Error(res?.error || '设置开机自启动失败');
-      }
-    } catch (e: any) {
-      setError(e?.message || '设置开机自启动失败');
-      throw e;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return { enabled, loading, error, refresh, setEnabled };
+  return {
+    enabled: !!autoLaunchEnabled,
+    loading: isLoading, // 直接使用store的加载状态
+    setEnabled: setAutoLaunchEnabled,
+  };
 };
-

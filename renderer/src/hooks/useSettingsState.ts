@@ -1,109 +1,81 @@
 import { useState, useEffect } from 'react';
+import { useConfigStore } from '../stores/configStore';
 import type { SettingsFormData } from '../types/settings';
 
-const defaultFormData = {
+// 如果没有从store加载到配置，则使用此默认值
+const defaultFormData: SettingsFormData = {
   apiUrl: 'https://api.openai.com/v1',
   apiKey: '',
   model: 'gpt-4o',
   customModel: '',
   sourceLang: 'en',
   targetLang: 'zh',
-  // 新增：默认快捷键
   resultHotkey: 'CommandOrControl+Shift+T',
-  screenshotHotkey: 'CommandOrControl+Shift+S'
-}
+  screenshotHotkey: 'CommandOrControl+Shift+S',
+  autoLaunch: false,
+};
 
 export const useSettingsState = () => {
-  // 表单数据状态
+  // 1. 从Zustand store中获取全局状态和action
+  const {
+    config: globalConfig,
+    isLoading: isConfigLoading,
+    error: configError,
+    setConfig: setGlobalConfig,
+    fetchConfig,
+  } = useConfigStore();
+
+  // 2. 为表单编辑会话管理本地状态
   const [formData, setFormData] = useState<SettingsFormData>(defaultFormData);
-
-  // 表单验证状态
   const [errors, setErrors] = useState<Partial<SettingsFormData>>({});
-
-  // 保存状态
   const [isSaving, setIsSaving] = useState(false);
-  
-  // 加载状态
-  const [isLoading, setIsLoading] = useState(true);
 
-  // 更新表单数据
+  // 3. 当全局配置加载或更改时，同步到本地表单状态
+  useEffect(() => {
+    if (globalConfig) {
+      setFormData(globalConfig);
+    }
+  }, [globalConfig]);
+
+  // 4. 管理本地表单状态的函数
   const updateFormData = (field: keyof SettingsFormData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    // 清除对应字段的错误
+    setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: undefined
-      }));
+      setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
-
-  // 重置表单数据
+  
   const resetFormData = () => {
-    setFormData({
-      apiUrl: 'https://api.openai.com/v1',
-      apiKey: '',
-      model: 'gpt-4o',
-      customModel: '',
-      sourceLang: 'en',
-      targetLang: 'zh',
-      resultHotkey: 'CommandOrControl+Shift+T',
-      screenshotHotkey: 'CommandOrControl+Shift+S'
-    });
+    // 将本地表单重置为上次保存的全局配置
+    if (globalConfig) {
+      setFormData(globalConfig);
+    } else {
+      setFormData(defaultFormData);
+    }
     setErrors({});
   };
 
-  // 设置错误信息
   const setFieldError = (field: keyof SettingsFormData, error: string) => {
-    setErrors(prev => ({
-      ...prev,
-      [field]: error
-    }));
+    setErrors(prev => ({ ...prev, [field]: error }));
   };
 
-  // 清除所有错误
   const clearErrors = () => {
     setErrors({});
   };
 
-  // 加载配置
-  const loadConfig = async () => {
-    try {
-      setIsLoading(true);
-      // 使用新的getLatestConfigWithDefaults函数，确保始终有可用的配置
-      const result = await window.electronAPI.getLatestConfigWithDefaults(true);
-      if (result.success && result.config) {
-        setFormData({...defaultFormData, ...result.config});
-        console.log('配置加载成功:', result.config);
-      } else {
-        console.log('使用默认配置');
-      }
-    } catch (error) {
-      console.error('加载配置失败:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 组件挂载时加载配置
-  useEffect(() => {
-    loadConfig();
-  }, []);
-
+  // 5. 返回本地状态处理函数和全局状态/action
   return {
     formData,
     errors,
     isSaving,
-    isLoading,
+    isLoading: isConfigLoading, // 使用全局的加载状态
+    configError, // 传递全局的错误状态
     updateFormData,
     resetFormData,
     setFieldError,
     clearErrors,
     setIsSaving,
-    loadConfig
+    setGlobalConfig, // 将全局的setter传递给逻辑hook
+    fetchConfig, // 暴露fetch函数以供重载
   };
-}; 
+};

@@ -823,9 +823,8 @@ ipcMain.handle('set-login-item-settings', async (_event, enable: boolean) => {
       if (fs.existsSync(updateExe)) {
         app.setLoginItemSettings({
           openAtLogin: enable,
-          enabled: enable,
           path: updateExe,
-          args: ['--processStart', `"${exeName}"`]
+          args: ['--processStart', `"${exeName}"`],
         });
       } else {
         app.setLoginItemSettings({ openAtLogin: enable, enabled: enable });

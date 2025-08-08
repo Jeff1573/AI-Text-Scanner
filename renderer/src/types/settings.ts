@@ -11,4 +11,5 @@ export interface SettingsFormData {
   // 新增：全局快捷键配置
   resultHotkey: string; // 打开结果窗口快捷键
   screenshotHotkey: string; // 截图识别快捷键
+  autoLaunch: boolean; // 开机自启动
 } 

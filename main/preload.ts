@@ -73,6 +73,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 加载配置
   loadConfig: () => ipcRenderer.invoke('load-config'),
   
+  // 获取最新配置
+  getLatestConfig: (withDefaults = false) => ipcRenderer.invoke('get-latest-config', withDefaults),
+  
   // 获取最新配置（带默认值）
   getLatestConfigWithDefaults: (withDefaults = false) => ipcRenderer.invoke('get-latest-config', withDefaults),
   
