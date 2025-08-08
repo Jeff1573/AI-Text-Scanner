@@ -5,7 +5,6 @@ import { useImageAnalysis } from "../hooks/useImageAnalysis";
 import { useSettingsState } from "../hooks/useSettingsState";
 import { calculateCropCoordinates, cropImage, saveSelectedImage } from "../utils/imageUtils";
 import { getImageElement, getClampedPosition, calculateSelection, isValidSelection } from "../utils/mouseUtils";
-import { ScreenshotHeader } from "./ScreenshotHeader";
 import { ScreenshotContent } from "./ScreenshotContent";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
@@ -29,7 +28,6 @@ export const ScreenshotViewer = () => {
     startPos,
     setStartPos,
     resetSelection,
-    cancelSelection,
   } = useScreenshotViewerState();
 
   // 图片分析状态
@@ -65,9 +63,16 @@ export const ScreenshotViewer = () => {
     }
   }, [analysisResult, analysisError]);
 
-  const handleClose = () => {
-    window.close();
-  };
+  // 支持按 ESC 关闭窗口
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        window.close();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   // 处理鼠标按下事件
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -162,12 +167,6 @@ export const ScreenshotViewer = () => {
   }
   return (
     <div className="screenshot-viewer">
-      <ScreenshotHeader
-        screenshotData={screenshotData}
-        showSelector={showSelector}
-        onCancelSelection={cancelSelection}
-        onClose={handleClose}
-      />
       <ScreenshotContent
         screenshotData={screenshotData}
         showSelector={showSelector}

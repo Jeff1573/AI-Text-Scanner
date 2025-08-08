@@ -18,8 +18,8 @@ export const useScreenshotViewerEffects = (
       setScreenshotData(data);
       setLoading(false);
       setError(null);
-      // 显示截图后自动显示选择器
-      setTimeout(() => setShowSelector(true), 1000);
+      // 显示截图后立即显示选择器
+      setShowSelector(true);
     };
 
     // 监听自定义事件（来自全局快捷键）
@@ -28,8 +28,8 @@ export const useScreenshotViewerEffects = (
       setScreenshotData(event.detail);
       setLoading(false);
       setError(null);
-      // 显示截图后自动显示选择器
-      setTimeout(() => setShowSelector(true), 1000);
+      // 显示截图后立即显示选择器
+      setShowSelector(true);
     };
 
     // 注册IPC监听器

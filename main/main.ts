@@ -299,16 +299,12 @@ const createScreenshotWindow = (screenshotData: ScreenSource) => {
     );
   }
 
-  // 传递截图数据到新窗口 - 改进时机
+  // 传递截图数据到新窗口
   screenshotWindow.webContents.on("did-finish-load", () => {
     console.log("窗口加载完成，准备发送数据");
-    // 延迟一点时间确保组件已经挂载
-    setTimeout(() => {
-      if (screenshotWindow && !screenshotWindow.isDestroyed()) {
-        // console.log('发送截图数据到新窗口:', screenshotData);
-        screenshotWindow.webContents.send("screenshot-data", screenshotData);
-      }
-    }, 500);
+    if (screenshotWindow && !screenshotWindow.isDestroyed()) {
+      screenshotWindow.webContents.send("screenshot-data", screenshotData);
+    }
   });
 
   // 添加错误处理
@@ -351,12 +347,7 @@ const registerGlobalShortcuts = (hotkeys: { resultHotkey: string; screenshotHotk
   // 截图识别
   const ret2 = globalShortcut.register(screenshotHotkey, async () => {
     console.log('全局快捷键被触发，准备启动截图功能');
-    
-    // 如果主窗口不存在，先创建它
-    if (!mainWindow) {
-      createWindow();
-    }
-    
+
     // 执行截图
     try {
       // 隐藏当前应用窗口
@@ -381,18 +372,8 @@ const registerGlobalShortcuts = (hotkeys: { resultHotkey: string; screenshotHotk
         thumbnail: sources[0].thumbnail.toDataURL(),
       };
 
-      // 截图完成后恢复窗口显示
-      if (mainWindow) {
-        mainWindow.show();
-      }
-
-      // 通过IPC通知渲染进程启动截图查看器
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.setAlwaysOnTop(true);
-        // 窗口最大化
-        mainWindow.maximize();
-        mainWindow.webContents.send('open-screenshot-viewer', screenshotData);
-      }
+      // 直接创建新的截图展示窗口
+      createScreenshotWindow(screenshotData);
     } catch (error) {
       console.error('截图过程中发生错误:', error);
       // 即使截图失败也要恢复窗口显示
