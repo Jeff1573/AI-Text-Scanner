@@ -29,11 +29,7 @@ export const useImageAnalysis = () => {
 
   // 分析图片
   const analyzeImage = useCallback(
-    async (
-      config: SettingsFormData,
-      imageData: string,
-      prompt?: string
-    ) => {
+    async (config: SettingsFormData, imageData: string, prompt?: string) => {
       const dynamicPrompt =
         prompt ||
         `请分析图片内容，提取图片中的文本内容，严格按图片内容逐字输出原文`;
@@ -66,8 +62,6 @@ export const useImageAnalysis = () => {
         // 调用preload的API
         const result: OpenAIResponse =
           await window.electronAPI.analyzeImageOpenAI(apiConfig, request);
-
-        console.log("result", result);
 
         if (result.error) {
           setState((prev) => ({

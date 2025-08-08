@@ -644,12 +644,6 @@ ipcMain.handle(
   "analyze-image-openai",
   async (event, config: APIConfig, request: ImageAnalysisRequest) => {
     try {
-      console.log("receive image data:", {
-        apiUrl: config.apiUrl,
-        model: config.model,
-        prompt: request.prompt,
-      });
-
       const result = await analyzeImageWithOpenAI(config, request);
 
       console.log("analyze-image-openai:", {

@@ -33,14 +33,14 @@ export const ResultPage = () => {
   useEffect(() => {
     const handleResultData = (data: string) => {
       try {
-        const parseData = JSON.parse(
-          data
-            .replace(/```json/g, "")
-            .replace(/```/g, "")
-            .trim()
-        );
-        setOriginalText(parseData.original || "");
-        setTranslatedText(parseData.translated || "");
+        console.log("handleResultData", data);
+        // const parseData = JSON.parse(
+        //   data
+        //     .replace(/```json/g, "")
+        //     .replace(/```/g, "")
+        //     .trim()
+        // );
+        setOriginalText(data || "");
       } catch (error) {
         console.error("解析结果失败:", error);
         setOriginalText("内容解析失败");
