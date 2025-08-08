@@ -9,12 +9,12 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "clear": "rimraf out"
   },
   "keywords": [],
   "author": {
-    "name": "jf",
-    "email": "https://gitlab.hunantianxing.com/"
+    "name": "jf"
   },
   "license": "MIT",
   "devDependencies": {

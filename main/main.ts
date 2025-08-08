@@ -47,6 +47,23 @@ let currentHotkeys: { resultHotkey: string; screenshotHotkey: string } = {
 
 const DEFAULT_HOTKEYS = { ...currentHotkeys };
 
+// 单实例锁，防止重复启动
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  // 监听第二个实例启动事件，聚焦现有窗口
+  app.on("second-instance", () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      if (!mainWindow.isVisible()) mainWindow.show();
+      mainWindow.focus();
+    } else {
+      createWindow();
+    }
+  });
+}
+
 // 读取磁盘中的配置（同步）
 const loadConfigFromDisk = (): ConfigProvider | null => {
   try {
