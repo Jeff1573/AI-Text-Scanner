@@ -31,6 +31,10 @@ export const ResultPage = () => {
   const isSyncing = useRef(false);
 
   useEffect(() => {
+    originalRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
     const handleResultData = (data: string) => {
       try {
         console.log("handleResultData", data);

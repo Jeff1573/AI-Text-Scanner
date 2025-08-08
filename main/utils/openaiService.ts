@@ -237,7 +237,6 @@ export async function translateText(
       ],
     });
 
-    console.log(`translate response`, response.choices[0].message.content);
     return {
       content: response.choices[0].message.content || "",
     };
