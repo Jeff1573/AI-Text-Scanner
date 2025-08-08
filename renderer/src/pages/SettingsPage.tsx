@@ -1,5 +1,5 @@
 import { useSettingsLogic } from "../hooks/useSettingsLogic";
-import { Collapse, Form, Input, Select, Button, message } from "antd";
+import { Collapse, Form, Input, Select, Button, message, Switch } from "antd";
 import {
   SaveOutlined,
   ReloadOutlined,
@@ -7,6 +7,7 @@ import {
 } from "@ant-design/icons";
 import type { CollapseProps } from "antd";
 import { ConfigDisplay } from "../components/ConfigDisplay";
+import { useAutoLaunch } from "../hooks/useAutoLaunch";
 
 export const SettingsPage = () => {
   // use memo
@@ -20,6 +21,9 @@ export const SettingsPage = () => {
     handleResetSettings,
     validateApiConfig,
   } = useSettingsLogic();
+
+  // 开机自启动 Hook（逻辑与状态分离）
+  const { enabled: autoLaunchEnabled, loading: autoLaunchLoading, setEnabled: setAutoLaunchEnabled } = useAutoLaunch();
 
   // 显示加载状态
   if (isLoading) {
@@ -76,7 +80,7 @@ export const SettingsPage = () => {
     if (e.altKey) parts.push('Alt');
     if (e.shiftKey) parts.push('Shift');
     // Super/Win 键
-    if ((!isMac && e.getModifierState && e.getModifierState('OS')) || (isMac && e.metaKey && !e.ctrlKey)) {
+    if ((!isMac && e.getModifierState && e.getModifierState('Meta')) || (isMac && e.metaKey && !e.ctrlKey)) {
       // 已用 CommandOrControl 表示 ctrl/cmd，这里仅在 Windows 上尝试 Super
       if (!parts.includes('CommandOrControl')) parts.push('Super');
     }
@@ -282,6 +286,35 @@ export const SettingsPage = () => {
         </Form>
       )
     },
+    {
+      key: '4',
+      label: '启动与系统',
+      children: (
+        <Form layout="vertical" style={{ padding: '16px 0' }}>
+          <Form.Item label="开机自启动">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Switch
+                checked={autoLaunchEnabled}
+                loading={autoLaunchLoading}
+                onChange={async (checked) => {
+                  try {
+                    await setAutoLaunchEnabled(checked);
+                    if (checked) {
+                      message.success('已开启开机自启动');
+                    } else {
+                      message.info('已关闭开机自启动');
+                    }
+                  } catch (e) {
+                    message.error('修改开机自启动失败');
+                  }
+                }}
+              />
+              <span style={{ color: '#888' }}>在系统登录时自动启动应用（macOS/Windows）。</span>
+            </div>
+          </Form.Item>
+        </Form>
+      )
+    }
   ];
 
   return (

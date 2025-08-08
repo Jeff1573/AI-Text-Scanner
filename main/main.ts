@@ -791,6 +791,55 @@ app.on("ready", () => {
   applyHotkeysFromConfig();
 });
 
+// 开机自启动：IPC - 获取与设置
+ipcMain.handle('get-login-item-settings', async () => {
+  try {
+    // 为确保 Windows 下与 setLoginItemSettings 一致，可按需提供 path/args
+    let options: any = undefined;
+    if (process.platform === 'win32') {
+      // 若打包为 Squirrel，尽量读取 Update.exe 路径；否则采用默认
+      const appFolder = path.dirname(process.execPath);
+      const updateExe = path.resolve(appFolder, '..', 'Update.exe');
+      if (fs.existsSync(updateExe)) {
+        const exeName = path.basename(process.execPath);
+        options = { path: updateExe, args: [
+          '--processStart', `"${exeName}"`
+        ] };
+      }
+    }
+    const settings = app.getLoginItemSettings(options);
+    return { success: true, openAtLogin: settings.openAtLogin, raw: settings };
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) };
+  }
+});
+
+ipcMain.handle('set-login-item-settings', async (_event, enable: boolean) => {
+  try {
+    if (process.platform === 'win32') {
+      const appFolder = path.dirname(process.execPath);
+      const updateExe = path.resolve(appFolder, '..', 'Update.exe');
+      const exeName = path.basename(process.execPath);
+      if (fs.existsSync(updateExe)) {
+        app.setLoginItemSettings({
+          openAtLogin: enable,
+          enabled: enable,
+          path: updateExe,
+          args: ['--processStart', `"${exeName}"`]
+        });
+      } else {
+        app.setLoginItemSettings({ openAtLogin: enable, enabled: enable });
+      }
+    } else {
+      app.setLoginItemSettings({ openAtLogin: enable });
+    }
+    const confirmed = app.getLoginItemSettings();
+    return { success: true, openAtLogin: confirmed.openAtLogin };
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) };
+  }
+});
+
 // 当所有窗口关闭时，不退出应用，而是隐藏到托盘
 app.on("window-all-closed", () => {
   // 在Windows和Linux上，隐藏窗口而不是退出应用

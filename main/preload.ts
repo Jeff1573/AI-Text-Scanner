@@ -141,12 +141,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeOpenScreenshotViewerListener: () => {
     ipcRenderer.removeAllListeners('open-screenshot-viewer');
   },
-  
+
   // 托盘相关API
   hideToTray: () => ipcRenderer.invoke('hide-to-tray'),
   showFromTray: () => ipcRenderer.invoke('show-from-tray'),
   isTrayAvailable: () => ipcRenderer.invoke('is-tray-available'),
-  
+
   // 监听打开设置页面事件
   onOpenSettingsPage: (callback: () => void) => {
     ipcRenderer.on('open-settings-page', () => {
@@ -157,9 +157,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
     });
   },
-  
+
   // 移除打开设置页面事件监听
   removeOpenSettingsPageListener: () => {
     ipcRenderer.removeAllListeners('open-settings-page');
   },
+
+  // 开机自启动 API
+  getLoginItemSettings: () => ipcRenderer.invoke('get-login-item-settings'),
+  setLoginItemSettings: (enable: boolean) => ipcRenderer.invoke('set-login-item-settings', enable),
 });

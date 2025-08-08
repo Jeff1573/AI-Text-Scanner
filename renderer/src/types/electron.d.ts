@@ -89,10 +89,13 @@ export interface ElectronAPI {
   isTrayAvailable: () => Promise<boolean>;
   onOpenSettingsPage: (callback: () => void) => void;
   removeOpenSettingsPageListener: () => void;
+  // 开机自启动
+  getLoginItemSettings: () => Promise<{ success: boolean; openAtLogin?: boolean; error?: string }>;
+  setLoginItemSettings: (enable: boolean) => Promise<{ success: boolean; openAtLogin?: boolean; error?: string }>;
 }
 
 declare global {
   interface Window {
     electronAPI: ElectronAPI;
   }
-} 
+}
