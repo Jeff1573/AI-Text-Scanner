@@ -1,6 +1,6 @@
 {
-  "name": "ai-ocr",
-  "productName": "ai-ocr",
+  "name": "fast-ocr",
+  "productName": "fast-ocr",
   "version": "1.0.0",
   "description": "AI OCR application for text recognition",
   "main": ".vite/build/main.js",

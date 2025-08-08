@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import { readFileSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 
 // https://vitejs.dev/config
 export default defineConfig({
@@ -18,11 +18,16 @@ export default defineConfig({
       name: 'copy-static-assets',
       generateBundle() {
         // 在构建时复制静态资源
-        this.emitFile({
-          type: 'asset',
-          fileName: 'static/tray-icon.svg',
-          source: readFileSync(resolve(__dirname, 'main/static/tray-icon.svg'))
-        });
+        // 复制目录下的所有文件到static
+        const staticDir = resolve(__dirname, 'main/static');
+        const files = readdirSync(staticDir);
+        for (const file of files) {
+          this.emitFile({
+            type: 'asset',
+            fileName: `static/${file}`,
+            source: readFileSync(resolve(staticDir, file))
+          });
+        }
       }
     }
   ]

@@ -91,9 +91,7 @@ const createWindow = () => {
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
-    mainWindow.loadFile(
-      path.join(__dirname, `../renderer/index.html`)
-    );
+    mainWindow.loadFile(path.join(__dirname, `../renderer/index.html`));
   }
 
   // 开发模式下添加F12键监听，用于打开开发者工具
@@ -131,15 +129,13 @@ const createTray = () => {
   let iconPath: string;
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     // 开发环境：直接使用源码目录
-    iconPath = path.join(__dirname, "../main/static/tray-icon.svg");
+    iconPath = path.join(__dirname, "./static/fast_ocr_tray_icon.ico");
   } else {
     // 生产环境：使用构建后的路径
-    iconPath = path.join(__dirname, "./static/tray-icon.svg");
+    iconPath = path.join(__dirname, "./static/fast_ocr_tray_icon.ico");
   }
 
-  console.log("iconPath", iconPath);
-  console.log("iconPath exists:", fs.existsSync(iconPath));
-
+  console.log("iconPath", __dirname,iconPath);
   const icon = nativeImage.createFromPath(iconPath);
 
   // 创建托盘实例
@@ -311,10 +307,9 @@ const ensureScreenshotWindow = () => {
     console.log("预热加载URL:", url);
     screenshotWindow.loadURL(url);
   } else {
-    screenshotWindow.loadFile(
-      path.join(__dirname, `../renderer/index.html`),
-      { hash: "/screenshot" }
-    );
+    screenshotWindow.loadFile(path.join(__dirname, `../renderer/index.html`), {
+      hash: "/screenshot",
+    });
   }
 
   // 接收渲染进程就绪信号后再显示窗口（进一步避免白屏）
@@ -478,12 +473,9 @@ const createResultWindow = (resultContent: string) => {
     resultWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/result`);
     // resultWindow.webContents.openDevTools();
   } else {
-    resultWindow.loadFile(
-      path.join(__dirname, `../renderer/index.html`),
-      {
-        hash: "/result",
-      }
-    );
+    resultWindow.loadFile(path.join(__dirname, `../renderer/index.html`), {
+      hash: "/result",
+    });
   }
 
   // 传递识别结果
