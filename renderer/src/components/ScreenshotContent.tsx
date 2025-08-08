@@ -37,7 +37,13 @@ export const ScreenshotContent = ({
           src={screenshotData.thumbnail}
           alt={screenshotData.name}
           className="screenshot-image"
-          onLoad={() => console.log("图片加载成功")}
+          onLoad={() => {
+            console.log("图片加载成功");
+            // 通知主进程：首帧已渲染，可显示窗口
+            if (window.electronAPI?.notifyScreenshotReady) {
+              window.electronAPI.notifyScreenshotReady();
+            }
+          }}
           onError={(e) => console.error("图片加载失败:", e)}
           style={{ maxWidth: "100%", height: "auto" }}
         />

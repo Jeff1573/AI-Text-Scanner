@@ -55,6 +55,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
       }
     });
   },
+
+  // 通知主进程：截图图像已准备好首帧
+  notifyScreenshotReady: () => {
+    ipcRenderer.send('screenshot-image-ready');
+  },
   
   // 移除截图数据监听器
   removeScreenshotDataListener: () => {

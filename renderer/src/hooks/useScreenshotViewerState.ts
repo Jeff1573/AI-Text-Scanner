@@ -4,7 +4,7 @@ import type { Selection, StartPos } from "../types/common";
 
 export const useScreenshotViewerState = () => {
   const [screenshotData, setScreenshotData] = useState<ScreenSource | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSelector, setShowSelector] = useState(false);
   const [selection, setSelection] = useState<Selection>({

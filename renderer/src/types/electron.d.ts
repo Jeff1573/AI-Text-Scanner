@@ -76,6 +76,8 @@ export interface ElectronAPI {
   removeOpenResultPageListener: () => void;
   onOpenScreenshotViewer: (callback: (data: ScreenSource) => void) => void;
   removeOpenScreenshotViewerListener: () => void;
+  // 通知主进程：截图画面已渲染
+  notifyScreenshotReady: () => void;
   // 托盘相关API
   hideToTray: () => Promise<void>;
   showFromTray: () => Promise<void>;

@@ -255,70 +255,82 @@ const createTray = () => {
   });
 };
 
-// 创建截图展示窗口
-const createScreenshotWindow = (screenshotData: ScreenSource) => {
-  console.log("创建截图窗口，数据:", screenshotData);
-
-  // 关闭已存在的截图窗口
-  if (screenshotWindow) {
-    screenshotWindow.close();
+// 确保截图窗口已创建并完成加载（预热复用）
+const ensureScreenshotWindow = () => {
+  if (screenshotWindow && !screenshotWindow.isDestroyed()) {
+    return screenshotWindow;
   }
 
-  // 获取主显示器的尺寸
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
 
   screenshotWindow = new BrowserWindow({
-    width: width,
-    height: height,
+    width,
+    height,
     x: 0,
     y: 0,
+    show: false,
     fullscreen: true,
-    autoHideMenuBar: true, // 隐藏顶部菜单栏
+    frame: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
+      backgroundThrottling: false,
     },
   });
-
-  // 打开开发者工具用于调试
-  // screenshotWindow.webContents.openDevTools();
 
   // 加载截图展示页面
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     const url = `${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/screenshot`;
-    console.log("加载URL:", url);
+    console.log("预热加载URL:", url);
     screenshotWindow.loadURL(url);
   } else {
     screenshotWindow.loadFile(
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-      {
-        hash: "/screenshot",
-      }
+      { hash: "/screenshot" }
     );
   }
 
-  // 传递截图数据到新窗口
-  screenshotWindow.webContents.on("did-finish-load", () => {
-    console.log("窗口加载完成，准备发送数据");
+  // 接收渲染进程就绪信号后再显示窗口（进一步避免白屏）
+  ipcMain.on('screenshot-image-ready', () => {
     if (screenshotWindow && !screenshotWindow.isDestroyed()) {
-      screenshotWindow.webContents.send("screenshot-data", screenshotData);
+      if (!screenshotWindow.isVisible()) {
+        screenshotWindow.show();
+        screenshotWindow.focus();
+      }
     }
   });
 
-  // 添加错误处理
-  screenshotWindow.webContents.on(
-    "did-fail-load",
-    (event, errorCode, errorDescription) => {
-      console.error("窗口加载失败:", errorCode, errorDescription);
-    }
-  );
-
-  // 窗口关闭时清理引用
+  // 错误处理和清理
+  screenshotWindow.webContents.on("did-fail-load", (event, errorCode, errorDescription) => {
+    console.error("窗口加载失败:", errorCode, errorDescription);
+  });
   screenshotWindow.on("closed", () => {
     screenshotWindow = null;
   });
+
+  return screenshotWindow;
+};
+
+// 使用已预热窗口发送数据并显示
+const createScreenshotWindow = (screenshotData: ScreenSource) => {
+  const win = ensureScreenshotWindow();
+  // 默认策略：先发送数据，待渲染首帧后再显示
+  const sendOnly = () => {
+    if (!win.isDestroyed()) {
+      win.webContents.send("screenshot-data", screenshotData);
+    }
+  };
+
+  if (win.webContents.isLoading()) {
+    win.webContents.once("did-finish-load", sendOnly);
+  } else {
+    sendOnly();
+  }
 };
 
 // 注册全局快捷键（根据传入配置）
@@ -372,7 +384,7 @@ const registerGlobalShortcuts = (hotkeys: { resultHotkey: string; screenshotHotk
         thumbnail: sources[0].thumbnail.toDataURL(),
       };
 
-      // 直接创建新的截图展示窗口
+      // 使用已预热窗口，先发数据后显示
       createScreenshotWindow(screenshotData);
     } catch (error) {
       console.error('截图过程中发生错误:', error);
@@ -629,6 +641,9 @@ app.on("ready", () => {
   
   // 创建系统托盘
   createTray();
+  
+  // 预热截图窗口
+  ensureScreenshotWindow();
   
   // 注册全局快捷键
   applyHotkeysFromConfig();
