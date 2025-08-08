@@ -61,6 +61,80 @@ const loadConfigFromDisk = (): ConfigProvider | null => {
   }
 };
 
+/**
+ * 获取最新配置的函数
+ * 从配置文件读取最新的配置信息，支持默认值和错误处理
+ * @returns {ConfigProvider | null} 返回配置对象，如果读取失败则返回null
+ */
+const getLatestConfig = (): ConfigProvider | null => {
+  try {
+    // 从磁盘读取配置
+    const config = loadConfigFromDisk();
+    
+    if (config) {
+      console.log("成功从配置文件读取配置");
+      return config;
+    }
+    
+    console.log("配置文件不存在或为空，返回null");
+    return null;
+  } catch (error) {
+    console.error("获取最新配置时发生错误:", error);
+    return null;
+  }
+};
+
+/**
+ * 获取最新配置的函数（带默认值）
+ * 从配置文件读取最新的配置信息，如果读取失败则返回默认配置
+ * @param {Partial<ConfigProvider>} defaultConfig - 默认配置对象
+ * @returns {ConfigProvider} 返回配置对象，包含默认值
+ */
+const getLatestConfigWithDefaults = (defaultConfig: Partial<ConfigProvider> = {}): ConfigProvider => {
+  try {
+    // 从磁盘读取配置
+    const config = loadConfigFromDisk();
+    
+    // 定义完整的默认配置
+    const fullDefaultConfig: ConfigProvider = {
+      apiUrl: "https://api.openai.com/v1",
+      apiKey: "",
+      model: "gpt-4o",
+      customModel: "",
+      sourceLang: "auto",
+      targetLang: "zh",
+      resultHotkey: "CommandOrControl+Shift+T",
+      screenshotHotkey: "CommandOrControl+Shift+S",
+      ...defaultConfig
+    };
+    
+    if (config) {
+      console.log("成功从配置文件读取配置，合并默认值");
+      // 合并配置，确保所有必需字段都存在
+      return {
+        ...fullDefaultConfig,
+        ...config
+      };
+    }
+    
+    console.log("配置文件不存在或为空，返回默认配置");
+    return fullDefaultConfig;
+  } catch (error) {
+    console.error("获取最新配置时发生错误，返回默认配置:", error);
+    return {
+      apiUrl: "https://api.openai.com/v1",
+      apiKey: "",
+      model: "gpt-4o",
+      customModel: "",
+      sourceLang: "auto",
+      targetLang: "zh",
+      resultHotkey: "CommandOrControl+Shift+T",
+      screenshotHotkey: "CommandOrControl+Shift+S",
+      ...defaultConfig
+    };
+  }
+};
+
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -115,14 +189,11 @@ const createWindow = () => {
 // 创建系统托盘
 const createTray = () => {
   // 从配置读取热键以展示在菜单加速器
-  const cfg = loadConfigFromDisk();
-  const hotkeys = cfg
-    ? {
-        resultHotkey: cfg.resultHotkey || DEFAULT_HOTKEYS.resultHotkey,
-        screenshotHotkey:
-          cfg.screenshotHotkey || DEFAULT_HOTKEYS.screenshotHotkey,
-      }
-    : DEFAULT_HOTKEYS;
+  const cfg = getLatestConfigWithDefaults();
+  const hotkeys = {
+    resultHotkey: cfg.resultHotkey || DEFAULT_HOTKEYS.resultHotkey,
+    screenshotHotkey: cfg.screenshotHotkey || DEFAULT_HOTKEYS.screenshotHotkey,
+  };
   // 创建托盘图标
   // 使用一个简单的纯色图标
   // 在开发环境和生产环境中使用不同的路径解析策略
@@ -434,10 +505,10 @@ const registerGlobalShortcuts = (hotkeys: {
 
 // 从配置更新快捷键与托盘菜单
 const applyHotkeysFromConfig = () => {
-  const cfg = loadConfigFromDisk();
+  const cfg = getLatestConfigWithDefaults();
   const hotkeys = {
-    resultHotkey: cfg?.resultHotkey || DEFAULT_HOTKEYS.resultHotkey,
-    screenshotHotkey: cfg?.screenshotHotkey || DEFAULT_HOTKEYS.screenshotHotkey,
+    resultHotkey: cfg.resultHotkey || DEFAULT_HOTKEYS.resultHotkey,
+    screenshotHotkey: cfg.screenshotHotkey || DEFAULT_HOTKEYS.screenshotHotkey,
   };
   const status = registerGlobalShortcuts(hotkeys);
   // 重建托盘菜单以更新加速器显示
@@ -660,6 +731,33 @@ ipcMain.handle("load-config", async () => {
   }
 });
 
+// 获取最新配置的IPC处理器
+ipcMain.handle("get-latest-config", async (event, withDefaults = false) => {
+  try {
+    let config: ConfigProvider | null;
+    
+    if (withDefaults) {
+      config = getLatestConfigWithDefaults();
+      // console.log("获取最新配置（带默认值）成功");
+    } else {
+      config = getLatestConfig();
+      console.log("获取最新配置成功");
+    }
+    
+    return {
+      success: true,
+      config: config,
+    };
+  } catch (error) {
+    console.error("获取最新配置失败:", error);
+    return {
+      success: false,
+      error: error.message,
+      config: null,
+    };
+  }
+});
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -706,10 +804,19 @@ app.on("activate", () => {
 // 处理翻译请求
 ipcMain.handle(
   "translate-text",
-  async (event, config: APIConfig, request: TranslateRequest) => {
+  async (event, request: TranslateRequest) => {
     try {
       console.log("收到文本翻译请求:", request);
-      const result = await translateText(config, request);
+      
+      // 获取最新配置
+      const config = getLatestConfigWithDefaults();
+      const apiConfig: APIConfig = {
+        apiKey: config.apiKey,
+        apiUrl: config.apiUrl,
+        model: config.customModel || config.model
+      };
+      
+      const result = await translateText(apiConfig, request);
       console.log("文本翻译结果:", result);
       return result;
     } catch (error) {
@@ -725,9 +832,17 @@ ipcMain.handle(
 // 处理图片分析请求
 ipcMain.handle(
   "analyze-image-openai",
-  async (event, config: APIConfig, request: ImageAnalysisRequest) => {
+  async (event, request: ImageAnalysisRequest) => {
     try {
-      const result = await analyzeImageWithOpenAI(config, request);
+      // 获取最新配置
+      const config = getLatestConfigWithDefaults();
+      const apiConfig: APIConfig = {
+        apiKey: config.apiKey,
+        apiUrl: config.apiUrl,
+        model: config.customModel || config.model
+      };
+      
+      const result = await analyzeImageWithOpenAI(apiConfig, request);
 
       console.log("analyze-image-openai:", {
         success: !result.error,
@@ -747,14 +862,22 @@ ipcMain.handle(
 );
 
 // 验证OpenAI API配置
-ipcMain.handle("validate-openai-config", async (event, config: APIConfig) => {
+ipcMain.handle("validate-openai-config", async (event) => {
   try {
-    console.log("验证OpenAI API配置:", {
+    // 获取最新配置
+    const config = getLatestConfigWithDefaults();
+    const apiConfig: APIConfig = {
+      apiKey: config.apiKey,
       apiUrl: config.apiUrl,
-      hasApiKey: !!config.apiKey,
+      model: config.customModel || config.model
+    };
+    
+    console.log("验证OpenAI API配置:", {
+      apiUrl: apiConfig.apiUrl,
+      hasApiKey: !!apiConfig.apiKey,
     });
 
-    const isValid = await validateOpenAIConfig(config);
+    const isValid = await validateOpenAIConfig(apiConfig);
 
     console.log("OpenAI API配置验证结果:", isValid);
 
@@ -769,14 +892,22 @@ ipcMain.handle("validate-openai-config", async (event, config: APIConfig) => {
 });
 
 // 获取可用的OpenAI模型列表
-ipcMain.handle("get-openai-models", async (event, config: APIConfig) => {
+ipcMain.handle("get-openai-models", async (event) => {
   try {
-    console.log("获取OpenAI模型列表:", {
+    // 获取最新配置
+    const config = getLatestConfigWithDefaults();
+    const apiConfig: APIConfig = {
+      apiKey: config.apiKey,
       apiUrl: config.apiUrl,
-      hasApiKey: !!config.apiKey,
+      model: config.customModel || config.model
+    };
+    
+    console.log("获取OpenAI模型列表:", {
+      apiUrl: apiConfig.apiUrl,
+      hasApiKey: !!apiConfig.apiKey,
     });
 
-    const models = await getAvailableOpenAIModels(config);
+    const models = await getAvailableOpenAIModels(apiConfig);
 
     console.log("获取到的模型列表:", models);
 

@@ -73,21 +73,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 加载配置
   loadConfig: () => ipcRenderer.invoke('load-config'),
   
+  // 获取最新配置（带默认值）
+  getLatestConfigWithDefaults: (withDefaults = false) => ipcRenderer.invoke('get-latest-config', withDefaults),
+  
   // 分析图片 - OpenAI
-  analyzeImageOpenAI: (config: APIConfig, request: ImageAnalysisRequest) => 
-    ipcRenderer.invoke('analyze-image-openai', config, request),
+  analyzeImageOpenAI: (request: ImageAnalysisRequest) => 
+    ipcRenderer.invoke('analyze-image-openai', request),
   
   // 验证OpenAI API配置
-  validateOpenAIConfig: (config: APIConfig) => 
-    ipcRenderer.invoke('validate-openai-config', config),
+  validateOpenAIConfig: () => 
+    ipcRenderer.invoke('validate-openai-config'),
   
   // 获取可用的OpenAI模型列表
-  getOpenAIModels: (config: APIConfig) =>
-    ipcRenderer.invoke('get-openai-models', config),
+  getOpenAIModels: () =>
+    ipcRenderer.invoke('get-openai-models'),
 
   // 翻译文本
-  translate: (config: APIConfig, request: TranslateRequest) =>
-    ipcRenderer.invoke('translate-text', config, request),
+  translate: (request: TranslateRequest) =>
+    ipcRenderer.invoke('translate-text', request),
   
   // 窗口控制功能
   windowMinimize: () => ipcRenderer.invoke('window-minimize'),

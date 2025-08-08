@@ -6,6 +6,7 @@ import {
   CheckCircleOutlined,
 } from "@ant-design/icons";
 import type { CollapseProps } from "antd";
+import { ConfigDisplay } from "../components/ConfigDisplay";
 
 export const SettingsPage = () => {
   // use memo
@@ -318,6 +319,11 @@ export const SettingsPage = () => {
           >
             重置
           </Button>
+        </div>
+        
+        {/* 配置显示组件示例 */}
+        <div style={{ marginTop: 32 }}>
+          <ConfigDisplay />
         </div>
       </div>
     </div>

@@ -2,7 +2,6 @@ import { useCallback, useEffect } from "react";
 import { useScreenshotViewerState } from "../hooks/useScreenshotViewerState";
 import { useScreenshotViewerEffects } from "../hooks/useScreenshotViewerEffects";
 import { useImageAnalysis } from "../hooks/useImageAnalysis";
-import { useSettingsState } from "../hooks/useSettingsState";
 import { calculateCropCoordinates, cropImage, saveSelectedImage } from "../utils/imageUtils";
 import { getImageElement, getClampedPosition, calculateSelection, isValidSelection } from "../utils/mouseUtils";
 import { ScreenshotContent } from "./ScreenshotContent";
@@ -39,8 +38,7 @@ export const ScreenshotViewer = () => {
     clearAnalysis
   } = useImageAnalysis();
 
-  // 设置状态
-  const { formData: settings } = useSettingsState();
+
 
   useScreenshotViewerEffects(
     setScreenshotData,
@@ -129,19 +127,15 @@ export const ScreenshotViewer = () => {
       try {
         const selectedImageData = await cropImage(screenshotData.thumbnail, cropCoords);
         saveSelectedImage(selectedImageData, cropCoords.width, cropCoords.height);
-        // 如果配置了API，则进行图片分析
-        if (settings.apiKey && settings.apiUrl) {
-          await analyzeImage(settings, selectedImageData);
-        } else {
-          window.close();
-        }
+        // 进行图片分析
+        await analyzeImage(selectedImageData);
       } catch (error) {
         alert('裁剪图片失败，请重试');
         resetSelection();
       }
     };
     img.src = screenshotData.thumbnail;
-  }, [screenshotData, selection, settings, analyzeImage, resetSelection]);
+  }, [screenshotData, selection, analyzeImage, resetSelection]);
 
   if (loading) {
     return <LoadingState />;

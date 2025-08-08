@@ -89,13 +89,7 @@ export const useSettingsLogic = () => {
     }
 
     try {
-      const apiConfig: APIConfig = {
-        apiKey: formData.apiKey,
-        apiUrl: formData.apiUrl,
-        model: formData.customModel || formData.model
-      };
-
-      const result = await window.electronAPI.validateOpenAIConfig(apiConfig);
+      const result = await window.electronAPI.validateOpenAIConfig();
       console.log('validateOpenAIConfig result:', result);
       if (!result.success) {
         setFieldError('apiKey', `API配置验证失败: ${result.error || '未知错误'}`);

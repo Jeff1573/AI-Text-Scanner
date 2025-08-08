@@ -74,7 +74,8 @@ export const useSettingsState = () => {
   const loadConfig = async () => {
     try {
       setIsLoading(true);
-      const result = await window.electronAPI.loadConfig();
+      // 使用新的getLatestConfigWithDefaults函数，确保始终有可用的配置
+      const result = await window.electronAPI.getLatestConfigWithDefaults(true);
       if (result.success && result.config) {
         setFormData({...defaultFormData, ...result.config});
         console.log('配置加载成功:', result.config);

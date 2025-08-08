@@ -61,10 +61,15 @@ export interface ElectronAPI {
     config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string } | null;
     error?: string;
   }>;
-  analyzeImageOpenAI: (config: APIConfig, request: ImageAnalysisRequest) => Promise<OpenAIResponse>;
-  validateOpenAIConfig: (config: APIConfig) => Promise<{ success: boolean; error?: string }>;
-  getOpenAIModels: (config: APIConfig) => Promise<{ success: boolean; models: string[]; error?: string }>;
-  translate: (config: APIConfig, request: TranslateRequest) => Promise<OpenAIResponse>;
+  getLatestConfigWithDefaults: (withDefaults?: boolean) => Promise<{
+    success: boolean;
+    config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string } | null;
+    error?: string;
+  }>;
+  analyzeImageOpenAI: (request: ImageAnalysisRequest) => Promise<OpenAIResponse>;
+  validateOpenAIConfig: () => Promise<{ success: boolean; error?: string }>;
+  getOpenAIModels: () => Promise<{ success: boolean; models: string[]; error?: string }>;
+  translate: (request: TranslateRequest) => Promise<OpenAIResponse>;
   windowMinimize: () => Promise<void>;
   windowMaximize: () => Promise<void>;
   windowClose: () => Promise<void>;

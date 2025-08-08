@@ -1,5 +1,3 @@
-import type { APIConfig } from "../types/electron";
-
 interface TranslateParams {
   text: string;
   sourceLang: string;
@@ -7,11 +5,10 @@ interface TranslateParams {
 }
 
 export const translate = async (
-  config: APIConfig,
   params: TranslateParams
 ): Promise<string> => {
   try {
-    const result = await window.electronAPI.translate(config, params);
+    const result = await window.electronAPI.translate(params);
     if (result.error) {
       throw new Error(result.error);
     }
