@@ -108,7 +108,17 @@ export const SettingsPage = () => {
       children: (
         <Form layout="vertical" style={{ padding: "16px 0" }}>
           {/* 表单项与之前类似，但value和onChange直接来自重构后的hook */}
-          <Form.Item label="API地址" validateStatus={errors.apiUrl ? "error" : ""} help={errors.apiUrl}>
+          <Form.Item
+            label="API地址"
+            validateStatus={errors.apiUrl ? "error" : ""}
+            help={errors.apiUrl}
+            extra={
+              <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>
+                {(() => { const b = (((formData.apiUrl || '').trim() || 'https://api.openai.com').replace(/\/+$/, '')); const suffix = /\/v1$/i.test(b) ? '/chat/completions' : '/v1/chat/completions'; return `${b}${suffix}`; })()}
+                <span style={{ marginLeft: 8, color: '#bbb' }}>(其中 v1 可选，可省略)</span>
+              </div>
+            }
+          >
             <Input
               value={formData.apiUrl}
               onChange={(e) => handleInputChange("apiUrl", e.target.value)}

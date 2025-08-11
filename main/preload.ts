@@ -76,9 +76,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 获取最新配置
   getLatestConfig: (withDefaults = false) => ipcRenderer.invoke('get-latest-config', withDefaults),
   
-  // 获取最新配置（带默认值）
-  getLatestConfigWithDefaults: (withDefaults = false) => ipcRenderer.invoke('get-latest-config', withDefaults),
-  
   // 分析图片 - OpenAI
   analyzeImageOpenAI: (request: ImageAnalysisRequest) => 
     ipcRenderer.invoke('analyze-image-openai', request),

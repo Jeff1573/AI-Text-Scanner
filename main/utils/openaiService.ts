@@ -221,18 +221,16 @@ export async function translateText(
       baseURL: config.apiUrl,
     });
 
-    console.log(`translate config`, config);
-    console.log(`translate request`, request);
-    const system_prompt = `你是一个多语言翻译机器人。用户会指定要翻译成什么语言，或者让你直接翻译。如果用户没有指定目标语言，就默认翻译成中文。只返回翻译结果。`;
+    const system_prompt = `你是一个多语言翻译机器人。用户会指定要翻译成什么语言，或者让你直接翻译。如果用户没有指定目标语言，就默认翻译成中文。只返回翻译结果。如果无法翻译或用户传入为空则返回原文。`;
 
-    console.log("system_prompt", system_prompt);
+    console.log(`translate request`, request.text);
     const response = await openai.chat.completions.create({
       model: config.customModel || config.model,
       messages: [
         { role: "system", content: system_prompt },
         {
           role: "user",
-          content: `翻译成${request.targetLang}：${request.text}`,
+          content: `翻译成${request.targetLang}：${request.text || ''}`,
         }
       ],
     });

@@ -38,7 +38,7 @@ export const useSettingsState = () => {
   }, [globalConfig]);
 
   // 4. 管理本地表单状态的函数
-  const updateFormData = (field: keyof SettingsFormData, value: string) => {
+  const updateFormData = (field: keyof SettingsFormData, value: SettingsFormData[typeof field]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));

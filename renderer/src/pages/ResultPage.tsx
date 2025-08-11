@@ -38,13 +38,19 @@ export const ResultPage = () => {
     const handleResultData = (data: string) => {
       try {
         console.log("handleResultData", data);
-        // const parseData = JSON.parse(
-        //   data
-        //     .replace(/```json/g, "")
-        //     .replace(/```/g, "")
-        //     .trim()
-        // );
-        setOriginalText(data || "");
+        // 检查数据是否为JSON格式
+        if (data && data.startsWith('{') && data.endsWith('}')) {
+          try {
+            const parseData = JSON.parse(data);
+            setOriginalText(parseData.original || "");
+          } catch (jsonError) {
+            // 如果JSON解析失败，将整个数据作为原始文本
+            setOriginalText(data || "");
+          }
+        } else {
+          // 非JSON格式的数据直接作为原始文本
+          setOriginalText(data || "");
+        }
       } catch (error) {
         console.error("解析结果失败:", error);
         setOriginalText("内容解析失败");

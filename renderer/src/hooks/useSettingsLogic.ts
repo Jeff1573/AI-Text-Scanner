@@ -123,7 +123,7 @@ export const useSettingsLogic = () => {
   };
 
   // 处理输入变化
-  const handleInputChange = (field: keyof SettingsFormData, value: string) => {
+  const handleInputChange = (field: keyof SettingsFormData, value: string | boolean) => {
     updateFormData(field, value);
   };
 
