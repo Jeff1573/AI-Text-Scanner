@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { TitleBar } from "../components";
 import { translate } from "../utils/translate";
-import type { APIConfig } from "../types/electron";
 import "../assets/styles/result-page.css";
 import "../assets/styles/language-selector.css";
 
@@ -23,7 +22,6 @@ export const ResultPage = () => {
   const [isCopied, setIsCopied] = useState(false);
   const [sourceLang, setSourceLang] = useState("auto");
   const [targetLang, setTargetLang] = useState("zh");
-  const [apiConfig, setApiConfig] = useState<APIConfig | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
 
   const originalRef = useRef<HTMLTextAreaElement>(null);
@@ -61,7 +59,6 @@ export const ResultPage = () => {
     const loadConfig = async () => {
       const result = await window.electronAPI.loadConfig();
       if (result.success && result.config) {
-        setApiConfig(result.config);
         setSourceLang(result.config.sourceLang || "auto");
         setTargetLang(result.config.targetLang || "zh");
       }
@@ -76,11 +73,11 @@ export const ResultPage = () => {
   }, []);
 
   const handleTranslate = useCallback(async () => {
-    if (!originalText || !apiConfig) return;
+    if (!originalText) return;
 
     setIsTranslating(true);
     try {
-      const result = await translate(apiConfig, {
+      const result = await translate({
         text: originalText,
         sourceLang,
         targetLang,
@@ -91,7 +88,7 @@ export const ResultPage = () => {
     } finally {
       setIsTranslating(false);
     }
-  }, [originalText, sourceLang, targetLang, apiConfig]);
+  }, [originalText, sourceLang, targetLang]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

@@ -8,6 +8,7 @@ export const translate = async (
   params: TranslateParams
 ): Promise<string> => {
   try {
+    console.log("translate request", params);
     const result = await window.electronAPI.translate(params);
     if (result.error) {
       throw new Error(result.error);
