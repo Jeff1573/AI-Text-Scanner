@@ -217,7 +217,7 @@ const createTray = () => {
   let iconPath: string;
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     // 开发环境：直接使用源码目录
-    iconPath = path.join(__dirname, "./static/fast_ocr_tray_icon.ico");
+    iconPath = path.join(__dirname, "./static/icons8-camera-50.png");
   } else {
     // 生产环境：使用构建后的路径
     iconPath = path.join(__dirname, "./static/fast_ocr_tray_icon.ico");
