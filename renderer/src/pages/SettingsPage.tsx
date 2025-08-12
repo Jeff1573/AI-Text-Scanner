@@ -9,11 +9,15 @@ import {
   Switch,
   Spin,
   Alert,
+  Card,
+  Space,
 } from "antd";
 import {
   SaveOutlined,
   ReloadOutlined,
   CheckCircleOutlined,
+  LoadingOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import type { CollapseProps } from "antd";
 import { ConfigDisplay } from "../components/ConfigDisplay";
@@ -23,6 +27,7 @@ export const SettingsPage = () => {
     formData,
     errors,
     isSaving,
+    isValidating,
     isLoading,
     configError,
     handleInputChange,
@@ -30,6 +35,9 @@ export const SettingsPage = () => {
     handleResetSettings,
     validateApiConfig,
   } = useSettingsLogic();
+
+  // 使用 Hook 方式获取 message API
+  const [messageApi, contextHolder] = message.useMessage();
 
   // 当全局配置仍在加载时，显示加载指示器
   if (isLoading) {
@@ -54,26 +62,64 @@ export const SettingsPage = () => {
   }
 
   const handleSave = async () => {
-    const ok = await handleSaveSettings();
-    if (ok) {
-      message.success("设置保存成功！");
-    } else {
-      message.error("保存失败，请检查表单项或控制台日志");
+    const hideLoading = messageApi.loading('正在保存设置...', 0);
+    
+    try {
+      const ok = await handleSaveSettings();
+      hideLoading();
+      
+      if (ok) {
+        messageApi.success({
+          content: "设置保存成功！配置已生效。",
+          duration: 3,
+        });
+      } else {
+        messageApi.error({
+          content: "保存失败，请检查表单中的错误信息并修正。",
+          duration: 4,
+        });
+      }
+    } catch (error) {
+      hideLoading();
+      messageApi.error({
+        content: "保存过程中发生错误，请稍后重试。",
+        duration: 3,
+      });
     }
   };
 
   const handleValidate = async () => {
-    const ok = await validateApiConfig();
-    if (ok) {
-        message.success("API配置验证成功！");
-    } else {
-        message.error("API配置验证失败，请检查参数");
+    // 显示验证开始的提示
+    const hideLoading = messageApi.loading('正在验证API配置...', 0);
+    
+    try {
+      const ok = await validateApiConfig();
+      hideLoading();
+      
+      if (ok) {
+        messageApi.success({
+          content: "API配置验证成功！连接正常，可以正常使用。",
+          duration: 3,
+        });
+      } else {
+        // 错误信息已经在表单字段中显示，这里只显示简单提示
+        messageApi.error({
+          content: "API配置验证失败，请查看详细错误信息并修正配置。",
+          duration: 4,
+        });
+      }
+    } catch (error) {
+      hideLoading();
+      messageApi.error({
+        content: "验证过程中发生错误，请稍后重试。",
+        duration: 3,
+      });
     }
   };
 
   const handleReset = () => {
     handleResetSettings();
-    message.info("设置已重置为上次保存的状态");
+    messageApi.info("设置已重置为上次保存的状态");
   };
 
   // 键盘事件处理，用于快捷键输入
@@ -140,8 +186,48 @@ export const SettingsPage = () => {
             >
               <Select.Option value="gpt-4o">GPT-4o</Select.Option>
               <Select.Option value="gpt-4o-mini">GPT-4o Mini</Select.Option>
+              <Select.Option value="custom">自定义模型</Select.Option>
             </Select>
           </Form.Item>
+          {formData.model === "custom" && (
+            <Form.Item 
+              label="自定义模型名称" 
+              validateStatus={errors.customModel ? "error" : ""} 
+              help={errors.customModel}
+            >
+              <Input
+                value={formData.customModel}
+                onChange={(e) => handleInputChange("customModel", e.target.value)}
+                placeholder="请输入模型名称，如 gpt-3.5-turbo"
+                size="large"
+              />
+            </Form.Item>
+          )}
+          
+          {/* 验证状态提示 */}
+          {isValidating && (
+            <Card size="small" style={{ marginTop: 16, backgroundColor: '#f6ffed', border: '1px solid #b7eb8f' }}>
+              <Space>
+                <LoadingOutlined style={{ color: '#52c41a' }} />
+                <span style={{ color: '#389e0d' }}>正在验证API配置，请稍候...</span>
+              </Space>
+            </Card>
+          )}
+          
+          {/* 错误提示增强 */}
+          {errors.apiKey && (
+            <Card size="small" style={{ marginTop: 16, backgroundColor: '#fff2f0', border: '1px solid #ffccc7' }}>
+              <Space>
+                <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+                <div>
+                  <div style={{ color: '#cf1322', fontWeight: 500 }}>验证失败</div>
+                  <div style={{ color: '#8c8c8c', fontSize: 12, marginTop: 4 }}>
+                    {errors.apiKey}
+                  </div>
+                </div>
+              </Space>
+            </Card>
+          )}
         </Form>
       ),
     },
@@ -191,6 +277,9 @@ export const SettingsPage = () => {
 
   return (
     <div className="page" id="settings-page">
+      {/* Message contextHolder 必须放在组件树中 */}
+      {contextHolder}
+      
       <div className="page-header">
         <h1>设置</h1>
       </div>
@@ -210,10 +299,11 @@ export const SettingsPage = () => {
           <Button
             icon={<CheckCircleOutlined />}
             onClick={handleValidate}
-            disabled={isSaving}
+            loading={isValidating}
+            disabled={isSaving || isValidating}
             size="large"
           >
-            验证配置
+            {isValidating ? '验证中...' : '验证配置'}
           </Button>
           <Button
             icon={<ReloadOutlined />}

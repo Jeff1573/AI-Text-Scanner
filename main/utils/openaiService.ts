@@ -149,10 +149,11 @@ export async function validateOpenAIConfig(
     const openai = new OpenAI({
       apiKey: config.apiKey,
       baseURL: config.apiUrl,
+      timeout: 4000
     });
 
     // 发送一个简单的测试请求
-    await openai.models.list();
+    await openai.models.list({timeout: 4000});
     return true;
   } catch (error) {
     console.error("OpenAI API配置验证失败:", error);

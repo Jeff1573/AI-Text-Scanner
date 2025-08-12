@@ -29,6 +29,7 @@ export const useSettingsState = () => {
   const [formData, setFormData] = useState<SettingsFormData>(defaultFormData);
   const [errors, setErrors] = useState<Partial<SettingsFormData>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
 
   // 3. 当全局配置加载或更改时，同步到本地表单状态
   useEffect(() => {
@@ -68,6 +69,7 @@ export const useSettingsState = () => {
     formData,
     errors,
     isSaving,
+    isValidating,
     isLoading: isConfigLoading, // 使用全局的加载状态
     configError, // 传递全局的错误状态
     updateFormData,
@@ -75,6 +77,7 @@ export const useSettingsState = () => {
     setFieldError,
     clearErrors,
     setIsSaving,
+    setIsValidating,
     setGlobalConfig, // 将全局的setter传递给逻辑hook
     fetchConfig, // 暴露fetch函数以供重载
   };

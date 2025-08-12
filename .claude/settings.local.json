@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "mcp__github_com_upstash_context7-mcp__resolve-library-id",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "mcp__github_com_upstash_context7-mcp__get-library-docs",
+      "Bash(git add:*)"
     ],
     "deny": []
   }
