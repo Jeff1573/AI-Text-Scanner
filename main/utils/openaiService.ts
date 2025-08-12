@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import OpenAI, { APIError, APIConnectionError, RateLimitError } from "openai";
 
 // OpenAI API响应接口
 export interface OpenAIResponse {
@@ -100,12 +100,12 @@ export async function analyzeImageWithOpenAI(
     console.error("OpenAI API调用异常:", error);
 
     // 处理不同类型的错误
-    if (error instanceof OpenAI.APIError) {
+    if (error instanceof APIError) {
       return {
         content: "",
         error: `API错误: ${error.message}`,
       };
-    } else if (error instanceof OpenAI.APIConnectionError) {
+    } else if (error instanceof APIConnectionError) {
       return {
         content: "",
         error: `连接错误: ${error.message}`,
@@ -119,7 +119,7 @@ export async function analyzeImageWithOpenAI(
         content: "",
         error: `请求超时: ${error.message}`,
       };
-    } else if (error instanceof OpenAI.RateLimitError) {
+    } else if (error instanceof RateLimitError) {
       return {
         content: "",
         error: `请求频率限制: ${error.message}`,
@@ -153,7 +153,7 @@ export async function validateOpenAIConfig(
     });
 
     // 发送一个简单的测试请求
-    await openai.models.list({timeout: 4000});
+    await openai.models.list();
     return true;
   } catch (error) {
     console.error("OpenAI API配置验证失败:", error);

@@ -23,4 +23,24 @@ export interface ConfigProvider {
 // 配置接口
 export interface Config {
   provider: ConfigProvider[];
+}
+
+// 快捷键配置接口
+export interface HotkeyConfig {
+  resultHotkey: string;
+  screenshotHotkey: string;
+}
+
+// 快捷键状态接口
+export interface HotkeyStatus {
+  resultRegistered: boolean;
+  screenshotRegistered: boolean;
+}
+
+// 配置保存结果接口
+export interface SaveResult {
+  success: boolean;
+  error?: string;
+  hotkeyStatus?: HotkeyStatus;
+  hotkeys?: HotkeyConfig;
 } 
