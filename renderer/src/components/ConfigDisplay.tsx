@@ -16,7 +16,7 @@ export const ConfigDisplay: React.FC = () => {
       title={
         <Space>
           <InfoCircleOutlined />
-          全局配置信息 (来自Zustand Store)
+          全局配置信息
         </Space>
       }
       extra={
