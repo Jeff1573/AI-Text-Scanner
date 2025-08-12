@@ -11,9 +11,12 @@ import { join } from 'path'
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    icon: join(__dirname, 'main/static/icons8-camera-256'),
   },
   rebuildConfig: {},
-  makers: [new MakerSquirrel({}), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],
+  makers: [new MakerSquirrel({
+    setupIcon: join(__dirname, 'main/static/icons8-camera-256.ico'),
+  }), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],
   plugins: [
     new VitePlugin({
       // `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.

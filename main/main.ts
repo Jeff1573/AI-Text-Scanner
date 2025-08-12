@@ -153,6 +153,7 @@ const getLatestConfigWithDefaults = (defaultConfig: Partial<ConfigProvider> = {}
 };
 
 const createWindow = () => {
+  const iconPath = path.join(__dirname, "./static/icons8-camera-256.ico");
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 800,
@@ -165,7 +166,9 @@ const createWindow = () => {
       nodeIntegration: false,
       contextIsolation: true,
     },
+    icon: iconPath,
   });
+  console.log('main window iconPath', iconPath);
 
   // 设置桌面捕获权限处理
   session.defaultSession.setDisplayMediaRequestHandler(
@@ -217,10 +220,10 @@ const createTray = () => {
   let iconPath: string;
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     // 开发环境：直接使用源码目录
-    iconPath = path.join(__dirname, "./static/icons8-camera-50.png");
+    iconPath = path.join(__dirname, "./static/icons8-camera-256.ico");
   } else {
     // 生产环境：使用构建后的路径
-    iconPath = path.join(__dirname, "./static/fast_ocr_tray_icon.ico");
+    iconPath = path.join(__dirname, "./static/icons8-camera-256.ico");
   }
 
   console.log("iconPath", __dirname,iconPath);
