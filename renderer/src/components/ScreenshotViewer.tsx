@@ -51,9 +51,11 @@ export const ScreenshotViewer = () => {
   // 监听识别结果，成功则打开新窗口并关闭自己，失败则提示
   useEffect(() => {
     if (analysisResult && !analysisError) {
-      window.electronAPI.openResultWindow(analysisResult).then(() => {
-        window.close();
-      });
+      // TODO: 识别成功，获取结果。
+      console.log("analysisResult", analysisResult);
+      // window.electronAPI.openResultWindow(analysisResult).then(() => {
+        // window.close();
+      // });
     } else if (analysisError) {
       alert(analysisError);
       clearAnalysis();

@@ -15,7 +15,7 @@ export interface APIConfig {
 
 export interface ImageAnalysisRequest {
   imageData: string;
-  prompt: string;
+  prompt?: string;
   maxTokens?: number;
   temperature?: number;
 }

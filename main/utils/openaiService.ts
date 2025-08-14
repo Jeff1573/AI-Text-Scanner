@@ -53,6 +53,10 @@ export async function analyzeImageWithOpenAI(
       baseURL: config.apiUrl, // 使用自定义API地址
     });
 
+    const system_prompt = `
+    我给你一张图片，你将解析该图片内容和结构，然后形成一个翻译后的html文件内容给我。该html的内容包括原文和翻译后的内容，翻译的文本放到原文右侧左右布局。格式参考图片格式形成。
+    `;
+
     console.log("发送OpenAI API请求:", {
       url: config.apiUrl,
       model: config.customModel || config.model,
@@ -69,7 +73,7 @@ export async function analyzeImageWithOpenAI(
           content: [
             {
               type: "text" as const,
-              text: request.prompt,
+              text: system_prompt || request.prompt,
             },
             {
               type: "image_url" as const,

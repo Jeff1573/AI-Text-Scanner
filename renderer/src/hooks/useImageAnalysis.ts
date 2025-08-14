@@ -47,9 +47,6 @@ export const useImageAnalysis = () => {
         // 构建请求参数
         const request: ImageAnalysisRequest = {
           imageData,
-          prompt: dynamicPrompt,
-          maxTokens: 1500,
-          temperature: 0.3,
         };
 
         // 调用preload的API
