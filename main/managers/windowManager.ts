@@ -1,4 +1,10 @@
-import { BrowserWindow, session, screen, ipcMain, desktopCapturer } from "electron";
+import {
+  BrowserWindow,
+  session,
+  screen,
+  ipcMain,
+  desktopCapturer,
+} from "electron";
 import path from "node:path";
 import type { ScreenSource } from "../types";
 import { ScreenshotService } from "../services/screenshotService";
@@ -24,11 +30,11 @@ export class WindowManager {
 
   createMainWindow(): BrowserWindow | null {
     try {
-      console.log('[WindowManager] 开始创建主窗口...');
-      
+      console.log("[WindowManager] 开始创建主窗口...");
+
       const iconPath = path.join(__dirname, "./static/icons8-camera-256.ico");
-      console.log('[WindowManager] 图标路径:', iconPath);
-      
+      console.log("[WindowManager] 图标路径:", iconPath);
+
       this.mainWindow = new BrowserWindow({
         width: 800,
         height: 600,
@@ -42,36 +48,44 @@ export class WindowManager {
         },
         icon: iconPath,
       });
-      
-      console.log('[WindowManager] 主窗口创建成功，preload路径:', path.join(__dirname, "./preload.js"));
+
+      console.log(
+        "[WindowManager] 主窗口创建成功，preload路径:",
+        path.join(__dirname, "./preload.js")
+      );
 
       // 设置显示媒体请求处理器
       try {
         session.defaultSession.setDisplayMediaRequestHandler(
           (request, callback) => {
-            desktopCapturer.getSources({ types: ["screen"] }).then((sources) => {
-              callback({ video: sources[0] });
-            });
+            desktopCapturer
+              .getSources({ types: ["screen"] })
+              .then((sources) => {
+                callback({ video: sources[0] });
+              });
           },
           { useSystemPicker: true }
         );
-        console.log('[WindowManager] 显示媒体请求处理器设置成功');
+        console.log("[WindowManager] 显示媒体请求处理器设置成功");
       } catch (mediaError) {
-        console.warn('[WindowManager] 显示媒体请求处理器设置失败:', mediaError);
+        console.warn("[WindowManager] 显示媒体请求处理器设置失败:", mediaError);
       }
 
       // 加载页面
       try {
         if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-          console.log('[WindowManager] 加载开发服务器URL:', MAIN_WINDOW_VITE_DEV_SERVER_URL);
+          console.log(
+            "[WindowManager] 加载开发服务器URL:",
+            MAIN_WINDOW_VITE_DEV_SERVER_URL
+          );
           this.mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
         } else {
           const htmlPath = path.join(__dirname, `../renderer/index.html`);
-          console.log('[WindowManager] 加载HTML文件:', htmlPath);
+          console.log("[WindowManager] 加载HTML文件:", htmlPath);
           this.mainWindow.loadFile(htmlPath);
         }
       } catch (loadError) {
-        console.error('[WindowManager] 页面加载失败:', loadError);
+        console.error("[WindowManager] 页面加载失败:", loadError);
         throw loadError;
       }
 
@@ -83,10 +97,10 @@ export class WindowManager {
         }
       });
 
-      console.log('[WindowManager] 主窗口创建完成');
+      console.log("[WindowManager] 主窗口创建完成");
       return this.mainWindow;
     } catch (error) {
-      console.error('[WindowManager] 创建主窗口失败:', error);
+      console.error("[WindowManager] 创建主窗口失败:", error);
       throw error;
     }
   }
@@ -123,9 +137,12 @@ export class WindowManager {
       console.log("预热加载URL:", url);
       this.screenshotWindow.loadURL(url);
     } else {
-      this.screenshotWindow.loadFile(path.join(__dirname, `../renderer/index.html`), {
-        hash: "/screenshot",
-      });
+      this.screenshotWindow.loadFile(
+        path.join(__dirname, `../renderer/index.html`),
+        {
+          hash: "/screenshot",
+        }
+      );
     }
 
     ipcMain.on("screenshot-image-ready", () => {
@@ -143,7 +160,7 @@ export class WindowManager {
         console.error("窗口加载失败:", errorCode, errorDescription);
       }
     );
-    
+
     this.screenshotWindow.on("closed", () => {
       this.screenshotWindow = null;
     });
@@ -153,7 +170,7 @@ export class WindowManager {
 
   createScreenshotWindow(screenshotData: ScreenSource): void {
     const win = this.ensureScreenshotWindow();
-    
+
     const sendOnly = () => {
       if (!win.isDestroyed()) {
         win.webContents.send("screenshot-data", screenshotData);
@@ -170,8 +187,9 @@ export class WindowManager {
   createResultWindow(resultContent: string): void {
     if (this.resultWindow) {
       this.resultWindow.close();
+      this.resultWindow.destroy();
     }
-    
+
     this.resultWindow = new BrowserWindow({
       width: 600,
       height: 400,
@@ -189,20 +207,29 @@ export class WindowManager {
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       this.resultWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/result`);
     } else {
-      this.resultWindow.loadFile(path.join(__dirname, `../renderer/index.html`), {
-        hash: "/result",
-      });
+      this.resultWindow.loadFile(
+        path.join(__dirname, `../renderer/index.html`),
+        {
+          hash: "/result",
+        }
+      );
     }
 
-    this.resultWindow.webContents.on("did-finish-load", () => {
-      setTimeout(() => {
-        if (this.resultWindow && !this.resultWindow.isDestroyed()) {
-          this.resultWindow.webContents.send("result-data", resultContent);
-        }
-      }, 300);
+    this.resultWindow.on("ready-to-show", () => {
+      console.log("==========result window loaded==========");
+
+      if (this.resultWindow) {
+        const dataToSend =
+          typeof resultContent === "string"
+            ? JSON.stringify({ original: resultContent })
+            : resultContent;
+        this.resultWindow.webContents.send("result-data", dataToSend);
+      }
+      console.log("=======================================");
     });
 
     this.resultWindow.on("closed", () => {
+      console.log("result window closed");
       this.resultWindow = null;
     });
   }
@@ -229,12 +256,13 @@ export class WindowManager {
   registerIPCHandlers(): void {
     ipcMain.handle("open-result-window", async (event, resultContent) => {
       try {
+        console.log("open-result-window", resultContent);
         this.createResultWindow(resultContent);
         return { success: true };
       } catch (error) {
-        return { 
-          success: false, 
-          error: error instanceof Error ? error.message : "未知错误" 
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误",
         };
       }
     });
@@ -266,19 +294,22 @@ export class WindowManager {
       }
     });
 
-    ipcMain.handle("create-screenshot-window", async (event, screenshotData) => {
-      try {
-        console.log("received create screenshot window request, data:");
-        this.createScreenshotWindow(screenshotData);
-        return { success: true };
-      } catch (error) {
-        console.error("创建截图窗口失败:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "未知错误",
-        };
+    ipcMain.handle(
+      "create-screenshot-window",
+      async (event, screenshotData) => {
+        try {
+          console.log("received create screenshot window request, data:");
+          this.createScreenshotWindow(screenshotData);
+          return { success: true };
+        } catch (error) {
+          console.error("创建截图窗口失败:", error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "未知错误",
+          };
+        }
       }
-    });
+    );
 
     ipcMain.handle("window-minimize", (event) => {
       const win = BrowserWindow.fromWebContents(event.sender);

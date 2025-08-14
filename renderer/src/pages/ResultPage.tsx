@@ -37,7 +37,7 @@ export const ResultPage = () => {
       try {
         console.log("handleResultData", data);
         // 检查数据是否为JSON格式
-        if (data && data.startsWith('{') && data.endsWith('}')) {
+        if (data && typeof data === 'string' && data.startsWith('{') && data.endsWith('}')) {
           try {
             const parseData = JSON.parse(data);
             setOriginalText(parseData.original || "");
@@ -45,9 +45,15 @@ export const ResultPage = () => {
             // 如果JSON解析失败，将整个数据作为原始文本
             setOriginalText(data || "");
           }
-        } else {
+        } else if (typeof data === 'string') {
           // 非JSON格式的数据直接作为原始文本
           setOriginalText(data || "");
+        } else if (typeof data === 'object' && data !== null) {
+          // 如果是对象，尝试获取original字段
+          setOriginalText((data as any).original || JSON.stringify(data));
+        } else {
+          // 其他情况
+          setOriginalText(String(data || ""));
         }
       } catch (error) {
         console.error("解析结果失败:", error);
@@ -115,6 +121,8 @@ export const ResultPage = () => {
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
       console.error("无法复制文本: ", err);
+      // 显示复制失败的提示
+      alert("复制失败，请手动复制文本");
     }
   };
 

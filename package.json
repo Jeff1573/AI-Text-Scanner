@@ -10,7 +10,7 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
-    "clear": "rimraf out"
+    "clear": "iObitUnlocker /Delete out"
   },
   "keywords": [],
   "author": {
