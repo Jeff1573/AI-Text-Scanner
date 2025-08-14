@@ -1,6 +1,6 @@
-# Fast OCR UI原型
+# AI Text Scanner UI原型
 
-这是一个使用HTML + CSS + JavaScript实现的Fast OCR应用UI原型，符合Figma设计规范。
+这是一个使用HTML + CSS + JavaScript实现的AI Text Scanner应用UI原型，符合Figma设计规范。
 
 ## 功能特性
 

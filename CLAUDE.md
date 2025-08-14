@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-这是一个基于 Electron 和 React 的 AI 文字识别应用，名为 Fast OCR。主要功能包括：
+这是一个基于 Electron 和 React 的 AI 文字识别应用，名为 AI Text Scanner。主要功能包括：
 - 屏幕截图文字识别
 - 多语言文本翻译
 - 可配置的 AI API 设置（支持 OpenAI API）
@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 项目结构
 
 ```
-fast-ocr/
+ai-text-scanner/
 ├── main/                 # Electron主进程
 ├── renderer/             # 渲染进程(React应用)
 │   ├── src/

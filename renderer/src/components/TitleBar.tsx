@@ -29,7 +29,7 @@ export const TitleBar: React.FC = () => {
         <div className="titlebar-left">
           <div className="app-title">
             <span className="app-icon">📷</span>
-            <span className="app-name">AI-OCR</span>
+            <span className="app-name">AI Text Scanner</span>
           </div>
         </div>
         

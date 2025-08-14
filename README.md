@@ -1,6 +1,6 @@
-# Fast OCR - AI文字识别应用
+# AI Text Scanner - AI文字识别应用
 
-一个基于Electron和React的AI文字识别应用，支持截图识别和文本翻译功能。
+一个基于Electron和React的AI智能文本扫描应用，支持截图识别和文本翻译功能。
 
 ## 功能特性
 
@@ -53,7 +53,7 @@ npm run make
 ## 项目结构
 
 ```
-fast-ocr/
+ai-text-scanner/
 ├── main/                 # Electron主进程
 ├── renderer/            # 渲染进程(React应用)
 │   ├── src/

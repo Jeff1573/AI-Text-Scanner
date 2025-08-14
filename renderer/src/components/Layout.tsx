@@ -47,7 +47,7 @@ export const Layout = () => {
           {/* <div className="sidebar-header">
             <div className="logo">
               <div className="logo-icon">📷</div>
-              <div className="logo-text">Fast OCR</div>
+              <div className="logo-text">AI Text Scanner</div>
             </div>
           </div> */}
 

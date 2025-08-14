@@ -28,7 +28,7 @@ export class TrayManager {
     const icon = nativeImage.createFromPath(iconPath);
 
     this.tray = new Tray(icon);
-    this.tray.setToolTip("Fast OCR - AI文字识别工具");
+    this.tray.setToolTip("AI Text Scanner - AI文字识别工具");
 
     this.updateTrayMenu(hotkeys);
     this.setupTrayEvents();
