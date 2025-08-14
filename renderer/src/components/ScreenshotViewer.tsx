@@ -55,7 +55,7 @@ export const ScreenshotViewer = () => {
         window.close();
       });
     } else if (analysisError) {
-      alert('识别失败，请重新选择区域');
+      alert(analysisError);
       clearAnalysis();
       resetSelection();
     }

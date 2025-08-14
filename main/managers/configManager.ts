@@ -8,6 +8,7 @@ export class ConfigManager {
   private configCache: ConfigProvider | null = null;
   private cacheTimestamp = 0;
   private readonly CACHE_TTL = 5000; // 5秒缓存
+  private configUpdateCallbacks: Array<() => void> = [];
 
   constructor() {
     this.configPath = this.getConfigPath();
@@ -59,9 +60,26 @@ export class ConfigManager {
     this.cacheTimestamp = 0;
   }
 
+  // 添加配置更新监听器
+  onConfigUpdate(callback: () => void): void {
+    this.configUpdateCallbacks.push(callback);
+  }
+
+  // 通知所有监听器配置已更新
+  private notifyConfigUpdate(): void {
+    this.configUpdateCallbacks.forEach(callback => {
+      try {
+        callback();
+      } catch (error) {
+        console.error("配置更新回调执行失败:", error);
+      }
+    });
+  }
+
   getLatestConfigWithDefaults(defaultConfig: Partial<ConfigProvider> = {}): ConfigProvider {
     try {
-      const config = this.loadConfigFromDisk();
+      // 使用缓存机制获取配置
+      const config = this.getLatestConfig();
       
       const fullDefaultConfig: ConfigProvider = {
         apiUrl: "https://api.openai.com/v1",
@@ -118,8 +136,9 @@ export class ConfigManager {
       fs.writeFileSync(this.configPath, JSON.stringify(configData, null, 2), "utf8");
       console.log("配置保存成功:", this.configPath);
       
-      // 保存后清除缓存
+      // 保存后清除缓存并通知更新
       this.invalidateCache();
+      this.notifyConfigUpdate();
 
       if (applyHotkeysCallback) {
         try {

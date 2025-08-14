@@ -11,7 +11,7 @@ interface ConfigState {
 
 // 定义 Store 的 actions
 interface ConfigActions {
-  fetchConfig: () => Promise<void>;
+  fetchConfig: (force?: boolean) => Promise<void>;
   setConfig: (newConfig: Partial<SettingsFormData>) => void;
   saveConfig: () => Promise<boolean>;
   resetConfig: () => void;
@@ -41,9 +41,10 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
   isSaving: false,
 
   // Action: 从主进程异步获取配置
-  fetchConfig: async () => {
-    // 防止重复获取
-    if (!get().isLoading && get().config.apiKey) return;
+  fetchConfig: async (force = false) => {
+    console.log("fetchConfig", force);
+    // 防止重复获取，除非强制刷新
+    if (!force && !get().isLoading && get().config.apiKey) return;
 
     set({ isLoading: true, error: null });
     try {
@@ -80,12 +81,21 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     set({ isSaving: true });
     try {
       const currentConfig = get().config;
+      console.log('[ConfigStore] 开始保存配置:', currentConfig);
       const result = await window.electronAPI.saveConfig(currentConfig);
+      console.log('[ConfigStore] 保存结果:', result);
+      
       if (result.success) {
+        // 保存成功后，强制重新获取最新配置以确保同步
+        console.log('[ConfigStore] 配置保存成功，重新获取最新配置');
+        await get().fetchConfig(true);
         return true;
+      } else {
+        console.error('[ConfigStore] 配置保存失败:', result.error);
+        return false;
       }
-      return false;
     } catch (error) {
+      console.error('[ConfigStore] 保存配置异常:', error);
       return false;
     } finally {
       set({ isSaving: false });

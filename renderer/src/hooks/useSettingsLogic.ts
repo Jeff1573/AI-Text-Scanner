@@ -90,8 +90,15 @@ export const useSettingsLogic = () => {
     clearErrors();
 
     try {
-      // 首先保存当前配置以便验证
-      await setGlobalConfig(formData);
+      // 首先更新本地状态
+      setGlobalConfig(formData);
+      
+      // 保存配置到磁盘以便验证
+      const saveResult = await window.electronAPI.saveConfig(formData);
+      if (!saveResult.success) {
+        setFieldError('apiKey', saveResult.error || '保存配置失败，无法验证');
+        return false;
+      }
       
       // API验证直接使用主进程的最新配置
       const result = await window.electronAPI.validateOpenAIConfig();
@@ -147,8 +154,15 @@ export const useSettingsLogic = () => {
     
     setIsSaving(true);
     try {
-      // 先保存基本配置
-      await setGlobalConfig(formData);
+      // 先更新本地状态
+      setGlobalConfig(formData);
+      
+      // 保存配置到磁盘
+      const saveResult = await window.electronAPI.saveConfig(formData);
+      if (!saveResult.success) {
+        setFieldError('apiUrl', saveResult.error || '保存失败');
+        return false;
+      }
       
       // 如果开机自启设置发生变化，需要单独处理
       const currentConfig = await window.electronAPI.getConfig();

@@ -1,4 +1,4 @@
-import { Tray, Menu, nativeImage, clipboard } from "electron";
+import { Tray, Menu, nativeImage, clipboard, app } from "electron";
 import path from "node:path";
 import type { WindowManager } from "./windowManager";
 import type { ConfigManager } from "./configManager";
@@ -104,7 +104,6 @@ export class TrayManager {
       {
         label: "退出",
         click: () => {
-          const { app } = require("electron");
           app.quit();
         },
       },

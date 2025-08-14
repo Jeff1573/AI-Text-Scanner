@@ -47,6 +47,12 @@ const initializeManagers = () => {
     return result;
   });
   ipcHandlers.registerAllHandlers();
+
+  // 设置配置更新监听器，确保配置变更时其他模块能及时更新
+  configManager.onConfigUpdate(() => {
+    console.log('[Main] 配置已更新，通知相关模块');
+    // 这里可以添加其他需要在配置更新时执行的逻辑
+  });
 };
 
 // 应用就绪时的初始化

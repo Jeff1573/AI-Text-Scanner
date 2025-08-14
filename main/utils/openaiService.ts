@@ -222,7 +222,7 @@ export async function translateText(
       baseURL: config.apiUrl,
     });
 
-    const system_prompt = `你是一个多语言翻译机器人。用户会指定要翻译成什么语言，或者让你直接翻译。如果用户没有指定目标语言，就默认翻译成中文。只返回翻译结果。如果无法翻译或用户传入为空则返回原文。`;
+    const system_prompt = `你是一个多语言翻译机器人。用户会指定要翻译成什么语言，或者让你直接翻译。1.如果用户没有指定目标语言，就默认翻译成中文。2.只返回翻译结果。如果无法翻译或用户传入为空则返回原文。3.不翻译标点符号、遇到驼峰命法需要拆开翻译。`;
 
     console.log(`translate request`, request.text);
     const response = await openai.chat.completions.create({
