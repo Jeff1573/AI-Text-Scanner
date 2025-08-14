@@ -1,4 +1,5 @@
 import { useSettingsLogic } from "../hooks/useSettingsLogic";
+import { useState } from "react";
 import {
   Collapse,
   Form,
@@ -35,6 +36,9 @@ export const SettingsPage = () => {
     handleResetSettings,
     validateApiConfig,
   } = useSettingsLogic();
+
+  // 焦点状态管理
+  const [focusedHotkey, setFocusedHotkey] = useState<string | null>(null);
 
   // 使用 Hook 方式获取 message API
   const [messageApi, contextHolder] = message.useMessage();
@@ -144,7 +148,18 @@ export const SettingsPage = () => {
     
     if (accelerator) {
       handleInputChange(field, accelerator);
+      // 设置完快捷键后移除焦点状态
+      setFocusedHotkey(null);
     }
+  };
+
+  // 处理输入框焦点
+  const handleHotkeyFocus = (field: "resultHotkey" | "screenshotHotkey") => {
+    setFocusedHotkey(field);
+  };
+
+  const handleHotkeyBlur = () => {
+    setFocusedHotkey(null);
   };
 
   const items: CollapseProps["items"] = [
@@ -236,20 +251,62 @@ export const SettingsPage = () => {
       label: "快捷键设置",
       children: (
         <Form layout="vertical" style={{ padding: '16px 0' }}>
-          <Form.Item label="打开结果窗口快捷键" validateStatus={errors.resultHotkey ? 'error' : ''} help={errors.resultHotkey}>
+          <Form.Item 
+            label="打开结果窗口快捷键" 
+            validateStatus={errors.resultHotkey ? 'error' : ''} 
+            help={errors.resultHotkey}
+            extra={
+              <div style={{ fontSize: 12, color: focusedHotkey === 'resultHotkey' ? '#1890ff' : '#666', marginTop: 4 }}>
+                {focusedHotkey === 'resultHotkey' 
+                  ? '🎯 已选中，请按下组合键...' 
+                  : '点击输入框并按下组合键来设置快捷键，例如：Ctrl+Alt+R'
+                }
+              </div>
+            }
+          >
             <Input
               value={formData.resultHotkey}
               onKeyDown={(e) => handleHotkeyKeyDown(e, 'resultHotkey')}
+              onFocus={() => handleHotkeyFocus('resultHotkey')}
+              onBlur={handleHotkeyBlur}
+              placeholder="点击此处并按下组合键"
               size="large"
               readOnly
+              style={{ 
+                cursor: 'pointer',
+                borderColor: focusedHotkey === 'resultHotkey' ? '#1890ff' : undefined,
+                boxShadow: focusedHotkey === 'resultHotkey' ? '0 0 0 2px rgba(24, 144, 255, 0.2)' : undefined,
+                backgroundColor: focusedHotkey === 'resultHotkey' ? '#f6ffed' : undefined
+              }}
             />
           </Form.Item>
-          <Form.Item label="截图识别快捷键" validateStatus={errors.screenshotHotkey ? 'error' : ''} help={errors.screenshotHotkey}>
+          <Form.Item 
+            label="截图识别快捷键" 
+            validateStatus={errors.screenshotHotkey ? 'error' : ''} 
+            help={errors.screenshotHotkey}
+            extra={
+              <div style={{ fontSize: 12, color: focusedHotkey === 'screenshotHotkey' ? '#1890ff' : '#666', marginTop: 4 }}>
+                {focusedHotkey === 'screenshotHotkey' 
+                  ? '🎯 已选中，请按下组合键...' 
+                  : '点击输入框并按下组合键来设置快捷键，例如：Ctrl+Alt+S'
+                }
+              </div>
+            }
+          >
             <Input
               value={formData.screenshotHotkey}
               onKeyDown={(e) => handleHotkeyKeyDown(e, 'screenshotHotkey')}
+              onFocus={() => handleHotkeyFocus('screenshotHotkey')}
+              onBlur={handleHotkeyBlur}
+              placeholder="点击此处并按下组合键"
               size="large"
               readOnly
+              style={{ 
+                cursor: 'pointer',
+                borderColor: focusedHotkey === 'screenshotHotkey' ? '#1890ff' : undefined,
+                boxShadow: focusedHotkey === 'screenshotHotkey' ? '0 0 0 2px rgba(24, 144, 255, 0.2)' : undefined,
+                backgroundColor: focusedHotkey === 'screenshotHotkey' ? '#f6ffed' : undefined
+              }}
             />
           </Form.Item>
         </Form>
