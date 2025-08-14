@@ -47,17 +47,24 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
+      console.log('[ConfigStore] 开始获取配置...');
       const result = await window.electronAPI.getLatestConfig(true);
+      console.log('[ConfigStore] 获取配置结果:', result);
+      
       if (result.success && result.config) {
-        set({ config: result.config as SettingsFormData, isLoading: false });
+        // 确保配置包含所有必需字段
+        const configWithDefaults = { ...defaultConfig, ...result.config };
+        console.log('[ConfigStore] 设置配置:', configWithDefaults);
+        set({ config: configWithDefaults as SettingsFormData, isLoading: false });
       } else {
         // 如果失败，也使用默认值，并标记加载完成
+        console.warn('[ConfigStore] 配置获取失败，使用默认配置:', result.error);
         set({ config: { ...defaultConfig }, isLoading: false, error: result.error || '未能加载配置' });
       }
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
+      console.error('[ConfigStore] 获取配置异常:', error);
       set({ error, isLoading: false, config: { ...defaultConfig } });
-      console.error('获取配置失败:', error);
     }
   },
 

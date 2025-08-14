@@ -23,47 +23,72 @@ export class WindowManager {
   }
 
   createMainWindow(): BrowserWindow | null {
-    const iconPath = path.join(__dirname, "./static/icons8-camera-256.ico");
-    
-    this.mainWindow = new BrowserWindow({
-      width: 800,
-      height: 600,
-      frame: false,
-      titleBarStyle: "hidden",
-      autoHideMenuBar: true,
-      webPreferences: {
-        preload: path.join(__dirname, "./preload.js"),
-        nodeIntegration: false,
-        contextIsolation: true,
-      },
-      icon: iconPath,
-    });
-    
-    console.log('main window iconPath', path.join(__dirname, "./preload.js"));
+    try {
+      console.log('[WindowManager] 开始创建主窗口...');
+      
+      const iconPath = path.join(__dirname, "./static/icons8-camera-256.ico");
+      console.log('[WindowManager] 图标路径:', iconPath);
+      
+      this.mainWindow = new BrowserWindow({
+        width: 800,
+        height: 600,
+        frame: false,
+        titleBarStyle: "hidden",
+        autoHideMenuBar: true,
+        webPreferences: {
+          preload: path.join(__dirname, "./preload.js"),
+          nodeIntegration: false,
+          contextIsolation: true,
+        },
+        icon: iconPath,
+      });
+      
+      console.log('[WindowManager] 主窗口创建成功，preload路径:', path.join(__dirname, "./preload.js"));
 
-    session.defaultSession.setDisplayMediaRequestHandler(
-      (request, callback) => {
-        desktopCapturer.getSources({ types: ["screen"] }).then((sources) => {
-          callback({ video: sources[0] });
-        });
-      },
-      { useSystemPicker: true }
-    );
-
-    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-      this.mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
-    } else {
-      this.mainWindow.loadFile(path.join(__dirname, `../renderer/index.html`));
-    }
-
-    this.mainWindow.webContents.on("before-input-event", (event, input) => {
-      if (input.key === "F12") {
-        event.preventDefault();
-        this.mainWindow?.webContents.openDevTools();
+      // 设置显示媒体请求处理器
+      try {
+        session.defaultSession.setDisplayMediaRequestHandler(
+          (request, callback) => {
+            desktopCapturer.getSources({ types: ["screen"] }).then((sources) => {
+              callback({ video: sources[0] });
+            });
+          },
+          { useSystemPicker: true }
+        );
+        console.log('[WindowManager] 显示媒体请求处理器设置成功');
+      } catch (mediaError) {
+        console.warn('[WindowManager] 显示媒体请求处理器设置失败:', mediaError);
       }
-    });
 
-    return this.mainWindow;
+      // 加载页面
+      try {
+        if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+          console.log('[WindowManager] 加载开发服务器URL:', MAIN_WINDOW_VITE_DEV_SERVER_URL);
+          this.mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+        } else {
+          const htmlPath = path.join(__dirname, `../renderer/index.html`);
+          console.log('[WindowManager] 加载HTML文件:', htmlPath);
+          this.mainWindow.loadFile(htmlPath);
+        }
+      } catch (loadError) {
+        console.error('[WindowManager] 页面加载失败:', loadError);
+        throw loadError;
+      }
+
+      // 设置开发者工具快捷键
+      this.mainWindow.webContents.on("before-input-event", (event, input) => {
+        if (input.key === "F12") {
+          event.preventDefault();
+          this.mainWindow?.webContents.openDevTools();
+        }
+      });
+
+      console.log('[WindowManager] 主窗口创建完成');
+      return this.mainWindow;
+    } catch (error) {
+      console.error('[WindowManager] 创建主窗口失败:', error);
+      throw error;
+    }
   }
 
   ensureScreenshotWindow(): BrowserWindow {

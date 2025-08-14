@@ -18,6 +18,8 @@ export interface ConfigProvider {
   // 新增：全局快捷键配置
   resultHotkey: string; // 打开结果窗口快捷键
   screenshotHotkey: string; // 截图识别快捷键
+  // 新增：开机自启配置
+  autoLaunch: boolean;
 }
 
 // 配置接口

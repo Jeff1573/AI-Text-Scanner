@@ -51,20 +51,42 @@ const initializeManagers = () => {
 
 // 应用就绪时的初始化
 app.on("ready", () => {
-  // 初始化管理器
-  initializeManagers();
+  try {
+    console.log('[Main] 应用启动，开始初始化...');
+    
+    // 初始化管理器
+    initializeManagers();
+    console.log('[Main] 管理器初始化完成');
 
-  // 创建主窗口
-  windowManager.createMainWindow();
+    // 创建主窗口
+    windowManager.createMainWindow();
+    console.log('[Main] 主窗口创建完成');
 
-  // 创建系统托盘
-  trayManager.createTray();
+    // 创建系统托盘
+    trayManager.createTray();
+    console.log('[Main] 系统托盘创建完成');
 
-  // 预热截图窗口
-  windowManager.ensureScreenshotWindow();
+    // 预热截图窗口
+    windowManager.ensureScreenshotWindow();
+    console.log('[Main] 截图窗口预热完成');
 
-  // 注册全局快捷键
-  hotkeyManager.applyHotkeysFromConfig();
+    // 注册全局快捷键
+    hotkeyManager.applyHotkeysFromConfig();
+    console.log('[Main] 全局快捷键注册完成');
+    
+    console.log('[Main] 应用初始化完成');
+  } catch (error) {
+    console.error('[Main] 应用初始化失败:', error);
+    // 即使初始化失败，也不要退出应用，而是尝试基本功能
+    try {
+      if (!windowManager) {
+        windowManager = new WindowManager();
+      }
+      windowManager.createMainWindow();
+    } catch (fallbackError) {
+      console.error('[Main] 备用初始化也失败:', fallbackError);
+    }
+  }
 });
 
 // 当所有窗口关闭时，不退出应用，而是隐藏到托盘

@@ -72,6 +72,7 @@ export class ConfigManager {
         targetLang: "zh",
         resultHotkey: "CommandOrControl+Shift+T",
         screenshotHotkey: "CommandOrControl+Shift+S",
+        autoLaunch: false,
         ...defaultConfig
       };
       
@@ -96,6 +97,7 @@ export class ConfigManager {
         targetLang: "zh",
         resultHotkey: "CommandOrControl+Shift+T",
         screenshotHotkey: "CommandOrControl+Shift+S",
+        autoLaunch: false,
         ...defaultConfig
       };
     }
