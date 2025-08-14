@@ -146,29 +146,29 @@ export const ScreenshotViewer = () => {
   if (!screenshotData) {
     return <NoDataState />;
   }
-  if (isAnalyzing) {
-    return (
-      <div className="screenshot-viewer">
-        <div className="analysis-loading-overlay">
-          <div className="analysis-loading-content">
-            <div className="loading-spinner"></div>
-            <h3>正在识别中...</h3>
-            <p>请稍候，AI正在分析您选择的区域</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
   return (
     <div className="screenshot-viewer">
-      <ScreenshotContent
-        screenshotData={screenshotData}
-        showSelector={showSelector}
-        selection={selection}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-      />
+      <div className="screenshot-stage">
+        <ScreenshotContent
+          screenshotData={screenshotData}
+          showSelector={showSelector}
+          selection={selection}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+        />
+
+        {isAnalyzing && (
+          <>
+            <div className="stage-dim"></div>
+            <div className="analysis-inline-overlay">
+              <div className="loading-spinner"></div>
+              <h3>正在识别中...</h3>
+              <p>请稍候，AI正在分析您选择的区域</p>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }; 

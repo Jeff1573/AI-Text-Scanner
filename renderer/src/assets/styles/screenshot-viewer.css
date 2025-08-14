@@ -5,7 +5,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: #000;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   z-index: 9999;
@@ -191,3 +191,58 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 } 
+
+/* 舞台容器，承载图片与内联加载层 */
+.screenshot-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* 轻度变暗层，仅覆盖图片区域容器 */
+.stage-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+  z-index: 9000;
+}
+
+/* 内联加载提示卡片 */
+.analysis-inline-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9001;
+  background: rgba(22, 22, 24, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  border-radius: 12px;
+  padding: 20px 24px;
+  width: 320px;
+  text-align: center;
+  color: #fff;
+}
+
+.analysis-inline-overlay h3 {
+  margin: 12px 0 6px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.analysis-inline-overlay p {
+  margin: 0;
+  font-size: 13px;
+  color: #c8c8c8;
+}
+
+.analysis-inline-overlay .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 10px auto;
+}
