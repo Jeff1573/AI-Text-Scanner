@@ -21,6 +21,8 @@ interface SettingsConfig {
   // 新增：全局快捷键配置
   resultHotkey: string;
   screenshotHotkey: string;
+  // 新增：开机自启配置
+  autoLaunch: boolean;
 }
 
 interface ImageAnalysisRequest {
@@ -75,6 +77,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // 获取最新配置
   getLatestConfig: (withDefaults = false) => ipcRenderer.invoke('get-latest-config', withDefaults),
+  
+  // 获取配置（兼容性API）
+  getConfig: () => ipcRenderer.invoke('load-config'),
   
   // 分析图片 - OpenAI
   analyzeImageOpenAI: (request: ImageAnalysisRequest) => 
@@ -166,4 +171,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 开机自启动 API
   getLoginItemSettings: () => ipcRenderer.invoke('get-login-item-settings'),
   setLoginItemSettings: (enable: boolean) => ipcRenderer.invoke('set-login-item-settings', enable),
+  validateAutoLaunch: () => ipcRenderer.invoke('validate-auto-launch'),
+  getAutoLaunchDiagnostics: () => ipcRenderer.invoke('get-auto-launch-diagnostics'),
 });

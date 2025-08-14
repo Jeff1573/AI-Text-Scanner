@@ -147,7 +147,31 @@ export const useSettingsLogic = () => {
     
     setIsSaving(true);
     try {
+      // 先保存基本配置
       await setGlobalConfig(formData);
+      
+      // 如果开机自启设置发生变化，需要单独处理
+      const currentConfig = await window.electronAPI.getConfig();
+      if (currentConfig.success && currentConfig.config?.autoLaunch !== formData.autoLaunch) {
+        console.log(`[Settings] 开机自启设置变化: ${currentConfig.config?.autoLaunch} -> ${formData.autoLaunch}`);
+        
+        try {
+          const autoLaunchResult = await window.electronAPI.setLoginItemSettings(formData.autoLaunch);
+          if (!autoLaunchResult.success || !autoLaunchResult.verified) {
+            const errorMsg = autoLaunchResult.error || '开机自启设置失败';
+            console.error(`[Settings] 开机自启设置失败:`, errorMsg);
+            setFieldError('autoLaunch', errorMsg);
+            return false;
+          }
+          console.log(`[Settings] 开机自启设置成功: ${formData.autoLaunch}`);
+        } catch (autoLaunchError) {
+          const errorMsg = autoLaunchError instanceof Error ? autoLaunchError.message : '开机自启设置异常';
+          console.error(`[Settings] 开机自启设置异常:`, autoLaunchError);
+          setFieldError('autoLaunch', errorMsg);
+          return false;
+        }
+      }
+      
       return true;
     } catch (error) {
       setFieldError('apiUrl', '保存失败，请重试');

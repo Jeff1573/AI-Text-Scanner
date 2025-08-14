@@ -63,12 +63,12 @@ export interface ElectronAPI {
   }>;
   getLatestConfig: (withDefaults?: boolean) => Promise<{
     success: boolean;
-    config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string } | null;
+    config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string; autoLaunch: boolean } | null;
     error?: string;
   }>;
-  getLatestConfigWithDefaults: (withDefaults?: boolean) => Promise<{
+  getConfig: () => Promise<{
     success: boolean;
-    config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string } | null;
+    config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string; autoLaunch: boolean } | null;
     error?: string;
   }>;
   analyzeImageOpenAI: (request: ImageAnalysisRequest) => Promise<OpenAIResponse>;
@@ -95,8 +95,10 @@ export interface ElectronAPI {
   onOpenSettingsPage: (callback: () => void) => void;
   removeOpenSettingsPageListener: () => void;
   // 开机自启动
-  getLoginItemSettings: () => Promise<{ success: boolean; openAtLogin?: boolean; error?: string }>;
-  setLoginItemSettings: (enable: boolean) => Promise<{ success: boolean; openAtLogin?: boolean; error?: string }>;
+  getLoginItemSettings: () => Promise<{ success: boolean; openAtLogin?: boolean; strategy?: string; path?: string; error?: string }>;
+  setLoginItemSettings: (enable: boolean) => Promise<{ success: boolean; openAtLogin?: boolean; strategy?: string; path?: string; verified?: boolean; error?: string }>;
+  validateAutoLaunch: () => Promise<{ success: boolean; isValid?: boolean; strategy?: string; path?: string; error?: string }>;
+  getAutoLaunchDiagnostics: () => Promise<{ success: boolean; report?: string; error?: string }>;
 }
 
 declare global {

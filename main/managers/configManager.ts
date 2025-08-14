@@ -6,7 +6,7 @@ import type { ConfigProvider, Config, SaveResult } from "../types";
 export class ConfigManager {
   private configPath: string;
   private configCache: ConfigProvider | null = null;
-  private cacheTimestamp: number = 0;
+  private cacheTimestamp = 0;
   private readonly CACHE_TTL = 5000; // 5秒缓存
 
   constructor() {

@@ -11,6 +11,7 @@ import {
   type ImageAnalysisRequest,
   type TranslateRequest,
 } from "../utils/openaiService";
+import { validateAutoLaunchStatus, getAutoLaunchDiagnostics } from "../utils/autoLaunchValidator";
 
 export class IPCHandlers {
   constructor(private configManager: ConfigManager) {}
@@ -157,45 +158,236 @@ export class IPCHandlers {
   private registerSystemHandlers(): void {
     ipcMain.handle('get-login-item-settings', async () => {
       try {
-        let options: any = undefined;
+        console.log(`[AutoLaunch] 获取开机自启状态`);
+        console.log(`[AutoLaunch] 当前执行路径: ${process.execPath}`);
+
         if (process.platform === 'win32') {
           const appFolder = path.dirname(process.execPath);
-          const updateExe = path.resolve(appFolder, '..', 'Update.exe');
-          if (fs.existsSync(updateExe)) {
-            const exeName = path.basename(process.execPath);
-            options = { 
-              path: updateExe, 
-              args: ['--processStart', `"${exeName}"`] 
-            };
+          const exeName = path.basename(process.execPath);
+          console.log(`[AutoLaunch] 应用目录: ${appFolder}`);
+          console.log(`[AutoLaunch] 可执行文件名: ${exeName}`);
+
+          // 改进的路径检测策略，优先使用 Squirrel 方式
+          const pathStrategies = [
+            // 策略1: Squirrel Update.exe 方式 (推荐用于打包应用)
+            {
+              name: 'Squirrel Update.exe',
+              path: path.resolve(appFolder, '..', 'Update.exe'),
+              args: ['--processStart', exeName]
+            },
+            // 策略2: Squirrel 标准启动器
+            {
+              name: 'Squirrel Standard',
+              path: path.resolve(appFolder, '..', exeName),
+              args: undefined
+            },
+            // 策略3: 直接使用当前可执行文件 (开发环境)
+            {
+              name: 'Direct Executable',
+              path: process.execPath,
+              args: undefined
+            }
+          ];
+
+          let detectedSettings = null;
+          let activeStrategy = null;
+
+          // 检测所有策略的状态
+          for (const strategy of pathStrategies) {
+            console.log(`[AutoLaunch] 检查策略: ${strategy.name}, 路径: ${strategy.path}`);
+            if (fs.existsSync(strategy.path)) {
+              const options: any = { path: strategy.path };
+              if (strategy.args) {
+                options.args = strategy.args;
+              }
+              
+              const settings = app.getLoginItemSettings(options);
+              console.log(`[AutoLaunch] 策略 ${strategy.name} 状态:`, settings);
+              
+              if (settings.openAtLogin && !detectedSettings) {
+                detectedSettings = settings;
+                activeStrategy = strategy;
+                console.log(`[AutoLaunch] 找到活跃策略: ${strategy.name}`);
+                break; // 找到第一个活跃的策略就停止
+              }
+            } else {
+              console.log(`[AutoLaunch] 策略 ${strategy.name} 路径不存在`);
+            }
           }
+
+          // 如果没有检测到活跃的设置，使用第一个可用策略检查
+          if (!detectedSettings) {
+            console.log(`[AutoLaunch] 未找到活跃策略，使用第一个可用策略`);
+            const firstAvailable = pathStrategies.find(s => fs.existsSync(s.path));
+            if (firstAvailable) {
+              const options: any = { path: firstAvailable.path };
+              if (firstAvailable.args) {
+                options.args = firstAvailable.args;
+              }
+              detectedSettings = app.getLoginItemSettings(options);
+              activeStrategy = firstAvailable;
+              console.log(`[AutoLaunch] 使用策略: ${firstAvailable.name}`);
+            }
+          }
+
+          const result = { 
+            success: true, 
+            openAtLogin: detectedSettings?.openAtLogin || false,
+            strategy: activeStrategy?.name || 'None',
+            path: activeStrategy?.path || '',
+            raw: detectedSettings 
+          };
+          
+          console.log(`[AutoLaunch] 最终结果:`, result);
+          return result;
+        } else {
+          // 非 Windows 平台
+          const settings = app.getLoginItemSettings();
+          return { success: true, openAtLogin: settings.openAtLogin, raw: settings };
         }
-        const settings = app.getLoginItemSettings(options);
-        return { success: true, openAtLogin: settings.openAtLogin, raw: settings };
       } catch (error: any) {
+        console.error(`[AutoLaunch] 获取状态失败:`, error);
         return { success: false, error: error?.message || String(error) };
       }
     });
 
     ipcMain.handle('set-login-item-settings', async (_event, enable: boolean) => {
       try {
+        console.log(`[AutoLaunch] 设置开机自启: ${enable}`);
+        console.log(`[AutoLaunch] 当前执行路径: ${process.execPath}`);
+        console.log(`[AutoLaunch] 平台: ${process.platform}`);
+
         if (process.platform === 'win32') {
           const appFolder = path.dirname(process.execPath);
-          const updateExe = path.resolve(appFolder, '..', 'Update.exe');
           const exeName = path.basename(process.execPath);
-          if (fs.existsSync(updateExe)) {
-            app.setLoginItemSettings({
-              openAtLogin: enable,
-              path: updateExe,
-              args: ['--processStart', `"${exeName}"`],
-            });
-          } else {
-            app.setLoginItemSettings({ openAtLogin: enable, enabled: enable });
+          console.log(`[AutoLaunch] 应用目录: ${appFolder}`);
+          console.log(`[AutoLaunch] 可执行文件名: ${exeName}`);
+
+          // 改进的路径检测策略，优先使用 Squirrel Update.exe 方式
+          const pathStrategies = [
+            // 策略1: Squirrel Update.exe 方式 (推荐用于打包应用)
+            {
+              name: 'Squirrel Update.exe',
+              path: path.resolve(appFolder, '..', 'Update.exe'),
+              args: ['--processStart', exeName]
+            },
+            // 策略2: Squirrel 标准启动器
+            {
+              name: 'Squirrel Standard',
+              path: path.resolve(appFolder, '..', exeName),
+              args: undefined
+            },
+            // 策略3: 直接使用当前可执行文件 (开发环境)
+            {
+              name: 'Direct Executable',
+              path: process.execPath,
+              args: undefined
+            }
+          ];
+
+          let selectedStrategy = null;
+          
+          // 按优先级检测可用策略
+          for (const strategy of pathStrategies) {
+            console.log(`[AutoLaunch] 检测策略: ${strategy.name}, 路径: ${strategy.path}`);
+            if (fs.existsSync(strategy.path)) {
+              selectedStrategy = strategy;
+              console.log(`[AutoLaunch] 选择策略: ${strategy.name}`);
+              break;
+            }
           }
+
+          if (!selectedStrategy) {
+            throw new Error('无法找到有效的应用启动路径');
+          }
+
+          // 如果要禁用开机自启，先清除所有可能的设置
+          if (!enable) {
+            console.log(`[AutoLaunch] 禁用开机自启，清除所有策略的设置`);
+            for (const strategy of pathStrategies) {
+              if (fs.existsSync(strategy.path)) {
+                const clearOptions: any = {
+                  openAtLogin: false,
+                  path: strategy.path
+                };
+                if (strategy.args) {
+                  clearOptions.args = strategy.args;
+                }
+                app.setLoginItemSettings(clearOptions);
+                console.log(`[AutoLaunch] 清除策略: ${strategy.name}`);
+              }
+            }
+          }
+
+          // 设置开机自启
+          const loginSettings: any = {
+            openAtLogin: enable,
+            path: selectedStrategy.path
+          };
+          
+          if (selectedStrategy.args) {
+            loginSettings.args = selectedStrategy.args;
+          }
+
+          console.log(`[AutoLaunch] 设置参数:`, loginSettings);
+          app.setLoginItemSettings(loginSettings);
+
+          // 验证设置结果
+          const confirmOptions: any = {
+            path: selectedStrategy.path
+          };
+          if (selectedStrategy.args) {
+            confirmOptions.args = selectedStrategy.args;
+          }
+
+          const confirmed = app.getLoginItemSettings(confirmOptions);
+          console.log(`[AutoLaunch] 验证结果:`, confirmed);
+
+          // 额外验证：检查是否真的设置成功
+          const isActuallySet = confirmed.openAtLogin === enable;
+          if (!isActuallySet) {
+            console.warn(`[AutoLaunch] 设置验证失败: 期望=${enable}, 实际=${confirmed.openAtLogin}`);
+          }
+
+          return { 
+            success: isActuallySet, 
+            openAtLogin: confirmed.openAtLogin,
+            strategy: selectedStrategy.name,
+            path: selectedStrategy.path,
+            verified: isActuallySet
+          };
         } else {
+          // 非 Windows 平台
           app.setLoginItemSettings({ openAtLogin: enable });
+          const confirmed = app.getLoginItemSettings();
+          const isActuallySet = confirmed.openAtLogin === enable;
+          return { 
+            success: isActuallySet, 
+            openAtLogin: confirmed.openAtLogin,
+            verified: isActuallySet
+          };
         }
-        const confirmed = app.getLoginItemSettings();
-        return { success: true, openAtLogin: confirmed.openAtLogin };
+      } catch (error: any) {
+        console.error(`[AutoLaunch] 设置失败:`, error);
+        return { success: false, error: error?.message || String(error) };
+      }
+    });
+
+    // 开机自启验证工具
+    ipcMain.handle('validate-auto-launch', async () => {
+      try {
+        const result = await validateAutoLaunchStatus();
+        return { success: true, ...result };
+      } catch (error: any) {
+        return { success: false, error: error?.message || String(error) };
+      }
+    });
+
+    // 开机自启诊断报告
+    ipcMain.handle('get-auto-launch-diagnostics', async () => {
+      try {
+        const report = await getAutoLaunchDiagnostics();
+        return { success: true, report };
       } catch (error: any) {
         return { success: false, error: error?.message || String(error) };
       }
