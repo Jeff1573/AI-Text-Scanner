@@ -2,6 +2,9 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 import { contextBridge, ipcRenderer } from 'electron';
+import { createModuleLogger } from './utils/logger';
+
+const logger = createModuleLogger('Preload');
 
 // 类型定义
 
@@ -42,12 +45,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // 监听截图数据
   onScreenshotData: (callback: (data: { id: string; name: string; thumbnail: string }) => void) => {
-    console.log('注册截图数据监听器');
+    logger.debug('注册截图数据监听器');
     ipcRenderer.on('screenshot-data', (event, data) => {
       try {
         callback(data);
       } catch (error) {
-        console.error('回调函数执行失败:', error);
+        logger.error('回调函数执行失败', { error });
       }
     });
   },
@@ -115,7 +118,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       try {
         callback();
       } catch (error) {
-        console.error('打开ResultPage回调函数执行失败:', error);
+        logger.error('打开ResultPage回调函数执行失败', { error });
       }
     });
   },
@@ -131,7 +134,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       try {
         callback(data);
       } catch (error) {
-        console.error('打开ScreenshotViewer回调函数执行失败:', error);
+        logger.error('打开ScreenshotViewer回调函数执行失败', { error });
       }
     });
   },
@@ -152,7 +155,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       try {
         callback();
       } catch (error) {
-        console.error('打开设置页面回调函数执行失败:', error);
+        logger.error('打开设置页面回调函数执行失败', { error });
       }
     });
   },

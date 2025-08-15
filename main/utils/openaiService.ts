@@ -1,4 +1,7 @@
 import OpenAI, { APIError, APIConnectionError, RateLimitError } from "openai";
+import { createModuleLogger } from "./logger";
+
+const logger = createModuleLogger('OpenAIService');
 
 // OpenAI API响应接口
 export interface OpenAIResponse {
@@ -76,7 +79,7 @@ export async function analyzeImageWithOpenAI(
     *   返回的应该是图片中的内容不要有其他内容，不要添加额外的说明，直接按照原图格式来即可。
     *   背景尽量美化，整体要协调，但是结构要和原图内一致。
 `;
-    console.log("发送OpenAI API请求:", {
+    logger.info("发送OpenAI API请求", {
       url: config.apiUrl,
       model: config.customModel || config.model,
       prompt: request.prompt,
@@ -110,7 +113,7 @@ export async function analyzeImageWithOpenAI(
     // 发送请求
     const response = await openai.chat.completions.create(requestBody);
 
-    console.log("OpenAI API响应成功:", {
+    logger.info("OpenAI API响应成功", {
       content: response.choices[0].message.content,
       usage: response.usage,
     });
@@ -120,7 +123,7 @@ export async function analyzeImageWithOpenAI(
       usage: response.usage,
     };
   } catch (error) {
-    console.error("OpenAI API调用异常:", error);
+    logger.error("OpenAI API调用异常", { error });
 
     // 处理不同类型的错误
     if (error instanceof APIError) {
@@ -179,7 +182,7 @@ export async function validateOpenAIConfig(
     await openai.models.list();
     return true;
   } catch (error) {
-    console.error("OpenAI API配置验证失败:", error);
+    logger.error("OpenAI API配置验证失败", { error });
     return false;
   }
 }
@@ -213,7 +216,7 @@ export async function getAvailableOpenAIModels(
       )
       .map((model) => model.id);
   } catch (error) {
-    console.error("获取OpenAI模型列表失败:", error);
+    logger.error("获取OpenAI模型列表失败", { error });
     return [];
   }
 }
@@ -283,7 +286,7 @@ export async function translateText(
 
 现在，请以“高级智能翻译引擎”的身份开始工作。
 `;
-    console.log(`translate request`, request.text);
+    logger.info("翻译请求", { text: request.text });
     const response = await openai.chat.completions.create({
       model: config.customModel || config.model,
       messages: [
@@ -299,7 +302,7 @@ export async function translateText(
       content: response.choices[0].message.content || "",
     };
   } catch (error) {
-    console.error("OpenAI翻译API调用异常:", error);
+    logger.error("OpenAI翻译API调用异常", { error });
     return {
       content: "",
       error: error instanceof Error ? error.message : "未知错误",

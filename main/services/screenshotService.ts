@@ -1,5 +1,8 @@
 import { desktopCapturer, screen } from "electron";
 import type { ScreenSource } from "../types";
+import { createModuleLogger } from "../utils/logger";
+
+const logger = createModuleLogger('ScreenshotService');
 
 export class ScreenshotService {
   /**
@@ -26,9 +29,11 @@ export class ScreenshotService {
     
     // 开发环境下的调试日志
     if (process.env.NODE_ENV === 'development') {
-      console.log(`屏幕分辨率: ${screenWidth}x${screenHeight}`);
-      console.log(`计算缩略图尺寸: ${thumbnailSize.width}x${thumbnailSize.height}`);
-      console.log(`缩放比例: ${scale.toFixed(3)}`);
+      logger.debug("屏幕信息", {
+        screenResolution: `${screenWidth}x${screenHeight}`,
+        thumbnailSize: `${thumbnailSize.width}x${thumbnailSize.height}`,
+        scale: scale.toFixed(3)
+      });
     }
     
     return thumbnailSize;

@@ -12,6 +12,9 @@ import {
   type TranslateRequest,
 } from "../utils/openaiService";
 import { validateAutoLaunchStatus, getAutoLaunchDiagnostics } from "../utils/autoLaunchValidator";
+import { createModuleLogger } from "../utils/logger";
+
+const logger = createModuleLogger('IPCHandlers');
 
 export class IPCHandlers {
   constructor(private configManager: ConfigManager) {}
@@ -42,7 +45,7 @@ export class IPCHandlers {
       "translate-text",
       async (_event, request: TranslateRequest) => {
         try {
-          console.log("收到文本翻译请求:", request);
+          logger.info("收到文本翻译请求", { request });
           
           const config = this.configManager.getLatestConfigWithDefaults();
           const apiConfig: APIConfig = {
@@ -52,10 +55,10 @@ export class IPCHandlers {
           };
           
           const result = await translateText(apiConfig, request);
-          console.log("文本翻译结果:", result);
+          logger.info("文本翻译结果", { result });
           return result;
         } catch (error) {
-          console.error("文本翻译请求处理失败:", error);
+          logger.error("文本翻译请求处理失败", { error });
           return {
             content: "",
             error: error instanceof Error ? error.message : "未知错误",
@@ -77,7 +80,7 @@ export class IPCHandlers {
           
           const result = await analyzeImageWithOpenAI(apiConfig, request);
 
-          console.log("analyze-image-openai:", {
+          logger.info("图片分析结果", {
             success: !result.error,
             contentLength: result.content?.length || 0,
             error: result.error,
@@ -85,7 +88,7 @@ export class IPCHandlers {
 
           return result;
         } catch (error) {
-          console.error("图片分析请求处理失败:", error);
+          logger.error("图片分析请求处理失败", { error });
           return {
             content: "",
             error: error instanceof Error ? error.message : "未知错误",
@@ -103,18 +106,18 @@ export class IPCHandlers {
           model: config.customModel || config.model
         };
         
-        console.log("验证OpenAI API配置:", {
+        logger.info("验证OpenAI API配置", {
           apiUrl: apiConfig.apiUrl,
           hasApiKey: !!apiConfig.apiKey,
         });
 
         const isValid = await validateOpenAIConfig(apiConfig);
 
-        console.log("OpenAI API配置验证结果:", isValid);
+        logger.info("OpenAI API配置验证结果", { isValid });
 
         return { success: isValid };
       } catch (error) {
-        console.error("OpenAI API配置验证失败:", error);
+        logger.error("OpenAI API配置验证失败", { error });
         return {
           success: false,
           error: error instanceof Error ? error.message : "未知错误",
@@ -131,21 +134,21 @@ export class IPCHandlers {
           model: config.customModel || config.model
         };
         
-        console.log("获取OpenAI模型列表:", {
+        logger.info("获取OpenAI模型列表", {
           apiUrl: apiConfig.apiUrl,
           hasApiKey: !!apiConfig.apiKey,
         });
 
         const models = await getAvailableOpenAIModels(apiConfig);
 
-        console.log("获取到的模型列表:", models);
+        logger.info("获取到的模型列表", { models });
 
         return {
           success: true,
           models: models,
         };
       } catch (error) {
-        console.error("获取OpenAI模型列表失败:", error);
+        logger.error("获取OpenAI模型列表失败", { error });
         return {
           success: false,
           error: error instanceof Error ? error.message : "未知错误",
@@ -158,14 +161,12 @@ export class IPCHandlers {
   private registerSystemHandlers(): void {
     ipcMain.handle('get-login-item-settings', async () => {
       try {
-        console.log(`[AutoLaunch] 获取开机自启状态`);
-        console.log(`[AutoLaunch] 当前执行路径: ${process.execPath}`);
+        logger.info("获取开机自启状态", { execPath: process.execPath });
 
         if (process.platform === 'win32') {
           const appFolder = path.dirname(process.execPath);
           const exeName = path.basename(process.execPath);
-          console.log(`[AutoLaunch] 应用目录: ${appFolder}`);
-          console.log(`[AutoLaunch] 可执行文件名: ${exeName}`);
+          logger.info("应用路径信息", { appFolder, exeName });
 
           // 改进的路径检测策略，优先使用 Squirrel 方式
           const pathStrategies = [
@@ -194,7 +195,7 @@ export class IPCHandlers {
 
           // 检测所有策略的状态
           for (const strategy of pathStrategies) {
-            console.log(`[AutoLaunch] 检查策略: ${strategy.name}, 路径: ${strategy.path}`);
+            logger.debug("检查策略", { name: strategy.name, path: strategy.path });
             if (fs.existsSync(strategy.path)) {
               const options: { path: string; args?: string[] } = { path: strategy.path };
               if (strategy.args) {
@@ -202,22 +203,22 @@ export class IPCHandlers {
               }
               
               const settings = app.getLoginItemSettings(options);
-              console.log(`[AutoLaunch] 策略 ${strategy.name} 状态:`, settings);
+              logger.debug("策略状态", { name: strategy.name, settings });
               
               if (settings.openAtLogin && !detectedSettings) {
                 detectedSettings = settings;
                 activeStrategy = strategy;
-                console.log(`[AutoLaunch] 找到活跃策略: ${strategy.name}`);
+                logger.info("找到活跃策略", { name: strategy.name });
                 break; // 找到第一个活跃的策略就停止
               }
             } else {
-              console.log(`[AutoLaunch] 策略 ${strategy.name} 路径不存在`);
+              logger.debug("策略路径不存在", { name: strategy.name });
             }
           }
 
           // 如果没有检测到活跃的设置，使用第一个可用策略检查
           if (!detectedSettings) {
-            console.log(`[AutoLaunch] 未找到活跃策略，使用第一个可用策略`);
+            logger.info("未找到活跃策略，使用第一个可用策略");
             const firstAvailable = pathStrategies.find(s => fs.existsSync(s.path));
             if (firstAvailable) {
               const options: { path: string; args?: string[] } = { path: firstAvailable.path };
@@ -226,7 +227,7 @@ export class IPCHandlers {
               }
               detectedSettings = app.getLoginItemSettings(options);
               activeStrategy = firstAvailable;
-              console.log(`[AutoLaunch] 使用策略: ${firstAvailable.name}`);
+              logger.info("使用策略", { name: firstAvailable.name });
             }
           }
 
@@ -238,7 +239,7 @@ export class IPCHandlers {
             raw: detectedSettings 
           };
           
-          console.log(`[AutoLaunch] 最终结果:`, result);
+          logger.info("最终结果", result);
           return result;
         } else {
           // 非 Windows 平台
@@ -246,22 +247,19 @@ export class IPCHandlers {
           return { success: true, openAtLogin: settings.openAtLogin, raw: settings };
         }
       } catch (error: unknown) {
-        console.error(`[AutoLaunch] 获取状态失败:`, error);
+        logger.error("获取状态失败", { error });
         return { success: false, error: error instanceof Error ? error.message : String(error) };
       }
     });
 
     ipcMain.handle('set-login-item-settings', async (_event, enable: boolean) => {
       try {
-        console.log(`[AutoLaunch] 设置开机自启: ${enable}`);
-        console.log(`[AutoLaunch] 当前执行路径: ${process.execPath}`);
-        console.log(`[AutoLaunch] 平台: ${process.platform}`);
+        logger.info("设置开机自启", { enable, execPath: process.execPath, platform: process.platform });
 
         if (process.platform === 'win32') {
           const appFolder = path.dirname(process.execPath);
           const exeName = path.basename(process.execPath);
-          console.log(`[AutoLaunch] 应用目录: ${appFolder}`);
-          console.log(`[AutoLaunch] 可执行文件名: ${exeName}`);
+          logger.info("应用路径信息", { appFolder, exeName });
 
           // 改进的路径检测策略，优先使用 Squirrel Update.exe 方式
           const pathStrategies = [
@@ -289,10 +287,10 @@ export class IPCHandlers {
           
           // 按优先级检测可用策略
           for (const strategy of pathStrategies) {
-            console.log(`[AutoLaunch] 检测策略: ${strategy.name}, 路径: ${strategy.path}`);
+            logger.debug("检测策略", { name: strategy.name, path: strategy.path });
             if (fs.existsSync(strategy.path)) {
               selectedStrategy = strategy;
-              console.log(`[AutoLaunch] 选择策略: ${strategy.name}`);
+              logger.info("选择策略", { name: strategy.name });
               break;
             }
           }
@@ -303,7 +301,7 @@ export class IPCHandlers {
 
           // 如果要禁用开机自启，先清除所有可能的设置
           if (!enable) {
-            console.log(`[AutoLaunch] 禁用开机自启，清除所有策略的设置`);
+            logger.info("禁用开机自启，清除所有策略的设置");
             for (const strategy of pathStrategies) {
               if (fs.existsSync(strategy.path)) {
                 const clearOptions: { openAtLogin: boolean; path: string; args?: string[] } = {
@@ -314,7 +312,7 @@ export class IPCHandlers {
                   clearOptions.args = strategy.args;
                 }
                 app.setLoginItemSettings(clearOptions);
-                console.log(`[AutoLaunch] 清除策略: ${strategy.name}`);
+                logger.debug("清除策略", { name: strategy.name });
               }
             }
           }
@@ -329,7 +327,7 @@ export class IPCHandlers {
             loginSettings.args = selectedStrategy.args;
           }
 
-          console.log(`[AutoLaunch] 设置参数:`, loginSettings);
+          logger.debug("设置参数", loginSettings);
           app.setLoginItemSettings(loginSettings);
 
           // 验证设置结果
@@ -341,12 +339,12 @@ export class IPCHandlers {
           }
 
           const confirmed = app.getLoginItemSettings(confirmOptions);
-          console.log(`[AutoLaunch] 验证结果:`, confirmed);
+          logger.debug("验证结果", confirmed);
 
           // 额外验证：检查是否真的设置成功
           const isActuallySet = confirmed.openAtLogin === enable;
           if (!isActuallySet) {
-            console.warn(`[AutoLaunch] 设置验证失败: 期望=${enable}, 实际=${confirmed.openAtLogin}`);
+            logger.warn("设置验证失败", { expected: enable, actual: confirmed.openAtLogin });
           }
 
           return { 
@@ -368,7 +366,7 @@ export class IPCHandlers {
           };
         }
       } catch (error: unknown) {
-        console.error(`[AutoLaunch] 设置失败:`, error);
+        logger.error("设置失败", { error });
         return { success: false, error: error instanceof Error ? error.message : String(error) };
       }
     });

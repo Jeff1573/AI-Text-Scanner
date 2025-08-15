@@ -3,6 +3,9 @@ import type { WindowManager } from "./windowManager";
 import type { ConfigManager } from "./configManager";
 import type { HotkeyConfig, HotkeyStatus } from "../types";
 import { ScreenshotService } from "../services/screenshotService";
+import { createModuleLogger } from "../utils/logger";
+
+const logger = createModuleLogger('HotkeyManager');
 
 export class HotkeyManager {
   private currentHotkeys: HotkeyConfig = {
@@ -24,7 +27,7 @@ export class HotkeyManager {
     const { resultHotkey, screenshotHotkey } = hotkeys;
 
     const ret1 = globalShortcut.register(resultHotkey, () => {
-      console.log("全局快捷键被触发，准备直接打开结果窗口");
+      logger.info("全局快捷键被触发，准备直接打开结果窗口");
 
       const clipboardText = clipboard.readText();
       const defaultContent = clipboardText
@@ -35,28 +38,28 @@ export class HotkeyManager {
     });
 
     const ret2 = globalShortcut.register(screenshotHotkey, async () => {
-      console.log("全局快捷键被触发，准备启动截图功能");
+      logger.info("全局快捷键被触发，准备启动截图功能");
 
       try {
         await this.windowManager.hideAllWindows();
         const screenshotData = await ScreenshotService.captureScreen();
         this.windowManager.createScreenshotWindow(screenshotData);
       } catch (error) {
-        console.error("截图过程中发生错误:", error);
+        logger.error("截图过程中发生错误", { error });
         this.windowManager.showMainWindow();
       }
     });
 
     if (!ret1) {
-      console.log("ResultPage全局快捷键注册失败");
+      logger.warn("ResultPage全局快捷键注册失败");
     } else {
-      console.log(`ResultPage全局快捷键注册成功: ${resultHotkey}`);
+      logger.info("ResultPage全局快捷键注册成功", { hotkey: resultHotkey });
     }
 
     if (!ret2) {
-      console.log("ScreenshotViewer全局快捷键注册失败");
+      logger.warn("ScreenshotViewer全局快捷键注册失败");
     } else {
-      console.log(`ScreenshotViewer全局快捷键注册成功: ${screenshotHotkey}`);
+      logger.info("ScreenshotViewer全局快捷键注册成功", { hotkey: screenshotHotkey });
     }
 
     return { resultRegistered: !!ret1, screenshotRegistered: !!ret2 };

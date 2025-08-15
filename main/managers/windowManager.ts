@@ -8,6 +8,10 @@ import {
 import path from "node:path";
 import type { ScreenSource } from "../types";
 import { ScreenshotService } from "../services/screenshotService";
+import { createModuleLogger } from "../utils/logger";
+
+// 创建WindowManager日志器
+const logger = createModuleLogger('WindowManager');
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 
@@ -35,10 +39,10 @@ export class WindowManager {
 
   createMainWindow(): BrowserWindow | null {
     try {
-      console.log("[WindowManager] 开始创建主窗口...");
+      logger.info("开始创建主窗口...");
 
       const iconPath = path.join(__dirname, "./static/icons8-camera-256.ico");
-      console.log("[WindowManager] 图标路径:", iconPath);
+      logger.debug("图标路径", { iconPath });
 
       this.mainWindow = new BrowserWindow({
         width: 800,
@@ -54,10 +58,7 @@ export class WindowManager {
         icon: iconPath,
       });
 
-      console.log(
-        "[WindowManager] 主窗口创建成功，preload路径:",
-        path.join(__dirname, "./preload.js")
-      );
+      logger.debug("主窗口创建成功", { preloadPath: path.join(__dirname, "./preload.js") });
 
       // 设置显示媒体请求处理器
       try {
@@ -71,26 +72,23 @@ export class WindowManager {
           },
           { useSystemPicker: true }
         );
-        console.log("[WindowManager] 显示媒体请求处理器设置成功");
+        logger.info("显示媒体请求处理器设置成功");
       } catch (mediaError) {
-        console.warn("[WindowManager] 显示媒体请求处理器设置失败:", mediaError);
+        logger.warn("显示媒体请求处理器设置失败", { error: mediaError.message });
       }
 
       // 加载页面
       try {
         if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-          console.log(
-            "[WindowManager] 加载开发服务器URL:",
-            MAIN_WINDOW_VITE_DEV_SERVER_URL
-          );
+          logger.debug("加载开发服务器URL", { url: MAIN_WINDOW_VITE_DEV_SERVER_URL });
           this.mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
         } else {
           const htmlPath = path.join(__dirname, `../renderer/index.html`);
-          console.log("[WindowManager] 加载HTML文件:", htmlPath);
+          logger.debug("加载HTML文件", { htmlPath });
           this.mainWindow.loadFile(htmlPath);
         }
       } catch (loadError) {
-        console.error("[WindowManager] 页面加载失败:", loadError);
+        logger.error("页面加载失败", { error: loadError.message, stack: loadError.stack });
         throw loadError;
       }
 
@@ -102,10 +100,10 @@ export class WindowManager {
         }
       });
 
-      console.log("[WindowManager] 主窗口创建完成");
+      logger.info("主窗口创建完成");
       return this.mainWindow;
     } catch (error) {
-      console.error("[WindowManager] 创建主窗口失败:", error);
+      logger.error("创建主窗口失败", { error: error.message, stack: error.stack });
       throw error;
     }
   }
@@ -140,7 +138,7 @@ export class WindowManager {
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       const url = `${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/screenshot`;
       // this.screenshotWindow.webContents.openDevTools()
-      console.log("预热加载URL:", url);
+      logger.debug("预热加载URL", { url });
       this.screenshotWindow.loadURL(url);
     } else {
       this.screenshotWindow.loadFile(
@@ -174,7 +172,7 @@ export class WindowManager {
     this.screenshotWindow.webContents.on(
       "did-fail-load",
       (_event, errorCode, errorDescription) => {
-        console.error("窗口加载失败:", errorCode, errorDescription);
+        logger.error("窗口加载失败", { errorCode, errorDescription });
       }
     );
 
@@ -236,7 +234,7 @@ export class WindowManager {
     }
 
     this.resultWindow.on("ready-to-show", () => {
-      console.log("==========result window loaded==========");
+      logger.info("结果窗口加载完成");
 
       if (this.resultWindow) {
         const dataToSend =
@@ -245,11 +243,10 @@ export class WindowManager {
             : resultContent;
         this.resultWindow.webContents.send("result-data", dataToSend);
       }
-      console.log("=======================================");
     });
 
     this.resultWindow.on("closed", () => {
-      console.log("result window closed");
+      logger.debug("结果窗口已关闭");
       this.resultWindow = null;
     });
   }
@@ -422,7 +419,7 @@ export class WindowManager {
     });
 
     this.htmlViewerWindow.on("closed", () => {
-      console.log("HTML viewer window closed");
+      logger.debug("HTML查看器窗口已关闭");
       this.htmlViewerWindow = null;
     });
 
@@ -460,10 +457,11 @@ export class WindowManager {
   registerIPCHandlers(): void {
     ipcMain.handle("open-result-window", async (_event, resultContent) => {
       try {
-        console.log("open-result-window", resultContent);
+        logger.debug("打开结果窗口", { resultContent });
         this.createResultWindow(resultContent);
         return { success: true };
       } catch (error) {
+        logger.error("打开结果窗口失败", { error: error instanceof Error ? error.message : "未知错误" });
         return {
           success: false,
           error: error instanceof Error ? error.message : "未知错误",
@@ -502,11 +500,11 @@ export class WindowManager {
       "create-screenshot-window",
       async (_event, screenshotData) => {
         try {
-          console.log("received create screenshot window request, data:");
+          logger.debug("收到创建截图窗口请求", { screenshotData });
           this.createScreenshotWindow(screenshotData);
           return { success: true };
         } catch (error) {
-          console.error("创建截图窗口失败:", error);
+          logger.error("创建截图窗口失败", { error: error instanceof Error ? error.message : "未知错误" });
           return {
             success: false,
             error: error instanceof Error ? error.message : "未知错误",
@@ -560,14 +558,11 @@ export class WindowManager {
       "open-html-viewer",
       async (_event, htmlContent: string, title?: string) => {
         try {
-          console.log("open-html-viewer", {
-            contentLength: htmlContent?.length,
-            title,
-          });
+          logger.debug("打开HTML查看器", { contentLength: htmlContent?.length, title });
           this.createHtmlViewerWindow(htmlContent, title);
           return { success: true };
         } catch (error) {
-          console.error("创建HTML查看器窗口失败:", error);
+          logger.error("创建HTML查看器窗口失败", { error: error instanceof Error ? error.message : "未知错误" });
           return {
             success: false,
             error: error instanceof Error ? error.message : "未知错误",

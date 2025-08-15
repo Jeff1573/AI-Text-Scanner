@@ -1,6 +1,9 @@
 import { app } from "electron";
 import path from "node:path";
 import fs from "node:fs";
+import { createModuleLogger } from "./logger";
+
+const logger = createModuleLogger('AutoLaunchValidator');
 
 export interface AutoLaunchValidationResult {
   isValid: boolean;
@@ -22,15 +25,13 @@ export interface AutoLaunchValidationResult {
  */
 export async function validateAutoLaunchStatus(): Promise<AutoLaunchValidationResult> {
   try {
-    console.log(`[AutoLaunchValidator] 开始验证开机自启状态`);
+    logger.info("开始验证开机自启状态");
     
     const execPath = process.execPath;
     const appFolder = path.dirname(execPath);
     const exeName = path.basename(execPath);
     
-    console.log(`[AutoLaunchValidator] 执行路径: ${execPath}`);
-    console.log(`[AutoLaunchValidator] 应用目录: ${appFolder}`);
-    console.log(`[AutoLaunchValidator] 可执行文件: ${exeName}`);
+    logger.info("系统路径信息", { execPath, appFolder, exeName });
 
     // 定义所有可能的策略，优先使用 Squirrel Update.exe 方式
     const strategies = [
@@ -58,7 +59,7 @@ export async function validateAutoLaunchStatus(): Promise<AutoLaunchValidationRe
 
     for (const strategy of strategies) {
       const exists = fs.existsSync(strategy.path);
-      console.log(`[AutoLaunchValidator] 策略 ${strategy.name}: 路径存在=${exists}, 路径=${strategy.path}`);
+      logger.debug("检查策略", { name: strategy.name, exists, path: strategy.path });
       
       if (exists) {
         availableStrategies.push(strategy.name);
@@ -70,7 +71,7 @@ export async function validateAutoLaunchStatus(): Promise<AutoLaunchValidationRe
         }
         
         const settings = app.getLoginItemSettings(options);
-        console.log(`[AutoLaunchValidator] 策略 ${strategy.name} Electron设置:`, settings);
+        logger.debug("策略Electron设置", { name: strategy.name, settings });
         
         if (settings.openAtLogin && !activeStrategy) {
           activeStrategy = strategy;
@@ -99,11 +100,11 @@ export async function validateAutoLaunchStatus(): Promise<AutoLaunchValidationRe
       }
     };
 
-    console.log(`[AutoLaunchValidator] 验证结果:`, result);
+    logger.info("验证结果", result);
     return result;
 
   } catch (error) {
-    console.error(`[AutoLaunchValidator] 验证失败:`, error);
+    logger.error("验证失败", { error });
     return {
       isValid: false,
       strategy: 'Error',
@@ -137,20 +138,20 @@ async function checkWindowsRegistry(appName: string): Promise<boolean> {
     // 查询注册表中的开机自启项
     const command = `reg query "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "${appName}" 2>nul`;
     
-    console.log(`[AutoLaunchValidator] 执行注册表查询: ${command}`);
+    logger.debug("执行注册表查询", { command });
     
     try {
       const { stdout } = await execAsync(command);
       const exists = stdout.includes(appName);
-      console.log(`[AutoLaunchValidator] 注册表项存在: ${exists}`);
+      logger.debug("注册表项检查结果", { exists });
       return exists;
     } catch (regError) {
       // 注册表项不存在时 reg query 会返回错误码，这是正常的
-      console.log(`[AutoLaunchValidator] 注册表项不存在 (这是正常的)`);
+      logger.debug("注册表项不存在 (这是正常的)");
       return false;
     }
   } catch (error) {
-    console.error(`[AutoLaunchValidator] 注册表检查失败:`, error);
+    logger.error("注册表检查失败", { error });
     return false;
   }
 }

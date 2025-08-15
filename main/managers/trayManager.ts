@@ -4,6 +4,9 @@ import type { WindowManager } from "./windowManager";
 import type { ConfigManager } from "./configManager";
 import type { HotkeyConfig } from "../types";
 import { ScreenshotService } from "../services/screenshotService";
+import { createModuleLogger } from "../utils/logger";
+
+const logger = createModuleLogger('TrayManager');
 
 
 export class TrayManager {
@@ -23,7 +26,7 @@ export class TrayManager {
 
     const iconPath = path.join(__dirname, "./static/icons8-camera-256.ico");
 
-    console.log("iconPath", __dirname, iconPath);
+    logger.debug("托盘图标路径", { __dirname, iconPath });
     const icon = nativeImage.createFromPath(iconPath);
 
     this.tray = new Tray(icon);
@@ -65,7 +68,7 @@ export class TrayManager {
               );
             }
           } catch (error) {
-            console.error("截图过程中发生错误:", error);
+            logger.error("截图过程中发生错误", { error });
             this.windowManager.showMainWindow();
           }
         },
@@ -77,7 +80,7 @@ export class TrayManager {
           "CmdOrCtrl"
         ),
         click: () => {
-          console.log("托盘菜单快捷翻译被点击");
+          logger.info("托盘菜单快捷翻译被点击");
           const clipboardText = clipboard.readText();
           const defaultContent = clipboardText
             ? JSON.stringify({ original: clipboardText, translated: "" })

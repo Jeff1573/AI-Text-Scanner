@@ -5,6 +5,7 @@ import { ConfigManager } from "./managers/configManager";
 import { HotkeyManager } from "./managers/hotkeyManager";
 import { TrayManager } from "./managers/trayManager";
 import { IPCHandlers } from "./managers/ipcHandlers";
+import { createModuleLogger } from "./utils/logger";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -17,6 +18,9 @@ let configManager: ConfigManager;
 let hotkeyManager: HotkeyManager;
 let trayManager: TrayManager;
 let ipcHandlers: IPCHandlers;
+
+// 创建主进程日志器
+const logger = createModuleLogger('Main');
 
 // 单实例锁，防止重复启动
 const gotTheLock = app.requestSingleInstanceLock();
@@ -50,7 +54,7 @@ const initializeManagers = () => {
 
   // 设置配置更新监听器，确保配置变更时其他模块能及时更新
   configManager.onConfigUpdate(() => {
-    console.log('[Main] 配置已更新，通知相关模块');
+    logger.info('配置已更新，通知相关模块');
     // 这里可以添加其他需要在配置更新时执行的逻辑
   });
 };
@@ -58,31 +62,31 @@ const initializeManagers = () => {
 // 应用就绪时的初始化
 app.on("ready", () => {
   try {
-    console.log('[Main] 应用启动，开始初始化...');
+    logger.info('应用启动，开始初始化...');
     
     // 初始化管理器
     initializeManagers();
-    console.log('[Main] 管理器初始化完成');
+    logger.info('管理器初始化完成');
 
     // 创建主窗口
     windowManager.createMainWindow();
-    console.log('[Main] 主窗口创建完成');
+    logger.info('主窗口创建完成');
 
     // 创建系统托盘
     trayManager.createTray();
-    console.log('[Main] 系统托盘创建完成');
+    logger.info('系统托盘创建完成');
 
     // 预热截图窗口
     windowManager.ensureScreenshotWindow();
-    console.log('[Main] 截图窗口预热完成');
+    logger.info('截图窗口预热完成');
 
     // 注册全局快捷键
     hotkeyManager.applyHotkeysFromConfig();
-    console.log('[Main] 全局快捷键注册完成');
+    logger.info('全局快捷键注册完成');
     
-    console.log('[Main] 应用初始化完成');
+    logger.info('应用初始化完成');
   } catch (error) {
-    console.error('[Main] 应用初始化失败:', error);
+    logger.error('应用初始化失败', { error: error.message, stack: error.stack });
     // 即使初始化失败，也不要退出应用，而是尝试基本功能
     try {
       if (!windowManager) {
@@ -90,7 +94,7 @@ app.on("ready", () => {
       }
       windowManager.createMainWindow();
     } catch (fallbackError) {
-      console.error('[Main] 备用初始化也失败:', fallbackError);
+      logger.error('备用初始化也失败', { error: fallbackError.message, stack: fallbackError.stack });
     }
   }
 });

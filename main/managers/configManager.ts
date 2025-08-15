@@ -2,6 +2,10 @@ import { app, ipcMain } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import type { ConfigProvider, Config, SaveResult } from "../types";
+import { createModuleLogger } from "../utils/logger";
+
+// 创建ConfigManager日志器
+const logger = createModuleLogger('ConfigManager');
 
 export class ConfigManager {
   private configPath: string;
@@ -41,16 +45,16 @@ export class ConfigManager {
       const config = this.loadConfigFromDisk();
       
       if (config) {
-        console.log("成功从配置文件读取配置");
+        logger.debug("成功从配置文件读取配置");
         this.configCache = config;
         this.cacheTimestamp = now;
         return config;
       }
       
-      console.log("配置文件不存在或为空，返回null");
+      logger.debug("配置文件不存在或为空，返回null");
       return null;
     } catch (error) {
-      console.error("获取最新配置时发生错误:", error);
+      logger.error("获取最新配置时发生错误", { error: error.message });
       return null;
     }
   }
@@ -71,7 +75,7 @@ export class ConfigManager {
       try {
         callback();
       } catch (error) {
-        console.error("配置更新回调执行失败:", error);
+        logger.error("配置更新回调执行失败", { error: error.message });
       }
     });
   }
@@ -95,17 +99,17 @@ export class ConfigManager {
       };
       
       if (config) {
-        console.log("成功从配置文件读取配置，合并默认值");
+        logger.debug("成功从配置文件读取配置，合并默认值");
         return {
           ...fullDefaultConfig,
           ...config
         };
       }
       
-      console.log("配置文件不存在或为空，返回默认配置");
+      logger.debug("配置文件不存在或为空，返回默认配置");
       return fullDefaultConfig;
     } catch (error) {
-      console.error("获取最新配置时发生错误，返回默认配置:", error);
+      logger.error("获取最新配置时发生错误，返回默认配置", { error: error.message });
       return {
         apiUrl: "https://api.openai.com/v1",
         apiKey: "",
@@ -123,7 +127,7 @@ export class ConfigManager {
 
   async saveConfig(config: ConfigProvider, applyHotkeysCallback?: () => void): Promise<SaveResult> {
     try {
-      console.log("save-config", config);
+      logger.debug("保存配置", { config });
       const configData: Config = {
         provider: [config],
       };
@@ -134,7 +138,7 @@ export class ConfigManager {
       }
 
       fs.writeFileSync(this.configPath, JSON.stringify(configData, null, 2), "utf8");
-      console.log("配置保存成功:", this.configPath);
+      logger.info("配置保存成功", { configPath: this.configPath });
       
       // 保存后清除缓存并通知更新
       this.invalidateCache();
@@ -149,7 +153,7 @@ export class ConfigManager {
             hotkeys: applied.hotkeys,
           };
         } catch (e) {
-          console.error("应用快捷键配置失败:", e);
+          logger.error("应用快捷键配置失败", { error: e.message });
           return {
             success: true,
             hotkeyStatus: { resultRegistered: false, screenshotRegistered: false },
@@ -159,7 +163,7 @@ export class ConfigManager {
 
       return { success: true };
     } catch (error) {
-      console.error("保存配置失败:", error);
+      logger.error("保存配置失败", { error: error instanceof Error ? error.message : "未知错误" });
       return {
         success: false,
         error: error instanceof Error ? error.message : "未知错误",
@@ -175,7 +179,7 @@ export class ConfigManager {
     ipcMain.handle("load-config", async () => {
       try {
         if (!fs.existsSync(this.configPath)) {
-          console.log("配置文件不存在，返回默认配置");
+          logger.debug("配置文件不存在，返回默认配置");
           return {
             success: true,
             config: null,
@@ -185,13 +189,13 @@ export class ConfigManager {
         const configData = fs.readFileSync(this.configPath, "utf8");
         const config: Config = JSON.parse(configData);
 
-        console.log("配置加载成功:", config);
+        logger.debug("配置加载成功", { config });
         return {
           success: true,
           config: config.provider[0] || null,
         };
       } catch (error) {
-        console.error("加载配置失败:", error);
+        logger.error("加载配置失败", { error: error.message });
         return {
           success: false,
           error: error instanceof Error ? error.message : "未知错误",
@@ -208,7 +212,7 @@ export class ConfigManager {
           config = this.getLatestConfigWithDefaults();
         } else {
           config = this.getLatestConfig();
-          console.log("获取最新配置成功");
+          logger.debug("获取最新配置成功");
         }
         
         return {
@@ -216,7 +220,7 @@ export class ConfigManager {
           config: config,
         };
       } catch (error) {
-        console.error("获取最新配置失败:", error);
+        logger.error("获取最新配置失败", { error: error.message });
         return {
           success: false,
           error: error instanceof Error ? error.message : "未知错误",
