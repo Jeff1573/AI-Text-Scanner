@@ -139,7 +139,7 @@ export class WindowManager {
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       const url = `${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/screenshot`;
-      this.screenshotWindow.webContents.openDevTools()
+      // this.screenshotWindow.webContents.openDevTools()
       console.log("预热加载URL:", url);
       this.screenshotWindow.loadURL(url);
     } else {
