@@ -6,20 +6,32 @@ export const TitleBar: React.FC = () => {
   const { hideToTray, isTrayAvailable } = useTrayContext();
 
   const handleMinimize = () => {
-    window.electronAPI.windowMinimize();
+    if (window.electronAPI) {
+      window.electronAPI.windowMinimize();
+    } else {
+      console.warn('window.electronAPI 未定义，无法最小化窗口');
+    }
   };
 
   const handleMaximize = () => {
-    window.electronAPI.windowMaximize();
+    if (window.electronAPI) {
+      window.electronAPI.windowMaximize();
+    } else {
+      console.warn('window.electronAPI 未定义，无法最大化窗口');
+    }
   };
 
   const handleClose = async () => {
-    if (isTrayAvailable) {
-      // 如果托盘可用，最小化到托盘
-      await hideToTray();
+    if (window.electronAPI) {
+      if (isTrayAvailable) {
+        // 如果托盘可用，最小化到托盘
+        await hideToTray();
+      } else {
+        // 如果托盘不可用，直接关闭窗口
+        window.electronAPI.windowClose();
+      }
     } else {
-      // 如果托盘不可用，直接关闭窗口
-      window.electronAPI.windowClose();
+      console.warn('window.electronAPI 未定义，无法关闭窗口');
     }
   };
 

@@ -49,6 +49,14 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       console.log('[ConfigStore] 开始获取配置...');
+      
+      // 检查 window.electronAPI 是否可用
+      if (!window.electronAPI) {
+        console.warn('[ConfigStore] window.electronAPI 未定义，使用默认配置');
+        set({ config: { ...defaultConfig }, isLoading: false, error: 'Electron API 不可用' });
+        return;
+      }
+      
       const result = await window.electronAPI.getLatestConfig(true);
       console.log('[ConfigStore] 获取配置结果:', result);
       
@@ -82,6 +90,13 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     try {
       const currentConfig = get().config;
       console.log('[ConfigStore] 开始保存配置:', currentConfig);
+      
+      // 检查 window.electronAPI 是否可用
+      if (!window.electronAPI) {
+        console.warn('[ConfigStore] window.electronAPI 未定义，无法保存配置');
+        return false;
+      }
+      
       const result = await window.electronAPI.saveConfig(currentConfig);
       console.log('[ConfigStore] 保存结果:', result);
       

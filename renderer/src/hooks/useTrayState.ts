@@ -21,6 +21,17 @@ export const useTrayState = (): [TrayState, TrayActions] => {
 
   const checkTrayAvailability = useCallback(async () => {
     try {
+      // 检查 window.electronAPI 是否存在
+      if (!window.electronAPI) {
+        console.warn('window.electronAPI 未定义，托盘功能可能不可用');
+        setState(prev => ({
+          ...prev,
+          isTrayAvailable: false,
+          isTrayInitialized: true,
+        }));
+        return;
+      }
+
       const isAvailable = await window.electronAPI.isTrayAvailable();
       setState(prev => ({
         ...prev,
@@ -39,6 +50,10 @@ export const useTrayState = (): [TrayState, TrayActions] => {
 
   const hideToTray = useCallback(async () => {
     try {
+      if (!window.electronAPI) {
+        console.warn('window.electronAPI 未定义，无法隐藏到托盘');
+        return;
+      }
       await window.electronAPI.hideToTray();
       setState(prev => ({
         ...prev,
@@ -51,6 +66,10 @@ export const useTrayState = (): [TrayState, TrayActions] => {
 
   const showFromTray = useCallback(async () => {
     try {
+      if (!window.electronAPI) {
+        console.warn('window.electronAPI 未定义，无法从托盘显示');
+        return;
+      }
       await window.electronAPI.showFromTray();
       setState(prev => ({
         ...prev,

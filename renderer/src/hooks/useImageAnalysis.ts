@@ -27,7 +27,7 @@ export const useImageAnalysis = () => {
 
   // 分析图片
   const analyzeImage = useCallback(
-    async (imageData: string, prompt?: string) => {
+    async (imageData: string, prompt?: string, targetLang?: string) => {
       const finalPrompt =
         prompt ||
         `请分析图片内容，提取图片中的文本内容，严格按图片内容逐字输出原文`;
@@ -42,12 +42,27 @@ export const useImageAnalysis = () => {
       try {
         console.log("开始分析图片...");
 
+        // 获取全局配置中的目标语言
+        let finalTargetLang = targetLang;
+        if (!finalTargetLang) {
+          try {
+            const configResult = await window.electronAPI.getLatestConfig(true);
+            if (configResult.success && configResult.config) {
+              finalTargetLang = configResult.config.targetLang;
+              console.log("使用全局配置中的目标语言:", finalTargetLang);
+            }
+          } catch (error) {
+            console.warn("获取全局配置失败，使用默认目标语言", error);
+            finalTargetLang = "zh"; // 默认中文
+          }
+        }
+
         // 构建请求参数
         const request: ImageAnalysisRequest = {
           imageData,
           prompt: finalPrompt,
-          maxTokens: 4000,
           temperature: 0.1,
+          targetLang: finalTargetLang,
         };
 
         // 调用preload的API

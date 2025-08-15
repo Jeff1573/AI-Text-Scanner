@@ -1,5 +1,6 @@
 import OpenAI, { APIError, APIConnectionError, RateLimitError } from "openai";
 import { createModuleLogger } from "./logger";
+import { ConfigManager } from "../managers/configManager";
 
 const logger = createModuleLogger('OpenAIService');
 
@@ -20,6 +21,7 @@ export interface ImageAnalysisRequest {
   prompt: string;
   maxTokens?: number;
   temperature?: number;
+  targetLang?: string; // 目标语言，如果不提供则使用全局配置
 }
 
 // API配置接口
@@ -50,11 +52,26 @@ export async function analyzeImageWithOpenAI(
       return { content: "", error: "API地址未配置" };
     }
 
+    // 获取目标语言，优先使用请求中的targetLang，否则使用全局配置
+    let targetLang = request.targetLang;
+    if (!targetLang) {
+      try {
+        const configManager = new ConfigManager();
+        const globalConfig = configManager.getLatestConfigWithDefaults();
+        targetLang = globalConfig.targetLang || "zh"; // 默认中文
+        logger.debug("使用全局配置中的目标语言", { targetLang });
+      } catch (error) {
+        logger.warn("获取全局配置失败，使用默认目标语言", { error: error.message });
+        targetLang = "zh"; // 默认中文
+      }
+    }
+
     // 创建OpenAI客户端实例
     const openai = new OpenAI({
       apiKey: config.apiKey,
       baseURL: config.apiUrl, // 使用自定义API地址
     });
+    logger.info("OpenAI客户端实例创建成功");
 
     const system_prompt = `你是一位精通多语言翻译和前端开发的AI专家。你的任务是接收一张图片，并将其内容转换成一个结构化的、双语对照的 HTML 文件。
 
@@ -64,9 +81,11 @@ export async function analyzeImageWithOpenAI(
 
 2.  **提取原文并构建HTML：** 将识别出的原文内容，按照其在图片中的结构，构建成语义化的 HTML。每一个独立的文本块（如一个段落或一个列表项）都应被一个独立的 HTML 标签包裹。
 
-3.  **翻译文本：** 将所有提取出的原文文本翻译成 **中文**。
-
-4.  **整合双语内容：** 将翻译后的中文内容，插入到对应原文HTML元素的正下方。为了保持结构清晰，请将每一组“原文-译文”对用一个 \`<div>\` 容器包裹起来。
+3.  **翻译文本：
+    *   将所有提取出的原文文本翻译成 **${targetLang}**。
+    *   驼峰命名等单词，需要拆开翻译。
+    *   只能根据上下文来翻译，对于可不翻译的内容（如：数字、标点符号等）则直接使用原文。
+4.  **整合双语内容：** 将翻译后的${targetLang}内容，插入到对应原文HTML元素的正下方。为了保持结构清晰，请将每一组“原文-译文”对用一个 \`<div>\` 容器包裹起来。
 
 5.  **添加样式：**
     *   为所有翻译后的文本元素添加内联 CSS 样式 \`style="color: #007BFF;"\`，使其以蓝色突出显示。
@@ -77,7 +96,7 @@ export async function analyzeImageWithOpenAI(
     *   在 \`<head>\` 中添加 \`<meta charset="UTF-8">\` 和一个简单的 \`<title>\`。
     *   将最终生成的完整 HTML 代码放入一个 Markdown 代码块中，以便我可以直接复制。
     *   返回的应该是图片中的内容不要有其他内容，不要添加额外的说明，直接按照原图格式来即可。
-    *   背景尽量美化，整体要协调，但是结构要和原图内一致。
+    *   统一使用浅色背景，不要根据原图背景设置样式。
 `;
     logger.info("发送OpenAI API请求", {
       url: config.apiUrl,

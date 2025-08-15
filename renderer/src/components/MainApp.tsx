@@ -5,6 +5,12 @@ import { TrayProvider } from '../contexts/TrayContext';
 
 export const MainApp = () => {
   useEffect(() => {
+    // 检查 window.electronAPI 是否可用
+    if (!window.electronAPI) {
+      console.warn('window.electronAPI 未定义，某些功能可能不可用');
+      return;
+    }
+
     // 监听全局快捷键事件
     const handleOpenResultPage = () => {
       // 通过修改URL hash来导航到ResultPage

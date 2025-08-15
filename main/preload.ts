@@ -2,9 +2,14 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 import { contextBridge, ipcRenderer } from 'electron';
-import { createModuleLogger } from './utils/logger';
 
-const logger = createModuleLogger('Preload');
+// 简化的日志函数，避免复杂的依赖
+const logger = {
+  debug: (message: string, meta?: any) => console.debug(`[Preload] ${message}`, meta),
+  error: (message: string, meta?: any) => console.error(`[Preload] ${message}`, meta),
+  info: (message: string, meta?: any) => console.info(`[Preload] ${message}`, meta),
+  warn: (message: string, meta?: any) => console.warn(`[Preload] ${message}`, meta),
+};
 
 // 类型定义
 

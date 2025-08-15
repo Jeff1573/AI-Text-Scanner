@@ -550,7 +550,15 @@ export class WindowManager {
     });
 
     ipcMain.handle("is-tray-available", () => {
-      return true;
+      try {
+        // 检查托盘是否可用（在Windows上通常可用）
+        const isAvailable = process.platform === 'win32' || process.platform === 'linux' || process.platform === 'darwin';
+        logger.debug("检查托盘可用性", { platform: process.platform, isAvailable });
+        return isAvailable;
+      } catch (error) {
+        logger.error("检查托盘可用性失败", { error: error instanceof Error ? error.message : "未知错误" });
+        return false;
+      }
     });
 
     // HTML查看器窗口

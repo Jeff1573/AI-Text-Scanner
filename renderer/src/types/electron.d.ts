@@ -18,6 +18,7 @@ export interface ImageAnalysisRequest {
   prompt?: string;
   maxTokens?: number;
   temperature?: number;
+  targetLang?: string; // 目标语言，如果不提供则使用全局配置
 }
 
 export interface TranslateRequest {
