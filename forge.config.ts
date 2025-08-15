@@ -23,9 +23,9 @@ const config: ForgeConfig = {
       config: {
         repository: {
           owner: 'cat9L',
-          name: 'ai-text-scanner'
+          name: 'fast-ocr'
         },
-        prerelease: false
+        prerelease: true
       }
     }
   ],

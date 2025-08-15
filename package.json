@@ -11,11 +11,16 @@
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
     "clean": "iObitUnlocker /Delete /Advanced E:\\jf\\fast-ocr\\out\\",
-    "release": "npm run make && npm run publish"
+    "release": "npm run make && npm run publish",
+    "release:full": "node scripts/release.js"
   },
   "keywords": [],
   "author": {
     "name": "jf"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cat9L/fast-ocr.git"
   },
   "license": "MIT",
   "devDependencies": {
@@ -27,6 +32,7 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.8.2",
     "@electron-forge/plugin-fuses": "^7.8.2",
     "@electron-forge/plugin-vite": "^7.8.2",
+    "@electron-forge/publisher-github": "^7.8.3",
     "@electron/fuses": "^1.8.0",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@types/react": "^19.1.8",
@@ -46,6 +52,7 @@
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
     "antd": "^5.26.7",
+    "cross-env": "^10.0.0",
     "electron-squirrel-startup": "^1.0.1",
     "openai": "^5.11.0",
     "react": "^19.1.0",
