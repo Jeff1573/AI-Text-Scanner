@@ -73,6 +73,7 @@ export async function analyzeImageWithOpenAI(
     *   请生成一个包含 \`<!DOCTYPE html>\`, \`<html>\`, \`<head>\`, \`<body>\` 的完整 HTML 文件内容。
     *   在 \`<head>\` 中添加 \`<meta charset="UTF-8">\` 和一个简单的 \`<title>\`。
     *   将最终生成的完整 HTML 代码放入一个 Markdown 代码块中，以便我可以直接复制。
+    * 背景半透明
 
 **输出示例：**
 如果图片中有一段是：
