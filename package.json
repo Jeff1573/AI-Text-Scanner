@@ -10,7 +10,8 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
-    "clean": "iObitUnlocker /Delete /Advanced E:\\jf\\fast-ocr\\out\\"
+    "clean": "iObitUnlocker /Delete /Advanced E:\\jf\\fast-ocr\\out\\",
+    "release": "npm run make && npm run publish"
   },
   "keywords": [],
   "author": {
