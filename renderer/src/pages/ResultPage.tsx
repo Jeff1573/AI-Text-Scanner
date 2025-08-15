@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef, useCallback } from "react";
-import { TitleBar } from "../components";
-import { translate } from "../utils/translate";
+import { useEffect } from "react";
+import { TitleBar, LanguageSelector, TextArea } from "../components";
+import { useResultPageState } from "../hooks/useResultPageState";
+import { useResultPageLogic } from "../hooks/useResultPageLogic";
 import "../assets/styles/result-page.css";
 import "../assets/styles/language-selector.css";
 
@@ -17,134 +18,74 @@ const languageOptions = [
 ];
 
 export const ResultPage = () => {
-  const [originalText, setOriginalText] = useState("");
-  const [translatedText, setTranslatedText] = useState("");
-  const [isCopied, setIsCopied] = useState(false);
-  const [sourceLang, setSourceLang] = useState("auto");
-  const [targetLang, setTargetLang] = useState("zh");
-  const [isTranslating, setIsTranslating] = useState(false);
+  const {
+    originalText,
+    setOriginalText,
+    translatedText,
+    setTranslatedText,
+    isCopied,
+    setIsCopied,
+    sourceLang,
+    setSourceLang,
+    targetLang,
+    setTargetLang,
+    isTranslating,
+    setIsTranslating,
+    originalRef,
+    translatedRef,
+    isSyncing,
+  } = useResultPageState();
 
-  const originalRef = useRef<HTMLTextAreaElement>(null);
-  const translatedRef = useRef<HTMLDivElement>(null);
-  const isSyncing = useRef(false);
+  const {
+    handleResultData,
+    handleTranslate,
+    handleSwitchLanguages,
+    handleCopy,
+    handleScroll,
+    loadConfig,
+  } = useResultPageLogic();
 
   useEffect(() => {
-    originalRef.current?.focus()
-  }, [])
+    originalRef.current?.focus();
+  }, [originalRef]);
 
   useEffect(() => {
-    const handleResultData = (data: string) => {
-      try {
-        console.log("handleResultData", data);
-        // 检查数据是否为JSON格式
-        if (data && typeof data === 'string' && data.startsWith('{') && data.endsWith('}')) {
-          try {
-            const parseData = JSON.parse(data);
-            setOriginalText(parseData.original || "");
-          } catch (jsonError) {
-            // 如果JSON解析失败，将整个数据作为原始文本
-            setOriginalText(data || "");
-          }
-        } else if (typeof data === 'string') {
-          // 非JSON格式的数据直接作为原始文本
-          setOriginalText(data || "");
-        } else if (typeof data === 'object' && data !== null) {
-          // 如果是对象，尝试获取original字段
-          setOriginalText((data as { original?: string }).original || JSON.stringify(data));
-        } else {
-          // 其他情况
-          setOriginalText(String(data || ""));
-        }
-      } catch (error) {
-        console.error("解析结果失败:", error);
-        setOriginalText("内容解析失败");
-        setTranslatedText("请检查传入的数据格式。");
-      }
+    const loadConfigAndSetup = async () => {
+      await loadConfig(setSourceLang, setTargetLang);
     };
 
-    const loadConfig = async () => {
-      const result = await window.electronAPI.loadConfig();
-      if (result.success && result.config) {
-        setSourceLang(result.config.sourceLang || "auto");
-        setTargetLang(result.config.targetLang || "zh");
-      }
+    const handleResultDataWrapper = (data: string) => {
+      handleResultData(data, setOriginalText, setTranslatedText);
     };
 
-    loadConfig();
-    window.electronAPI.onResultData(handleResultData);
+    loadConfigAndSetup();
+    window.electronAPI.onResultData(handleResultDataWrapper);
 
     return () => {
       window.electronAPI.removeResultDataListener();
     };
-  }, []);
-
-  const handleTranslate = useCallback(async () => {
-    if (!originalText) return;
-
-    setIsTranslating(true);
-    try {
-      const result = await translate({
-        text: originalText,
-        sourceLang,
-        targetLang,
-      });
-      setTranslatedText(result);
-    } catch (error) {
-      setTranslatedText("翻译失败");
-    } finally {
-      setIsTranslating(false);
-    }
-  }, [originalText, sourceLang, targetLang]);
+  }, [loadConfig, setSourceLang, setTargetLang, handleResultData, setOriginalText, setTranslatedText]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (originalText) {
-        handleTranslate();
+        handleTranslate(originalText, sourceLang, targetLang, setTranslatedText, setIsTranslating);
       }
     }, 500); // Debounce translation trigger
 
     return () => clearTimeout(timer);
-  }, [originalText, handleTranslate]);
+  }, [originalText, sourceLang, targetLang, handleTranslate, setTranslatedText, setIsTranslating]);
 
-  const handleSwitchLanguages = () => {
-    if (sourceLang === "auto") return;
-    const temp = sourceLang;
-    setSourceLang(targetLang);
-    setTargetLang(temp);
+  const handleSwitchLanguagesWrapper = () => {
+    handleSwitchLanguages(sourceLang, targetLang, setSourceLang, setTargetLang);
   };
 
-  const handleCopy = async () => {
-    if (!translatedText) return;
-    try {
-      await navigator.clipboard.writeText(translatedText);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
-      console.error("无法复制文本: ", err);
-      // 显示复制失败的提示
-      alert("复制失败，请手动复制文本");
-    }
+  const handleCopyWrapper = () => {
+    handleCopy(translatedText, setIsCopied);
   };
 
-  const handleScroll = (source: "original" | "translated") => {
-    if (isSyncing.current) return;
-    isSyncing.current = true;
-
-    const sourceEl =
-      source === "original" ? originalRef.current : translatedRef.current;
-    const targetEl =
-      source === "original" ? translatedRef.current : originalRef.current;
-
-    if (sourceEl && targetEl) {
-      const { scrollTop, scrollHeight, clientHeight } = sourceEl;
-      const scrollRatio = scrollTop / (scrollHeight - clientHeight);
-      targetEl.scrollTop =
-        scrollRatio * (targetEl.scrollHeight - targetEl.clientHeight);
-    }
-
-    setTimeout(() => {
-      isSyncing.current = false;
-    }, 100); // Add a small delay to prevent jerky scrolling
+  const handleScrollWrapper = (source: "original" | "translated") => {
+    handleScroll(source, originalRef, translatedRef, isSyncing);
   };
 
   return (
@@ -152,87 +93,37 @@ export const ResultPage = () => {
       <TitleBar />
 
       <div className="translation-container">
-        {/* 原文区域 */}
-        <div className="text-area-container">
-          <h3 className="area-title">原文</h3>
-          <textarea
-            ref={originalRef}
-            className="text-area original-text"
-            value={originalText}
-            onChange={(e) => setOriginalText(e.target.value)}
-            onScroll={() => handleScroll("original")}
-            placeholder="请输入或粘贴待翻译的文本"
-          />
-        </div>
+        <TextArea
+          type="original"
+          title="原文"
+          value={originalText}
+          onChange={setOriginalText}
+          onScroll={() => handleScrollWrapper("original")}
+          ref={originalRef}
+          placeholder="请输入或粘贴待翻译的文本"
+        />
 
         <div className="divider"></div>
-        <div className="language-selector-container">
-          <select
-            className="language-select"
-            value={sourceLang}
-            onChange={(e) => setSourceLang(e.target.value)}
-          >
-            {languageOptions.map((lang) => (
-              <option key={`source-${lang.value}`} value={lang.value}>
-                {lang.label}
-              </option>
-            ))}
-          </select>
-          <button
-            className="switch-lang-button"
-            onClick={handleSwitchLanguages}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
-              />
-            </svg>
-          </button>
-          <select
-            className="language-select"
-            value={targetLang}
-            onChange={(e) => setTargetLang(e.target.value)}
-          >
-            {languageOptions
-              .filter((lang) => lang.value !== "auto")
-              .map((lang) => (
-                <option key={`target-${lang.value}`} value={lang.value}>
-                  {lang.label}
-                </option>
-              ))}
-          </select>
-        </div>
+        
+        <LanguageSelector
+          sourceLang={sourceLang}
+          targetLang={targetLang}
+          onSourceLangChange={setSourceLang}
+          onTargetLangChange={setTargetLang}
+          onSwitchLanguages={handleSwitchLanguagesWrapper}
+          languageOptions={languageOptions}
+        />
 
-        {/* 译文区域 */}
-        <div className="text-area-container">
-          <h3 className="area-title">译文</h3>
-          <div
-            ref={translatedRef}
-            className="text-area translated-text"
-            onScroll={() => handleScroll("translated")}
-          >
-            {isTranslating ? (
-              <span className="placeholder">正在翻译中...</span>
-            ) : (
-              translatedText || (
-                <span className="placeholder">翻译结果将显示在这里</span>
-              )
-            )}
-          </div>
-          {translatedText && !isTranslating && (
-            <button onClick={handleCopy} className="copy-button">
-              {isCopied ? "✓ 已复制" : "复制"}
-            </button>
-          )}
-        </div>
+        <TextArea
+          type="translated"
+          title="译文"
+          value={translatedText}
+          onScroll={() => handleScrollWrapper("translated")}
+          ref={translatedRef}
+          isTranslating={isTranslating}
+          onCopy={handleCopyWrapper}
+          isCopied={isCopied}
+        />
       </div>
     </div>
   );
