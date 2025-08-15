@@ -1,7 +1,5 @@
 import { useState, useCallback } from "react";
-import type { SettingsFormData } from "../types/settings";
 import type {
-  APIConfig,
   ImageAnalysisRequest,
   OpenAIResponse,
 } from "../types/electron";
@@ -30,7 +28,7 @@ export const useImageAnalysis = () => {
   // 分析图片
   const analyzeImage = useCallback(
     async (imageData: string, prompt?: string) => {
-      const dynamicPrompt =
+      const finalPrompt =
         prompt ||
         `请分析图片内容，提取图片中的文本内容，严格按图片内容逐字输出原文`;
       setState((prev) => ({
@@ -47,6 +45,9 @@ export const useImageAnalysis = () => {
         // 构建请求参数
         const request: ImageAnalysisRequest = {
           imageData,
+          prompt: finalPrompt,
+          maxTokens: 4000,
+          temperature: 0.1,
         };
 
         // 调用preload的API

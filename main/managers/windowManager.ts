@@ -15,6 +15,7 @@ export class WindowManager {
   private mainWindow: BrowserWindow | null = null;
   private screenshotWindow: BrowserWindow | null = null;
   private resultWindow: BrowserWindow | null = null;
+  private htmlViewerWindow: BrowserWindow | null = null;
 
   getMainWindow(): BrowserWindow | null {
     return this.mainWindow;
@@ -26,6 +27,10 @@ export class WindowManager {
 
   getResultWindow(): BrowserWindow | null {
     return this.resultWindow;
+  }
+
+  getHtmlViewerWindow(): BrowserWindow | null {
+    return this.htmlViewerWindow;
   }
 
   createMainWindow(): BrowserWindow | null {
@@ -57,7 +62,7 @@ export class WindowManager {
       // 设置显示媒体请求处理器
       try {
         session.defaultSession.setDisplayMediaRequestHandler(
-          (request, callback) => {
+          (_request, callback) => {
             desktopCapturer
               .getSources({ types: ["screen"] })
               .then((sources) => {
@@ -156,7 +161,7 @@ export class WindowManager {
 
     this.screenshotWindow.webContents.on(
       "did-fail-load",
-      (event, errorCode, errorDescription) => {
+      (_event, errorCode, errorDescription) => {
         console.error("窗口加载失败:", errorCode, errorDescription);
       }
     );
@@ -234,6 +239,183 @@ export class WindowManager {
     });
   }
 
+  createHtmlViewerWindow(htmlContent: string, title = "AI 分析结果"): void {
+    // 如果已有HTML查看器窗口，先关闭
+    if (this.htmlViewerWindow) {
+      this.htmlViewerWindow.close();
+      this.htmlViewerWindow.destroy();
+    }
+
+    this.htmlViewerWindow = new BrowserWindow({
+      width: 1000,
+      height: 700,
+      minWidth: 600,
+      minHeight: 400,
+      alwaysOnTop: true,
+      autoHideMenuBar: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        webSecurity: true,
+        allowRunningInsecureContent: false,
+      },
+      frame: true,
+      titleBarStyle: "default",
+      title: title,
+      show: false,
+    });
+
+    // 创建HTML页面内容
+    const htmlPage = `
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #fff;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            background-color: #fff;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        th, td {
+            border: 1px solid #e1e4e8;
+            padding: 12px 16px;
+            text-align: left;
+        }
+        th {
+            background-color: #f6f8fa;
+            font-weight: 600;
+            color: #24292e;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        pre {
+            background-color: #f6f8fa;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            border: 1px solid #e1e4e8;
+            margin: 16px 0;
+        }
+        code {
+            background-color: #f6f8fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.9em;
+            border: 1px solid #e1e4e8;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            border: none;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+        h1 {
+            font-size: 2em;
+            border-bottom: 1px solid #e1e4e8;
+            padding-bottom: 10px;
+        }
+        h2 {
+            font-size: 1.5em;
+            border-bottom: 1px solid #e1e4e8;
+            padding-bottom: 8px;
+        }
+        ul, ol {
+            padding-left: 24px;
+            margin: 16px 0;
+        }
+        li {
+            margin: 4px 0;
+        }
+        blockquote {
+            margin: 16px 0;
+            padding: 0 16px;
+            color: #6a737d;
+            border-left: 4px solid #dfe2e5;
+            background-color: #f6f8fa;
+        }
+        a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content">
+            ${htmlContent}
+        </div>
+    </div>
+</body>
+</html>`;
+    // 加载HTML内容
+    this.htmlViewerWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent.replace(/```html/g, "").replace(/```/g, ""))}`);
+
+    this.htmlViewerWindow.once("ready-to-show", () => {
+      if (this.htmlViewerWindow && !this.htmlViewerWindow.isDestroyed()) {
+        this.htmlViewerWindow.show();
+        this.htmlViewerWindow.focus();
+      }
+    });
+
+    this.htmlViewerWindow.on("closed", () => {
+      console.log("HTML viewer window closed");
+      this.htmlViewerWindow = null;
+    });
+
+    // 开发者工具快捷键
+    this.htmlViewerWindow.webContents.on("before-input-event", (event, input) => {
+      if (input.key === "F12") {
+        event.preventDefault();
+        this.htmlViewerWindow?.webContents.openDevTools();
+      }
+    });
+  }
+
   async hideAllWindows(): Promise<void> {
     if (this.mainWindow) {
       this.mainWindow.hide();
@@ -254,7 +436,7 @@ export class WindowManager {
   }
 
   registerIPCHandlers(): void {
-    ipcMain.handle("open-result-window", async (event, resultContent) => {
+    ipcMain.handle("open-result-window", async (_event, resultContent) => {
       try {
         console.log("open-result-window", resultContent);
         this.createResultWindow(resultContent);
@@ -296,7 +478,7 @@ export class WindowManager {
 
     ipcMain.handle(
       "create-screenshot-window",
-      async (event, screenshotData) => {
+      async (_event, screenshotData) => {
         try {
           console.log("received create screenshot window request, data:");
           this.createScreenshotWindow(screenshotData);
@@ -349,6 +531,21 @@ export class WindowManager {
 
     ipcMain.handle("is-tray-available", () => {
       return true;
+    });
+
+    // HTML查看器窗口
+    ipcMain.handle("open-html-viewer", async (_event, htmlContent: string, title?: string) => {
+      try {
+        console.log("open-html-viewer", { contentLength: htmlContent?.length, title });
+        this.createHtmlViewerWindow(htmlContent, title);
+        return { success: true };
+      } catch (error) {
+        console.error("创建HTML查看器窗口失败:", error);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误",
+        };
+      }
     });
   }
 }

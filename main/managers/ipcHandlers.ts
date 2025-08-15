@@ -40,7 +40,7 @@ export class IPCHandlers {
   private registerAPIHandlers(): void {
     ipcMain.handle(
       "translate-text",
-      async (event, request: TranslateRequest) => {
+      async (_event, request: TranslateRequest) => {
         try {
           console.log("收到文本翻译请求:", request);
           
@@ -66,7 +66,7 @@ export class IPCHandlers {
 
     ipcMain.handle(
       "analyze-image-openai",
-      async (event, request: ImageAnalysisRequest) => {
+      async (_event, request: ImageAnalysisRequest) => {
         try {
           const config = this.configManager.getLatestConfigWithDefaults();
           const apiConfig: APIConfig = {
@@ -94,7 +94,7 @@ export class IPCHandlers {
       }
     );
 
-    ipcMain.handle("validate-openai-config", async (event) => {
+    ipcMain.handle("validate-openai-config", async () => {
       try {
         const config = this.configManager.getLatestConfigWithDefaults();
         const apiConfig: APIConfig = {
@@ -122,7 +122,7 @@ export class IPCHandlers {
       }
     });
 
-    ipcMain.handle("get-openai-models", async (event) => {
+    ipcMain.handle("get-openai-models", async () => {
       try {
         const config = this.configManager.getLatestConfigWithDefaults();
         const apiConfig: APIConfig = {
@@ -196,7 +196,7 @@ export class IPCHandlers {
           for (const strategy of pathStrategies) {
             console.log(`[AutoLaunch] 检查策略: ${strategy.name}, 路径: ${strategy.path}`);
             if (fs.existsSync(strategy.path)) {
-              const options: any = { path: strategy.path };
+              const options: { path: string; args?: string[] } = { path: strategy.path };
               if (strategy.args) {
                 options.args = strategy.args;
               }
@@ -220,7 +220,7 @@ export class IPCHandlers {
             console.log(`[AutoLaunch] 未找到活跃策略，使用第一个可用策略`);
             const firstAvailable = pathStrategies.find(s => fs.existsSync(s.path));
             if (firstAvailable) {
-              const options: any = { path: firstAvailable.path };
+              const options: { path: string; args?: string[] } = { path: firstAvailable.path };
               if (firstAvailable.args) {
                 options.args = firstAvailable.args;
               }
@@ -245,9 +245,9 @@ export class IPCHandlers {
           const settings = app.getLoginItemSettings();
           return { success: true, openAtLogin: settings.openAtLogin, raw: settings };
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`[AutoLaunch] 获取状态失败:`, error);
-        return { success: false, error: error?.message || String(error) };
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
       }
     });
 
@@ -306,7 +306,7 @@ export class IPCHandlers {
             console.log(`[AutoLaunch] 禁用开机自启，清除所有策略的设置`);
             for (const strategy of pathStrategies) {
               if (fs.existsSync(strategy.path)) {
-                const clearOptions: any = {
+                const clearOptions: { openAtLogin: boolean; path: string; args?: string[] } = {
                   openAtLogin: false,
                   path: strategy.path
                 };
@@ -320,7 +320,7 @@ export class IPCHandlers {
           }
 
           // 设置开机自启
-          const loginSettings: any = {
+          const loginSettings: { openAtLogin: boolean; path: string; args?: string[] } = {
             openAtLogin: enable,
             path: selectedStrategy.path
           };
@@ -333,7 +333,7 @@ export class IPCHandlers {
           app.setLoginItemSettings(loginSettings);
 
           // 验证设置结果
-          const confirmOptions: any = {
+          const confirmOptions: { path: string; args?: string[] } = {
             path: selectedStrategy.path
           };
           if (selectedStrategy.args) {
@@ -367,9 +367,9 @@ export class IPCHandlers {
             verified: isActuallySet
           };
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`[AutoLaunch] 设置失败:`, error);
-        return { success: false, error: error?.message || String(error) };
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
       }
     });
 
@@ -378,8 +378,8 @@ export class IPCHandlers {
       try {
         const result = await validateAutoLaunchStatus();
         return { success: true, ...result };
-      } catch (error: any) {
-        return { success: false, error: error?.message || String(error) };
+      } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
       }
     });
 
@@ -388,8 +388,8 @@ export class IPCHandlers {
       try {
         const report = await getAutoLaunchDiagnostics();
         return { success: true, report };
-      } catch (error: any) {
-        return { success: false, error: error?.message || String(error) };
+      } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
       }
     });
   }

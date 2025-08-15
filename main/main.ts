@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut } from "electron";
+import { app, BrowserWindow } from "electron";
 import started from "electron-squirrel-startup";
 import { WindowManager } from "./managers/windowManager";
 import { ConfigManager } from "./managers/configManager";

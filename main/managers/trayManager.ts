@@ -5,7 +5,6 @@ import type { ConfigManager } from "./configManager";
 import type { HotkeyConfig } from "../types";
 import { ScreenshotService } from "../services/screenshotService";
 
-declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 
 export class TrayManager {
   private tray: Tray | null = null;

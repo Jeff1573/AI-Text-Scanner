@@ -121,7 +121,7 @@ export class ConfigManager {
     }
   }
 
-  async saveConfig(config: ConfigProvider, applyHotkeysCallback?: () => any): Promise<SaveResult> {
+  async saveConfig(config: ConfigProvider, applyHotkeysCallback?: () => void): Promise<SaveResult> {
     try {
       console.log("save-config", config);
       const configData: Config = {
@@ -167,7 +167,7 @@ export class ConfigManager {
     }
   }
 
-  registerIPCHandlers(applyHotkeysCallback?: () => any): void {
+  registerIPCHandlers(applyHotkeysCallback?: () => void): void {
     ipcMain.handle("save-config", async (event, config: ConfigProvider) => {
       return this.saveConfig(config, applyHotkeysCallback);
     });

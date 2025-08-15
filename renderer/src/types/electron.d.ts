@@ -99,6 +99,8 @@ export interface ElectronAPI {
   setLoginItemSettings: (enable: boolean) => Promise<{ success: boolean; openAtLogin?: boolean; strategy?: string; path?: string; verified?: boolean; error?: string }>;
   validateAutoLaunch: () => Promise<{ success: boolean; isValid?: boolean; strategy?: string; path?: string; error?: string }>;
   getAutoLaunchDiagnostics: () => Promise<{ success: boolean; report?: string; error?: string }>;
+  // HTML查看器窗口
+  openHtmlViewer: (htmlContent: string, title?: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 declare global {

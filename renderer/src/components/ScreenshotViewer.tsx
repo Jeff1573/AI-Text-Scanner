@@ -2,8 +2,17 @@ import { useCallback, useEffect } from "react";
 import { useScreenshotViewerState } from "../hooks/useScreenshotViewerState";
 import { useScreenshotViewerEffects } from "../hooks/useScreenshotViewerEffects";
 import { useImageAnalysis } from "../hooks/useImageAnalysis";
-import { calculateCropCoordinates, cropImage, saveSelectedImage } from "../utils/imageUtils";
-import { getImageElement, getClampedPosition, calculateSelection, isValidSelection } from "../utils/mouseUtils";
+import {
+  calculateCropCoordinates,
+  cropImage,
+  saveSelectedImage,
+} from "../utils/imageUtils";
+import {
+  getImageElement,
+  getClampedPosition,
+  calculateSelection,
+  isValidSelection,
+} from "../utils/mouseUtils";
 import { ScreenshotContent } from "./ScreenshotContent";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
@@ -35,10 +44,8 @@ export const ScreenshotViewer = () => {
     analysisError,
     isAnalyzing,
     analyzeImage,
-    clearAnalysis
+    clearAnalysis,
   } = useImageAnalysis();
-
-
 
   useScreenshotViewerEffects(
     setScreenshotData,
@@ -48,20 +55,32 @@ export const ScreenshotViewer = () => {
     loading
   );
 
-  // 监听识别结果，成功则打开新窗口并关闭自己，失败则提示
+  // 监听识别结果，成功则打开新的HTML查看器窗口，失败则提示
   useEffect(() => {
     if (analysisResult && !analysisError) {
-      // TODO: 识别成功，获取结果。
       console.log("analysisResult", analysisResult);
-      // window.electronAPI.openResultWindow(analysisResult).then(() => {
-        // window.close();
-      // });
+      // 调用主进程创建HTML查看器窗口
+      window.electronAPI.openHtmlViewer(analysisResult, "AI 分析结果")
+        .then((result: { success: boolean; error?: string }) => {
+          if (result.success) {
+            console.log("HTML查看器窗口创建成功");
+            // 关闭当前截图窗口
+            window.close();
+          } else {
+            console.error("HTML查看器窗口创建失败:", result.error);
+            alert("打开结果窗口失败: " + result.error);
+          }
+        })
+        .catch((error: unknown) => {
+          console.error("调用HTML查看器失败:", error);
+          alert("打开结果窗口失败");
+        });
     } else if (analysisError) {
       alert(analysisError);
       clearAnalysis();
       resetSelection();
     }
-  }, [analysisResult, analysisError]);
+  }, [analysisResult, analysisError, clearAnalysis, resetSelection]);
 
   // 支持按 ESC 关闭窗口
   useEffect(() => {
@@ -75,25 +94,31 @@ export const ScreenshotViewer = () => {
   }, []);
 
   // 处理鼠标按下事件
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (!showSelector) return;
-    const imgElement = getImageElement();
-    if (!imgElement) return;
-    const position = getClampedPosition(e.clientX, e.clientY, imgElement);
-    setStartPos(position);
-    setSelection({ ...position, width: 0, height: 0 });
-    setIsSelecting(true);
-  }, [showSelector, setStartPos, setSelection, setIsSelecting]);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!showSelector) return;
+      const imgElement = getImageElement();
+      if (!imgElement) return;
+      const position = getClampedPosition(e.clientX, e.clientY, imgElement);
+      setStartPos(position);
+      setSelection({ ...position, width: 0, height: 0 });
+      setIsSelecting(true);
+    },
+    [showSelector, setStartPos, setSelection, setIsSelecting]
+  );
 
   // 处理鼠标移动事件
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isSelecting || !showSelector) return;
-    const imgElement = getImageElement();
-    if (!imgElement) return;
-    const currentPos = getClampedPosition(e.clientX, e.clientY, imgElement);
-    const newSelection = calculateSelection(currentPos, startPos);
-    setSelection(newSelection);
-  }, [isSelecting, showSelector, startPos, setSelection]);
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isSelecting || !showSelector) return;
+      const imgElement = getImageElement();
+      if (!imgElement) return;
+      const currentPos = getClampedPosition(e.clientX, e.clientY, imgElement);
+      const newSelection = calculateSelection(currentPos, startPos);
+      setSelection(newSelection);
+    },
+    [isSelecting, showSelector, startPos, setSelection]
+  );
 
   // 处理鼠标松开事件
   const handleMouseUp = useCallback(() => {
@@ -127,12 +152,19 @@ export const ScreenshotViewer = () => {
         displayHeight
       );
       try {
-        const selectedImageData = await cropImage(screenshotData.thumbnail, cropCoords);
-        saveSelectedImage(selectedImageData, cropCoords.width, cropCoords.height);
+        const selectedImageData = await cropImage(
+          screenshotData.thumbnail,
+          cropCoords
+        );
+        saveSelectedImage(
+          selectedImageData,
+          cropCoords.width,
+          cropCoords.height
+        );
         // 进行图片分析
         await analyzeImage(selectedImageData);
       } catch (error) {
-        alert('裁剪图片失败，请重试');
+        alert("裁剪图片失败，请重试");
         resetSelection();
       }
     };
@@ -173,4 +205,4 @@ export const ScreenshotViewer = () => {
       </div>
     </div>
   );
-}; 
+};

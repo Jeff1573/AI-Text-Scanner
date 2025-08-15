@@ -13,7 +13,7 @@ export interface AutoLaunchValidationResult {
     appFolder: string;
     exeName: string;
     availableStrategies: string[];
-    electronSettings: any;
+    electronSettings: Electron.LoginItemSettings;
   };
 }
 
@@ -64,7 +64,7 @@ export async function validateAutoLaunchStatus(): Promise<AutoLaunchValidationRe
         availableStrategies.push(strategy.name);
         
         // 检查此策略的 Electron 设置
-        const options: any = { path: strategy.path };
+        const options: { path: string; args?: string[] } = { path: strategy.path };
         if (strategy.args) {
           options.args = strategy.args;
         }

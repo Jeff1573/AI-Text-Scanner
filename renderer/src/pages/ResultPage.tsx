@@ -50,7 +50,7 @@ export const ResultPage = () => {
           setOriginalText(data || "");
         } else if (typeof data === 'object' && data !== null) {
           // 如果是对象，尝试获取original字段
-          setOriginalText((data as any).original || JSON.stringify(data));
+          setOriginalText((data as { original?: string }).original || JSON.stringify(data));
         } else {
           // 其他情况
           setOriginalText(String(data || ""));

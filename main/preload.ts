@@ -4,12 +4,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 // 类型定义
-interface APIConfig {
-  apiKey: string;
-  apiUrl: string;
-  model?: string;
-  customModel?: string;
-}
 
 interface SettingsConfig {
   apiUrl: string;
@@ -173,4 +167,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setLoginItemSettings: (enable: boolean) => ipcRenderer.invoke('set-login-item-settings', enable),
   validateAutoLaunch: () => ipcRenderer.invoke('validate-auto-launch'),
   getAutoLaunchDiagnostics: () => ipcRenderer.invoke('get-auto-launch-diagnostics'),
+
+  // HTML查看器窗口 API
+  openHtmlViewer: (htmlContent: string, title?: string) => ipcRenderer.invoke('open-html-viewer', htmlContent, title),
 });
