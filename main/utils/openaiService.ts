@@ -73,25 +73,9 @@ export async function analyzeImageWithOpenAI(
     *   请生成一个包含 \`<!DOCTYPE html>\`, \`<html>\`, \`<head>\`, \`<body>\` 的完整 HTML 文件内容。
     *   在 \`<head>\` 中添加 \`<meta charset="UTF-8">\` 和一个简单的 \`<title>\`。
     *   将最终生成的完整 HTML 代码放入一个 Markdown 代码块中，以便我可以直接复制。
-    * 背景半透明
-
-**输出示例：**
-如果图片中有一段是：
-> **Project Goals**
->
-> This is the first objective of our project.
-
-你的输出中应该包含类似这样的结构：
-\`\`\`html
-<div>
-  <h2>Project Goals</h2>
-  <h2 style="color: #007BFF;">项目目标</h2>
-</div>
-<div>
-  <p>This is the first objective of our project.</p>
-  <p style="color: #007BFF;">这是我们项目的第一个目标。</p>
-</div>
-\`\`\``;
+    *   返回的应该是图片中的内容不要有其他内容，不要添加额外的说明，直接按照原图格式来即可。
+    *   背景尽量美化，整体要协调，但是结构要和原图内一致。
+`;
     console.log("发送OpenAI API请求:", {
       url: config.apiUrl,
       model: config.customModel || config.model,

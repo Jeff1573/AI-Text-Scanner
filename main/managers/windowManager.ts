@@ -133,12 +133,13 @@ export class WindowManager {
         preload: path.join(__dirname, "./preload.js"),
         nodeIntegration: false,
         contextIsolation: true,
-        backgroundThrottling: false,
+        backgroundThrottling: false
       },
     });
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       const url = `${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/screenshot`;
+      this.screenshotWindow.webContents.openDevTools()
       console.log("预热加载URL:", url);
       this.screenshotWindow.loadURL(url);
     } else {
@@ -149,6 +150,17 @@ export class WindowManager {
         }
       );
     }
+
+    // // 开发者工具快捷键
+    // this.screenshotWindow.webContents.on(
+    //   "before-input-event",
+    //   (event, input) => {
+    //     if (input.key === "F12") {
+    //       event.preventDefault();
+    //       this.screenshotWindow?.webContents.openDevTools();
+    //     }
+    //   }
+    // );
 
     ipcMain.on("screenshot-image-ready", () => {
       if (this.screenshotWindow && !this.screenshotWindow.isDestroyed()) {
@@ -174,6 +186,9 @@ export class WindowManager {
   }
 
   createScreenshotWindow(screenshotData: ScreenSource): void {
+    if(this.mainWindow) {
+      this.mainWindow.hide()
+    }
     const win = this.ensureScreenshotWindow();
 
     const sendOnly = () => {
@@ -393,7 +408,11 @@ export class WindowManager {
 </body>
 </html>`;
     // 加载HTML内容
-    this.htmlViewerWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent.replace(/```html/g, "").replace(/```/g, ""))}`);
+    this.htmlViewerWindow.loadURL(
+      `data:text/html;charset=utf-8,${encodeURIComponent(
+        htmlContent.replace(/```html/g, "").replace(/```/g, "")
+      )}`
+    );
 
     this.htmlViewerWindow.once("ready-to-show", () => {
       if (this.htmlViewerWindow && !this.htmlViewerWindow.isDestroyed()) {
@@ -408,12 +427,15 @@ export class WindowManager {
     });
 
     // 开发者工具快捷键
-    this.htmlViewerWindow.webContents.on("before-input-event", (event, input) => {
-      if (input.key === "F12") {
-        event.preventDefault();
-        this.htmlViewerWindow?.webContents.openDevTools();
+    this.htmlViewerWindow.webContents.on(
+      "before-input-event",
+      (event, input) => {
+        if (input.key === "F12") {
+          event.preventDefault();
+          this.htmlViewerWindow?.webContents.openDevTools();
+        }
       }
-    });
+    );
   }
 
   async hideAllWindows(): Promise<void> {
@@ -534,18 +556,24 @@ export class WindowManager {
     });
 
     // HTML查看器窗口
-    ipcMain.handle("open-html-viewer", async (_event, htmlContent: string, title?: string) => {
-      try {
-        console.log("open-html-viewer", { contentLength: htmlContent?.length, title });
-        this.createHtmlViewerWindow(htmlContent, title);
-        return { success: true };
-      } catch (error) {
-        console.error("创建HTML查看器窗口失败:", error);
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : "未知错误",
-        };
+    ipcMain.handle(
+      "open-html-viewer",
+      async (_event, htmlContent: string, title?: string) => {
+        try {
+          console.log("open-html-viewer", {
+            contentLength: htmlContent?.length,
+            title,
+          });
+          this.createHtmlViewerWindow(htmlContent, title);
+          return { success: true };
+        } catch (error) {
+          console.error("创建HTML查看器窗口失败:", error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "未知错误",
+          };
+        }
       }
-    });
+    );
   }
 }
