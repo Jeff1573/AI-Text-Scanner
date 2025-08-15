@@ -18,11 +18,11 @@ export const router = createHashRouter([
         path: "settings",
         element: <SettingsPage />,
       },
-      {
-        path: "screenshot",
-        element: <ScreenshotViewer />,
-      },
     ],
+  },
+  {
+    path: "screenshot",
+    element: <ScreenshotViewer />,
   },
   {
     path: "result",

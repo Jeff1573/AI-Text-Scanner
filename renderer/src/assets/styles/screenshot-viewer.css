@@ -9,6 +9,20 @@
   display: flex;
   flex-direction: column;
   z-index: 9999;
+  /* 确保完全独立于主界面 */
+  isolation: isolate;
+  /* 重置可能继承的样式 */
+  font-family: inherit;
+  color: inherit;
+  /* 确保完全覆盖，无缝隙 */
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* 确保截图查看器内的所有元素都不会受到外部样式影响 */
+.screenshot-viewer * {
+  box-sizing: border-box;
 }
 
 .screenshot-viewer.loading {
@@ -94,17 +108,20 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 1rem;
+  padding: 0; /* 移除padding，消除四周缝隙 */
   overflow: hidden;
   position: relative;
+  width: 100%;
+  height: 100%;
+  margin: 0;
 }
 
 .screenshot-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 改为cover确保完全填满 */
+  border-radius: 0; /* 移除圆角 */
+  box-shadow: none; /* 移除阴影 */
   user-select: none;
   pointer-events: none;
 }

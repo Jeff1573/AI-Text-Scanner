@@ -32,7 +32,7 @@ export const ScreenshotContent = ({
       onMouseUp={onMouseUp}
       style={{ cursor: showSelector ? "crosshair" : "default" }}
     >
-      <div style={{ position: "relative", display: "inline-block" }}>
+      <div style={{ position: "relative", width: "100%", height: "100%" }}>
         <img
           src={screenshotData.thumbnail}
           alt={screenshotData.name}
@@ -45,7 +45,6 @@ export const ScreenshotContent = ({
             }
           }}
           onError={(e) => console.error("图片加载失败:", e)}
-          style={{ maxWidth: "100%", height: "auto" }}
         />
 
         {/* 选择框 */}
