@@ -96,7 +96,7 @@ export async function analyzeImageWithOpenAI(
     *   在 \`<head>\` 中添加 \`<meta charset="UTF-8">\` 和一个简单的 \`<title>\`。
     *   将最终生成的完整 HTML 代码放入一个 Markdown 代码块中，以便我可以直接复制。
     *   返回的应该是图片中的内容不要有其他内容，不要添加额外的说明，直接按照原图格式来即可。
-    *   统一使用浅色背景，不要根据原图背景设置样式。
+    *   统一使用浅色背景，不要根据原图背景设置样式，文本格式严格按照原图实现。
 `;
     logger.info("发送OpenAI API请求", {
       url: config.apiUrl,
