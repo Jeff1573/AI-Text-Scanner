@@ -102,6 +102,8 @@ export interface ElectronAPI {
   getAutoLaunchDiagnostics: () => Promise<{ success: boolean; report?: string; error?: string }>;
   // HTML查看器窗口
   openHtmlViewer: (htmlContent: string, title?: string) => Promise<{ success: boolean; error?: string }>;
+  // 获取应用版本
+  getVersion: () => Promise<{ success: boolean; version?: string; error?: string }>;
 }
 
 declare global {

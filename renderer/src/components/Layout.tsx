@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ConfigProvider } from "antd";
 import zhCN from "antd/locale/zh_CN";
@@ -9,6 +10,22 @@ export const Layout = () => {
   const { isSidebarCollapsed, toggleSidebar } = useMainAppState();
   const location = useLocation();
   const navigate = useNavigate();
+  const [version, setVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchVersion = async () => {
+      try {
+        const result = await window.electronAPI.getVersion();
+        if (result.success && result.version) {
+          setVersion(result.version);
+        }
+      } catch (error) {
+        console.error("Failed to fetch version:", error);
+      }
+    };
+
+    fetchVersion();
+  }, []);
 
   // 根据当前路径确定活动菜单项
   const isHomeActive = location.pathname === "/";
@@ -75,6 +92,11 @@ export const Layout = () => {
         {/* 主内容区域 */}
         <div className="main-content">
           <Outlet />
+          {version && (
+            <footer className="app-footer">
+              Version: v{version}
+            </footer>
+          )}
         </div>
       </div>
     </ConfigProvider>

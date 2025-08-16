@@ -23,6 +23,7 @@ export class IPCHandlers {
     this.registerClipboardHandlers();
     this.registerAPIHandlers();
     this.registerSystemHandlers();
+    this.registerVersionHandler();
   }
 
   private registerClipboardHandlers(): void {
@@ -153,6 +154,20 @@ export class IPCHandlers {
           success: false,
           error: error instanceof Error ? error.message : "未知错误",
           models: [],
+        };
+      }
+    });
+  }
+
+  private registerVersionHandler(): void {
+    ipcMain.handle("get-version", async () => {
+      try {
+        return { success: true, version: app.getVersion() };
+      } catch (error) {
+        logger.error("获取应用版本失败", { error });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误",
         };
       }
     });

@@ -178,4 +178,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // HTML查看器窗口 API
   openHtmlViewer: (htmlContent: string, title?: string) => ipcRenderer.invoke('open-html-viewer', htmlContent, title),
+
+  // 获取应用版本
+  getVersion: () => ipcRenderer.invoke('get-version'),
 });
