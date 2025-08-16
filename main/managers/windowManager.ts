@@ -423,13 +423,16 @@ export class WindowManager {
       this.htmlViewerWindow = null;
     });
 
-    // 开发者工具快捷键
+    // 开发者工具快捷键和ESC关闭窗口
     this.htmlViewerWindow.webContents.on(
       "before-input-event",
       (event, input) => {
         if (input.key === "F12") {
           event.preventDefault();
           this.htmlViewerWindow?.webContents.openDevTools();
+        } else if (input.key === "Escape") {
+          event.preventDefault();
+          this.htmlViewerWindow?.close();
         }
       }
     );
