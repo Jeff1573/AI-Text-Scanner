@@ -70,6 +70,8 @@ export async function analyzeImageWithOpenAI(
     const openai = new OpenAI({
       apiKey: config.apiKey,
       baseURL: config.apiUrl, // 使用自定义API地址
+      timeout: 5000,
+      maxRetries: 1
     });
     logger.info("OpenAI客户端实例创建成功");
 
@@ -96,7 +98,7 @@ export async function analyzeImageWithOpenAI(
     *   在 \`<head>\` 中添加 \`<meta charset="UTF-8">\` 和一个简单的 \`<title>\`。
     *   将最终生成的完整 HTML 代码放入一个 Markdown 代码块中，以便我可以直接复制。
     *   返回的应该是图片中的内容不要有其他内容，不要添加额外的说明，直接按照原图格式来即可。
-    *   统一使用浅色背景，不要根据原图背景设置样式，文本格式严格按照原图实现。
+    *   根据原图背景设置样式，文本格式严格按照原图实现。
 `;
     logger.info("发送OpenAI API请求", {
       url: config.apiUrl,
@@ -194,7 +196,8 @@ export async function validateOpenAIConfig(
     const openai = new OpenAI({
       apiKey: config.apiKey,
       baseURL: config.apiUrl,
-      timeout: 4000,
+      timeout: 5000,
+      maxRetries: 1
     });
 
     // 发送一个简单的测试请求
@@ -222,6 +225,8 @@ export async function getAvailableOpenAIModels(
     const openai = new OpenAI({
       apiKey: config.apiKey,
       baseURL: config.apiUrl,
+      timeout: 5000,
+      maxRetries: 1
     });
 
     const response = await openai.models.list();
@@ -265,6 +270,8 @@ export async function translateText(
     const openai = new OpenAI({
       apiKey: config.apiKey,
       baseURL: config.apiUrl,
+      maxRetries: 1,
+      timeout: 5000
     });
 
     const system_prompt = `
