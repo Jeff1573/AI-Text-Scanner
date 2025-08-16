@@ -184,7 +184,7 @@ export class WindowManager {
   }
 
   createScreenshotWindow(screenshotData: ScreenSource): void {
-    if(this.mainWindow) {
+    if(this.mainWindow && !this.mainWindow.isDestroyed()) {
       this.mainWindow.hide()
     }
     const win = this.ensureScreenshotWindow();
@@ -439,14 +439,14 @@ export class WindowManager {
   }
 
   async hideAllWindows(): Promise<void> {
-    if (this.mainWindow) {
+    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
       this.mainWindow.hide();
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
   showMainWindow(): void {
-    if (this.mainWindow) {
+    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
       if (this.mainWindow.isVisible()) {
         this.mainWindow.focus();
       } else {
@@ -482,13 +482,13 @@ export class WindowManager {
           sources: sources,
         };
 
-        if (this.mainWindow) {
+        if (this.mainWindow && !this.mainWindow.isDestroyed()) {
           this.mainWindow.show();
         }
 
         return result;
       } catch (error) {
-        if (this.mainWindow) {
+        if (this.mainWindow && !this.mainWindow.isDestroyed()) {
           this.mainWindow.show();
         }
 

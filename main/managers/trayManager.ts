@@ -58,7 +58,7 @@ export class TrayManager {
             const screenshotData = await ScreenshotService.captureScreen();
 
             const mainWindow = this.windowManager.getMainWindow();
-            if (mainWindow) {
+            if (mainWindow && !mainWindow.isDestroyed()) {
               mainWindow.show();
               mainWindow.setAlwaysOnTop(true);
               mainWindow.maximize();
