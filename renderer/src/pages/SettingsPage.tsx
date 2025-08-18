@@ -66,17 +66,29 @@ export const SettingsPage = () => {
   }
 
   const handleSave = async () => {
-    const hideLoading = messageApi.loading('正在保存设置...', 0);
+    const hideLoading = messageApi.loading('正在保存并验证设置...', 0);
     
     try {
-      const ok = await handleSaveSettings();
+      const result = await handleSaveSettings();
       hideLoading();
       
-      if (ok) {
-        messageApi.success({
-          content: "设置保存成功！配置已生效。",
-          duration: 3,
-        });
+      if (result.success) {
+        if (result.validationSuccess) {
+          messageApi.success({
+            content: "设置已保存，API配置验证成功！",
+            duration: 3,
+          });
+        } else if (result.validationSkipped) {
+          messageApi.warning({
+            content: "设置已保存，但API密钥或地址为空，已跳过验证。",
+            duration: 4,
+          });
+        } else {
+          messageApi.error({
+            content: "设置已保存，但API配置验证失败，请检查相关错误信息。",
+            duration: 5,
+          });
+        }
       } else {
         messageApi.error({
           content: "保存失败，请检查表单中的错误信息并修正。",
@@ -86,7 +98,7 @@ export const SettingsPage = () => {
     } catch (error) {
       hideLoading();
       messageApi.error({
-        content: "保存过程中发生错误，请稍后重试。",
+        content: "保存过程中发生未知错误，请稍后重试。",
         duration: 3,
       });
     }

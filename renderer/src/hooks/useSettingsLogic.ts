@@ -81,7 +81,7 @@ export const useSettingsLogic = () => {
   };
 
   // 验证API配置
-  const validateApiConfig = async (): Promise<boolean> => {
+  const handleValidateApiConfig = async (): Promise<boolean> => {
     if (!validateForm()) {
       return false;
     }
@@ -147,51 +147,56 @@ export const useSettingsLogic = () => {
   };
 
   // 保存设置
-  const handleSaveSettings = async (): Promise<boolean> => {
+  const handleSaveSettings = async (): Promise<{ success: boolean; validationSkipped?: boolean; validationSuccess?: boolean }> => {
     if (!validateForm()) {
-      return false;
+      return { success: false };
     }
     
     setIsSaving(true);
+    setIsValidating(true); // 同���设置验证状态
+    clearErrors();
+
     try {
-      // 先更新本地状态
+      // 1. 更新本地状态
       setGlobalConfig(formData);
       
-      // 保存配置到磁盘
+      // 2. 保存配置到磁盘
       const saveResult = await window.electronAPI.saveConfig(formData);
       if (!saveResult.success) {
         setFieldError('apiUrl', saveResult.error || '保存失败');
-        return false;
+        return { success: false };
       }
       
-      // 如果开机自启设置发生变化，需要单独处理
+      // 3. 处理开机自启设置
       const currentConfig = await window.electronAPI.getConfig();
       if (currentConfig.success && currentConfig.config?.autoLaunch !== formData.autoLaunch) {
-        console.log(`[Settings] 开机自启设置变化: ${currentConfig.config?.autoLaunch} -> ${formData.autoLaunch}`);
-        
-        try {
-          const autoLaunchResult = await window.electronAPI.setLoginItemSettings(formData.autoLaunch);
-          if (!autoLaunchResult.success || !autoLaunchResult.verified) {
-            const errorMsg = autoLaunchResult.error || '开机自启设置失败';
-            console.error(`[Settings] 开机自启设置失败:`, errorMsg);
-            setFieldError('autoLaunch', errorMsg);
-            return false;
-          }
-          console.log(`[Settings] 开机自启设置成功: ${formData.autoLaunch}`);
-        } catch (autoLaunchError) {
-          const errorMsg = autoLaunchError instanceof Error ? autoLaunchError.message : '开机自启设置异常';
-          console.error(`[Settings] 开机自启设置异常:`, autoLaunchError);
-          setFieldError('autoLaunch', errorMsg);
-          return false;
+        const autoLaunchResult = await window.electronAPI.setLoginItemSettings(formData.autoLaunch);
+        if (!autoLaunchResult.success || !autoLaunchResult.verified) {
+          setFieldError('autoLaunch', autoLaunchResult.error || '开机自启设置失败');
+          return { success: false };
         }
       }
-      
-      return true;
+
+      // 4. 验证API配置
+      if (!formData.apiKey || !formData.apiUrl) {
+        return { success: true, validationSkipped: true };
+      }
+
+      const validationResult = await window.electronAPI.validateOpenAIConfig();
+      if (!validationResult.success) {
+        const errorMessage = getDetailedErrorMessage(validationResult.error);
+        setFieldError('apiKey', errorMessage);
+        return { success: true, validationSuccess: false };
+      }
+
+      return { success: true, validationSuccess: true };
     } catch (error) {
-      setFieldError('apiUrl', '保存失败，请重试');
-      return false;
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      setFieldError('apiUrl', `保存或验证过程中发生错误: ${errorMessage}`);
+      return { success: false };
     } finally {
       setIsSaving(false);
+      setIsValidating(false);
     }
   };
 
@@ -215,7 +220,7 @@ export const useSettingsLogic = () => {
     handleInputChange,
     handleSaveSettings,
     handleResetSettings,
-    validateApiConfig,
+    validateApiConfig: handleValidateApiConfig,
     fetchConfig,
   };
 };
