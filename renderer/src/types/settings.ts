@@ -2,6 +2,7 @@
 
 // 设置表单数据接口
 export interface SettingsFormData {
+  provider: string; // 新增：AI服务提供商
   apiUrl: string;
   apiKey: string;
   model: string;

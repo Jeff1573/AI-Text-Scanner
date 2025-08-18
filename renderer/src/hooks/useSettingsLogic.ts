@@ -33,6 +33,10 @@ export const useSettingsLogic = () => {
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof SettingsFormData, string>> = {};
 
+    if (!formData.provider?.trim()) {
+      newErrors.provider = '请选择一个提供商';
+    }
+
     if (!formData.apiUrl?.trim()) {
       newErrors.apiUrl = 'API地址不能为空';
     } else if (!isValidUrl(formData.apiUrl)) {

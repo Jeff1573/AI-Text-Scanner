@@ -177,10 +177,20 @@ export const SettingsPage = () => {
   const items: CollapseProps["items"] = [
     {
       key: "1",
-      label: "OpenAI API 配置",
+      label: "API 配置",
       children: (
         <Form layout="vertical" style={{ padding: "16px 0" }}>
           {/* 表单项与之前类似，但value和onChange直接来自重构后的hook */}
+          <Form.Item label="提供商" validateStatus={errors.provider ? "error" : ""} help={errors.provider}>
+            <Select
+              value={formData.provider}
+              onChange={(value) => handleInputChange("provider", value)}
+              size="large"
+            >
+              <Select.Option value="openai">OpenAI</Select.Option>
+              {/* 未来可以添加更多提供商 */}
+            </Select>
+          </Form.Item>
           <Form.Item
             label="API地址"
             validateStatus={errors.apiUrl ? "error" : ""}

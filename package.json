@@ -50,13 +50,14 @@
     "vite": "^5.4.19"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.15",
     "@ant-design/icons": "^6.0.0",
+    "ai": "^5.0.15",
     "antd": "^5.26.7",
     "cross-env": "^10.0.0",
     "electron-log": "^5.4.2",
     "electron-squirrel-startup": "^1.0.1",
     "electron-updater": "^6.6.2",
-    "openai": "^5.11.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.7.1",
