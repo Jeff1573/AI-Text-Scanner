@@ -58,9 +58,55 @@ abstract class BaseAIService implements IAiService {
   protected model: LanguageModel;
   protected config: APIConfig;
 
-  abstract analyzeImage(request: ImageAnalysisRequest): Promise<AIResponse>;
   abstract validateConfig(): Promise<boolean>;
   abstract getAvailableModels(): Promise<string[]>;
+
+  async analyzeImage(request: ImageAnalysisRequest): Promise<AIResponse> {
+    try {
+      let targetLang = request.targetLang;
+      if (!targetLang) {
+        const configManager = new ConfigManager();
+        const globalConfig = configManager.getLatestConfigWithDefaults();
+        targetLang = globalConfig.targetLang || 'zh';
+      }
+
+      const system_prompt = `你需要将传给你的图片中的文本内容获取下来，然后以Markdown文本的形式返回给我。请确保返回的内容是图片中的文本内容，不要有其他内容。`;
+
+      const { text, usage } = await generateText({
+        model: this.model,
+        system: system_prompt,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: request.prompt },
+              {
+                type: 'image',
+                image: request.imageData,
+              },
+            ],
+          },
+        ],
+        temperature: request.temperature || 0.7,
+        maxOutputTokens: request.maxTokens || 10000,
+      });
+
+      return {
+        content: text,
+        usage: {
+          promptTokens: usage.inputTokens ?? 0,
+          completionTokens: usage.outputTokens ?? 0,
+          totalTokens: usage.totalTokens ?? 0,
+        },
+      };
+    } catch (error) {
+      logger.error('Image analysis failed', { error });
+      return {
+        content: '',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
 
   async translateText(request: TranslateRequest): Promise<AIResponse> {
     try {
@@ -72,9 +118,9 @@ abstract class BaseAIService implements IAiService {
       return {
         content: text,
         usage: {
-          promptTokens: (usage as any).promptTokens,
-          completionTokens: (usage as any).completionTokens,
-          totalTokens: (usage as any).totalTokens,
+          promptTokens: usage.inputTokens ?? 0,
+          completionTokens: usage.outputTokens ?? 0,
+          totalTokens: usage.totalTokens ?? 0,
         },
       };
     } catch (error) {
@@ -122,85 +168,13 @@ class OpenAIService extends BaseAIService {
     return this.config.customModel || this.config.model || 'gpt-4o';
   }
 
-  async analyzeImage(request: ImageAnalysisRequest): Promise<AIResponse> {
-    try {
-      let targetLang = request.targetLang;
-      if (!targetLang) {
-        const configManager = new ConfigManager();
-        const globalConfig = configManager.getLatestConfigWithDefaults();
-        targetLang = globalConfig.targetLang || 'zh';
-      }
-
-      const system_prompt = `你是一位精通多语言翻译和前端开发的AI专家。你的任务是接收一张图片，并将其内容转换成一个结构化的、双语对照的 HTML 文件。
-
-请严格按照以下步骤执行：
-
-1.  **解析图片结构：** 仔细分析图片中的文本内容和视觉布局。识别出所有结构化元素，包括但不限于：主标题 (\`<h1>\`)、副标题 (\`<h2>\`, \`<h3>\`...)、段落 (\`<p>\`)、无序列表 (\`<ul><li>\`)、有序列表 (\`<ol><li>\`) 和表格 (\`<table>\`)。
-
-2.  **提取原文并构建HTML：** 将识别出的原文内容，按照其在图片中的结构，构建成语义化的 HTML。每一个独立的文本块（如一个段落或一个列表项）都应被一个独立的 HTML 标签包裹。
-
-3.  **翻译文本：
-    *   将所有提取出的原文文本翻译成 **${targetLang}**。
-    *   驼峰命名等单词，需要拆开翻译。
-    *   只能根据上下文来翻译，对于可不翻译的内容（如：数字、标点符号等）则直接使用原文。
-4.  **整合双语内容：** 将翻译后的${targetLang}内容，插入到对应原文HTML元素的正下方。为了保持结构清晰，请将每一组“原文-译文”对用一个 \`<div>\` 容器包裹起来。
-
-5.  **添加样式：**
-    *   为所有翻译后的文本元素添加内联 CSS 样式 \`style="color: #007BFF;"\`，使其以蓝色突出显示。
-    *   你也可以给翻译文本的标签加上一个class，比如 \`class="translation"\`，并在\`<head>\`中定义样式。
-
-6.  **输出格式：**
-    *   请生成一个包含 \`<!DOCTYPE html>\`, \`<html>\`, \`<head>\`, \`<body>\` 的完整 HTML 文件内容。
-    *   在 \`<head>\` 中添加 \`<meta charset="UTF-8">\` 和一个简单的 \`<title>\`。
-    *   将最终生成的完整 HTML 代码放入一个 Markdown 代码块中，以便我可以直接复制。
-    *   返回的应该是图片中的内容不要有其他内容，不要添加额外的说明，直接按照原图格式来即可。
-    *   根据原图背景设置样式，文本格式严格按照原图实现。
-`;
-
-      const { text, usage } = await generateText({
-        model: this.model,
-        system: system_prompt,
-        prompt: request.prompt,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: request.prompt },
-              {
-                type: 'image',
-                image: request.imageData,
-              },
-            ],
-          },
-        ],
-        temperature: request.temperature || 0.7,
-        maxTokens: request.maxTokens || 10000,
-      } as any);
-
-      return {
-        content: text,
-        usage: {
-          promptTokens: (usage as any).promptTokens,
-          completionTokens: (usage as any).completionTokens,
-          totalTokens: (usage as any).totalTokens,
-        },
-      };
-    } catch (error) {
-      logger.error('Image analysis failed', { error });
-      return {
-        content: '',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    }
-  }
-
   async validateConfig(): Promise<boolean> {
     try {
       await generateText({
         model: this.model,
         prompt: 'Health check',
-        maxTokens: 1,
-      } as any);
+        maxOutputTokens: 1,
+      });
       return true;
     } catch (error) {
       logger.error('API config validation failed', { error });
@@ -232,8 +206,8 @@ class GoogleAIService extends BaseAIService {
       await generateText({
         model: this.model,
         prompt: 'Health check',
-        maxTokens: 1,
-      } as any);
+        maxOutputTokens: 1,
+      });
       return true;
     } catch (error) {
       logger.error('Google API config validation failed', { error });
@@ -256,17 +230,13 @@ class AnthropicAIService extends BaseAIService {
     logger.info('AnthropicAIService initialized');
   }
 
-  analyzeImage(request: ImageAnalysisRequest): Promise<AIResponse> {
-    throw new Error('Method not implemented.');
-  }
-
   async validateConfig(): Promise<boolean> {
     try {
       await generateText({
         model: this.model,
         prompt: 'Health check',
-        maxTokens: 1,
-      } as any);
+        maxOutputTokens: 1,
+      });
       return true;
     } catch (error) {
       logger.error('Anthropic API config validation failed', { error });

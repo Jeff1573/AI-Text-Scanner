@@ -67,7 +67,7 @@ export const useImageAnalysis = () => {
 
         // 调用preload的API
         const result: OpenAIResponse =
-          await window.electronAPI.analyzeImageOpenAI(request);
+          await window.electronAPI.analyzeImage(request);
 
         if (result.error) {
           setState((prev) => ({
