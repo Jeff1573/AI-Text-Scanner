@@ -9,6 +9,7 @@ export interface ScreenSource {
 
 // 配置提供者接口
 export interface ConfigProvider {
+  provider: string;
   apiUrl: string;
   apiKey: string;
   model: string;

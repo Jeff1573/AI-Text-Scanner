@@ -188,7 +188,8 @@ export const SettingsPage = () => {
               size="large"
             >
               <Select.Option value="openai">OpenAI</Select.Option>
-              {/* 未来可以添加更多提供商 */}
+              <Select.Option value="google">Google</Select.Option>
+              <Select.Option value="anthropic">Anthropic</Select.Option>
             </Select>
           </Form.Item>
           <Form.Item

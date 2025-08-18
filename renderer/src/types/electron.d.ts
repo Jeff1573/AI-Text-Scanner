@@ -53,28 +53,28 @@ export interface ElectronAPI {
   }>;
   onScreenshotData: (callback: (data: ScreenSource) => void) => void;
   removeScreenshotDataListener: () => void;
-  saveConfig: (config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string }) => Promise<{
+  saveConfig: (config: { provider: string; apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string }) => Promise<{
     success: boolean;
     error?: string;
   }>;
   loadConfig: () => Promise<{
     success: boolean;
-    config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string } | null;
+    config: { provider: string; apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string } | null;
     error?: string;
   }>;
   getLatestConfig: (withDefaults?: boolean) => Promise<{
     success: boolean;
-    config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string; autoLaunch: boolean } | null;
+    config: { provider: string; apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string; autoLaunch: boolean } | null;
     error?: string;
   }>;
   getConfig: () => Promise<{
     success: boolean;
-    config: { apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string; autoLaunch: boolean } | null;
+    config: { provider: string; apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string; autoLaunch: boolean } | null;
     error?: string;
   }>;
-  analyzeImageOpenAI: (request: ImageAnalysisRequest) => Promise<OpenAIResponse>;
-  validateOpenAIConfig: () => Promise<{ success: boolean; error?: string }>;
-  getOpenAIModels: () => Promise<{ success: boolean; models: string[]; error?: string }>;
+  analyzeImage: (request: ImageAnalysisRequest) => Promise<OpenAIResponse>;
+  validateApiConfig: () => Promise<{ success: boolean; error?: string }>;
+  getModels: () => Promise<{ success: boolean; models: string[]; error?: string }>;
   translate: (request: TranslateRequest) => Promise<OpenAIResponse>;
   windowMinimize: () => Promise<void>;
   windowMaximize: () => Promise<void>;

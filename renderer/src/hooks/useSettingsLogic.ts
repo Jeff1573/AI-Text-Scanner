@@ -105,7 +105,7 @@ export const useSettingsLogic = () => {
       }
       
       // API验证直接使用主进程的最新配置
-      const result = await window.electronAPI.validateOpenAIConfig();
+      const result = await window.electronAPI.validateApiConfig();
       
       if (!result.success) {
         const errorMessage = getDetailedErrorMessage(result.error);
@@ -186,7 +186,7 @@ export const useSettingsLogic = () => {
         return { success: true, validationSkipped: true };
       }
 
-      const validationResult = await window.electronAPI.validateOpenAIConfig();
+      const validationResult = await window.electronAPI.validateApiConfig();
       if (!validationResult.success) {
         const errorMessage = getDetailedErrorMessage(validationResult.error);
         setFieldError('apiKey', errorMessage);

@@ -50,7 +50,10 @@
     "vite": "^5.4.19"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.4",
+    "@ai-sdk/google": "^2.0.6",
     "@ai-sdk/openai": "^2.0.15",
+    "@ai-sdk/openai-compatible": "^1.0.7",
     "@ant-design/icons": "^6.0.0",
     "ai": "^5.0.15",
     "antd": "^5.26.7",

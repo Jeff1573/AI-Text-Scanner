@@ -14,6 +14,7 @@ const logger = {
 // 类型定义
 
 interface SettingsConfig {
+  provider: string;
   apiUrl: string;
   apiKey: string;
   model: string;
@@ -83,17 +84,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 获取配置（兼容性API）
   getConfig: () => ipcRenderer.invoke('load-config'),
   
-  // 分析图片 - OpenAI
-  analyzeImageOpenAI: (request: ImageAnalysisRequest) => 
-    ipcRenderer.invoke('analyze-image-openai', request),
+  // 分析图片
+  analyzeImage: (request: ImageAnalysisRequest) =>
+    ipcRenderer.invoke('analyze-image', request),
   
-  // 验证OpenAI API配置
-  validateOpenAIConfig: () => 
-    ipcRenderer.invoke('validate-openai-config'),
+  // 验证API配置
+  validateApiConfig: () =>
+    ipcRenderer.invoke('validate-api-config'),
   
-  // 获取可用的OpenAI模型列表
-  getOpenAIModels: () =>
-    ipcRenderer.invoke('get-openai-models'),
+  // 获取可用的模型列表
+  getModels: () =>
+    ipcRenderer.invoke('get-models'),
 
   // 翻译文本
   translate: (request: TranslateRequest) =>

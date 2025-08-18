@@ -3,14 +3,11 @@ import path from "node:path";
 import fs from "node:fs";
 import type { ConfigManager } from "./configManager";
 import {
-  analyzeImageWithOpenAI,
-  validateOpenAIConfig,
-  getAvailableOpenAIModels,
-  translateText,
+  AIServiceFactory,
   type APIConfig,
   type ImageAnalysisRequest,
   type TranslateRequest,
-} from "../utils/openaiService";
+} from "../utils/aiService";
 import { validateAutoLaunchStatus, getAutoLaunchDiagnostics } from "../utils/autoLaunchValidator";
 import { createModuleLogger } from "../utils/logger";
 
@@ -52,10 +49,12 @@ export class IPCHandlers {
           const apiConfig: APIConfig = {
             apiKey: config.apiKey,
             apiUrl: config.apiUrl,
-            model: config.customModel || config.model
+            model: config.customModel || config.model,
+            provider: config.provider as any,
           };
           
-          const result = await translateText(apiConfig, request);
+          const aiService = AIServiceFactory.create(apiConfig);
+          const result = await aiService.translateText(request);
           logger.info("文本翻译结果", { result });
           return result;
         } catch (error) {
@@ -69,17 +68,19 @@ export class IPCHandlers {
     );
 
     ipcMain.handle(
-      "analyze-image-openai",
+      "analyze-image",
       async (_event, request: ImageAnalysisRequest) => {
         try {
           const config = this.configManager.getLatestConfigWithDefaults();
           const apiConfig: APIConfig = {
             apiKey: config.apiKey,
             apiUrl: config.apiUrl,
-            model: config.customModel || config.model
+            model: config.customModel || config.model,
+            provider: config.provider as any,
           };
           
-          const result = await analyzeImageWithOpenAI(apiConfig, request);
+          const aiService = AIServiceFactory.create(apiConfig);
+          const result = await aiService.analyzeImage(request);
 
           logger.info("图片分析结果", {
             success: !result.error,
@@ -98,27 +99,30 @@ export class IPCHandlers {
       }
     );
 
-    ipcMain.handle("validate-openai-config", async () => {
+    ipcMain.handle("validate-api-config", async () => {
       try {
         const config = this.configManager.getLatestConfigWithDefaults();
         const apiConfig: APIConfig = {
           apiKey: config.apiKey,
           apiUrl: config.apiUrl,
-          model: config.customModel || config.model
+          model: config.customModel || config.model,
+          provider: config.provider as any,
         };
         
-        logger.info("验证OpenAI API配置", {
+        logger.info("验证API配置", {
+          provider: apiConfig.provider,
           apiUrl: apiConfig.apiUrl,
           hasApiKey: !!apiConfig.apiKey,
         });
 
-        const isValid = await validateOpenAIConfig(apiConfig);
+        const aiService = AIServiceFactory.create(apiConfig);
+        const isValid = await aiService.validateConfig();
 
-        logger.info("OpenAI API配置验证结果", { isValid });
+        logger.info("API配置验证结果", { isValid });
 
         return { success: isValid };
       } catch (error) {
-        logger.error("OpenAI API配置验证失败", { error });
+        logger.error("API配置验证失败", { error });
         return {
           success: false,
           error: error instanceof Error ? error.message : "未知错误",
@@ -126,21 +130,24 @@ export class IPCHandlers {
       }
     });
 
-    ipcMain.handle("get-openai-models", async () => {
+    ipcMain.handle("get-models", async () => {
       try {
         const config = this.configManager.getLatestConfigWithDefaults();
         const apiConfig: APIConfig = {
           apiKey: config.apiKey,
           apiUrl: config.apiUrl,
-          model: config.customModel || config.model
+          model: config.customModel || config.model,
+          provider: config.provider as any,
         };
         
-        logger.info("获取OpenAI模型列表", {
+        logger.info("获取模型列表", {
+          provider: apiConfig.provider,
           apiUrl: apiConfig.apiUrl,
           hasApiKey: !!apiConfig.apiKey,
         });
 
-        const models = await getAvailableOpenAIModels(apiConfig);
+        const aiService = AIServiceFactory.create(apiConfig);
+        const models = await aiService.getAvailableModels();
 
         logger.info("获取到的模型列表", { models });
 
@@ -149,7 +156,7 @@ export class IPCHandlers {
           models: models,
         };
       } catch (error) {
-        logger.error("获取OpenAI模型列表失败", { error });
+        logger.error("获取模型列表失败", { error });
         return {
           success: false,
           error: error instanceof Error ? error.message : "未知错误",
