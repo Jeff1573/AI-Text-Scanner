@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useScreenshotViewerState } from "../hooks/useScreenshotViewerState";
 import { useScreenshotViewerEffects } from "../hooks/useScreenshotViewerEffects";
 import { useImageAnalysis } from "../hooks/useImageAnalysis";
@@ -17,6 +17,7 @@ import { ScreenshotContent } from "./ScreenshotContent";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
 import { NoDataState } from "./NoDataState";
+import { FloatingToolbar } from "./FloatingToolbar";
 import "../assets/styles/screenshot-viewer.css";
 
 export const ScreenshotViewer = () => {
@@ -37,6 +38,8 @@ export const ScreenshotViewer = () => {
     setStartPos,
     resetSelection,
   } = useScreenshotViewerState();
+
+  const [showToolbar, setShowToolbar] = useState(false);
 
   // 图片分析状态
   const {
@@ -82,21 +85,48 @@ export const ScreenshotViewer = () => {
     }
   }, [analysisResult, analysisError, clearAnalysis, resetSelection]);
 
+
+
+
+
+  const handleCancel = useCallback(() => {
+    resetSelection();
+    setShowToolbar(false);
+  }, [resetSelection]);
+
   // 支持按 ESC 关闭窗口
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        window.close();
+        if (showToolbar) {
+          handleCancel();
+        } else {
+          window.close();
+        }
       }
     };
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showToolbar) {
+        const toolbar = document.querySelector(".floating-toolbar");
+        if (toolbar && !toolbar.contains(e.target as Node)) {
+          handleCancel();
+        }
+      }
+    };
+
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showToolbar, handleCancel]);
 
   // 处理鼠标按下事件
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (!showSelector) return;
+      if (!showSelector || showToolbar) return;
       const imgElement = getImageElement();
       if (!imgElement) return;
       const position = getClampedPosition(e.clientX, e.clientY, imgElement);
@@ -104,7 +134,7 @@ export const ScreenshotViewer = () => {
       setSelection({ ...position, width: 0, height: 0 });
       setIsSelecting(true);
     },
-    [showSelector, setStartPos, setSelection, setIsSelecting]
+    [showSelector, showToolbar, setStartPos, setSelection, setIsSelecting]
   );
 
   // 处理鼠标移动事件
@@ -124,17 +154,17 @@ export const ScreenshotViewer = () => {
   const handleMouseUp = useCallback(() => {
     if (!isSelecting || !showSelector) return;
     setIsSelecting(false);
-    // 如果选择区域太小，忽略
-    if (!isValidSelection(selection)) {
+    if (isValidSelection(selection)) {
+      setShowToolbar(true);
+    } else {
       resetSelection();
-      return;
     }
-    handleGetSelectedContent();
   }, [isSelecting, showSelector, selection, setIsSelecting, resetSelection]);
 
   // 获取选中内容
   const handleGetSelectedContent = useCallback(async () => {
     if (!screenshotData) return;
+    setShowToolbar(false);
     const imgElement = getImageElement();
     if (!imgElement) return;
     const displayRect = imgElement.getBoundingClientRect();
@@ -171,6 +201,7 @@ export const ScreenshotViewer = () => {
     img.src = screenshotData.thumbnail;
   }, [screenshotData, selection, analyzeImage, resetSelection]);
 
+
   if (loading) {
     return <LoadingState />;
   }
@@ -191,6 +222,14 @@ export const ScreenshotViewer = () => {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
         />
+
+        {showToolbar && (
+          <FloatingToolbar
+            onConfirm={handleGetSelectedContent}
+            onCancel={handleCancel}
+            selection={selection}
+          />
+        )}
 
         {isAnalyzing && (
           <>
