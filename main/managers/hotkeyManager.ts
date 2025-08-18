@@ -30,9 +30,7 @@ export class HotkeyManager {
       logger.info("全局快捷键被触发，准备直接打开结果窗口");
 
       const clipboardText = clipboard.readText();
-      const defaultContent = clipboardText
-        ? JSON.stringify({ original: clipboardText, translated: "" })
-        : '{"original": "", "translated": ""}';
+      const defaultContent = clipboardText ? clipboardText : "";
 
       this.windowManager.createResultWindow(defaultContent);
     });
