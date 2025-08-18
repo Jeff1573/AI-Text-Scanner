@@ -70,6 +70,7 @@ abstract class BaseAIService implements IAiService {
         targetLang = globalConfig.targetLang || 'zh';
       }
 
+      // logger.info('Image analysis request', { request });
       const system_prompt = `你需要将传给你的图片中的文本内容获取下来，然后以Markdown文本的形式返回给我。请确保返回的内容是图片中的文本内容，不要有其他内容。`;
 
       const { text, usage } = await generateText({
@@ -90,6 +91,7 @@ abstract class BaseAIService implements IAiService {
         temperature: request.temperature || 0.7,
         maxOutputTokens: request.maxTokens || 10000,
       });
+
 
       return {
         content: text,
@@ -197,9 +199,9 @@ class GoogleAIService extends BaseAIService {
     logger.info('GoogleAIService initialized');
   }
 
-  analyzeImage(request: ImageAnalysisRequest): Promise<AIResponse> {
-    throw new Error('Method not implemented.');
-  }
+  // analyzeImage(request: ImageAnalysisRequest): Promise<AIResponse> {
+  //   throw new Error('Method not implemented.');
+  // }
 
   async validateConfig(): Promise<boolean> {
     try {

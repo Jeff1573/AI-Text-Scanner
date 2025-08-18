@@ -28,13 +28,13 @@ export class ScreenshotService {
     };
     
     // 开发环境下的调试日志
-    if (process.env.NODE_ENV === 'development') {
-      logger.debug("屏幕信息", {
-        screenResolution: `${screenWidth}x${screenHeight}`,
-        thumbnailSize: `${thumbnailSize.width}x${thumbnailSize.height}`,
-        scale: scale.toFixed(3)
-      });
-    }
+    // if (process.env.NODE_ENV === 'development') {
+    //   logger.debug("屏幕信息", {
+    //     screenResolution: `${screenWidth}x${screenHeight}`,
+    //     thumbnailSize: `${thumbnailSize.width}x${thumbnailSize.height}`,
+    //     scale: scale.toFixed(3)
+    //   });
+    // }
     
     return thumbnailSize;
   }

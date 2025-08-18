@@ -503,7 +503,7 @@ export class WindowManager {
       "create-screenshot-window",
       async (_event, screenshotData) => {
         try {
-          logger.debug("收到创建截图窗口请求", { screenshotData });
+          // logger.debug("收到创建截图窗口请求", { screenshotData });
           this.createScreenshotWindow(screenshotData);
           return { success: true };
         } catch (error) {

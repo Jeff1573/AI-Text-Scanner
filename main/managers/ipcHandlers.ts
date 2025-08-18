@@ -71,6 +71,7 @@ export class IPCHandlers {
       "analyze-image",
       async (_event, request: ImageAnalysisRequest) => {
         try {
+          // logger.info("收到图片分析请求", { request });
           const config = this.configManager.getLatestConfigWithDefaults();
           const apiConfig: APIConfig = {
             apiKey: config.apiKey,
