@@ -4,6 +4,7 @@ import { HomePage } from "../pages/HomePage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { ScreenshotViewer } from "../components";
 import { ResultPage } from "../pages/ResultPage";
+import { ImageAnalysisPage } from "../pages/ImageAnalysisPage";
 
 export const router = createHashRouter([
   {
@@ -27,5 +28,9 @@ export const router = createHashRouter([
   {
     path: "result",
     element: <ResultPage />,
+  },
+  {
+    path: "image-analysis",
+    element: <ImageAnalysisPage />,
   },
 ]);

@@ -21,6 +21,7 @@ export class IPCHandlers {
     this.registerAPIHandlers();
     this.registerSystemHandlers();
     this.registerVersionHandler();
+    this.registerImageAnalysisHandler();
   }
 
   private registerClipboardHandlers(): void {
@@ -173,6 +174,26 @@ export class IPCHandlers {
         return { success: true, version: app.getVersion() };
       } catch (error) {
         logger.error("获取应用版本失败", { error });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误",
+        };
+      }
+    });
+  }
+
+  private registerImageAnalysisHandler(): void {
+    ipcMain.handle("get-image-analysis", async () => {
+      try {
+        // TODO: 实现从实际的图片分析数据获取逻辑
+        // 这里返回示例数据，实际使用时需要替换为真实的图片分析结果
+        return { 
+          success: true, 
+          imageUrl: "", // 这里应该是实际的图片URL
+          analysisText: "暂无解析结果，请先进行图片分析。" // 这里应该是实际的解析文本
+        };
+      } catch (error) {
+        logger.error("获取图片分析数据失败", { error });
         return {
           success: false,
           error: error instanceof Error ? error.message : "未知错误",

@@ -11,7 +11,7 @@ import { ScreenshotService } from "../services/screenshotService";
 import { createModuleLogger } from "../utils/logger";
 
 // 创建WindowManager日志器
-const logger = createModuleLogger('WindowManager');
+const logger = createModuleLogger("WindowManager");
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 
@@ -58,7 +58,9 @@ export class WindowManager {
         icon: iconPath,
       });
 
-      logger.debug("主窗口创建成功", { preloadPath: path.join(__dirname, "./preload.js") });
+      logger.debug("主窗口创建成功", {
+        preloadPath: path.join(__dirname, "./preload.js"),
+      });
 
       // 设置显示媒体请求处理器
       try {
@@ -74,13 +76,17 @@ export class WindowManager {
         );
         logger.info("显示媒体请求处理器设置成功");
       } catch (mediaError) {
-        logger.warn("显示媒体请求处理器设置失败", { error: mediaError.message });
+        logger.warn("显示媒体请求处理器设置失败", {
+          error: mediaError.message,
+        });
       }
 
       // 加载页面
       try {
         if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-          logger.debug("加载开发服务器URL", { url: MAIN_WINDOW_VITE_DEV_SERVER_URL });
+          logger.debug("加载开发服务器URL", {
+            url: MAIN_WINDOW_VITE_DEV_SERVER_URL,
+          });
           this.mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
         } else {
           const htmlPath = path.join(__dirname, `../renderer/index.html`);
@@ -88,7 +94,10 @@ export class WindowManager {
           this.mainWindow.loadFile(htmlPath);
         }
       } catch (loadError) {
-        logger.error("页面加载失败", { error: loadError.message, stack: loadError.stack });
+        logger.error("页面加载失败", {
+          error: loadError.message,
+          stack: loadError.stack,
+        });
         throw loadError;
       }
 
@@ -103,7 +112,10 @@ export class WindowManager {
       logger.info("主窗口创建完成");
       return this.mainWindow;
     } catch (error) {
-      logger.error("创建主窗口失败", { error: error.message, stack: error.stack });
+      logger.error("创建主窗口失败", {
+        error: error.message,
+        stack: error.stack,
+      });
       throw error;
     }
   }
@@ -131,7 +143,7 @@ export class WindowManager {
         preload: path.join(__dirname, "./preload.js"),
         nodeIntegration: false,
         contextIsolation: true,
-        backgroundThrottling: false
+        backgroundThrottling: false,
       },
     });
 
@@ -184,8 +196,8 @@ export class WindowManager {
   }
 
   createScreenshotWindow(screenshotData: ScreenSource): void {
-    if(this.mainWindow && !this.mainWindow.isDestroyed()) {
-      this.mainWindow.hide()
+    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+      this.mainWindow.hide();
     }
     const win = this.ensureScreenshotWindow();
 
@@ -259,162 +271,49 @@ export class WindowManager {
     }
 
     this.htmlViewerWindow = new BrowserWindow({
-      width: 1000,
-      height: 700,
-      minWidth: 600,
-      minHeight: 400,
+      width: 820,
+      height: 500,
       alwaysOnTop: true,
       autoHideMenuBar: true,
       webPreferences: {
+        preload: path.join(__dirname, "./preload.js"),
         nodeIntegration: false,
         contextIsolation: true,
-        webSecurity: true,
-        allowRunningInsecureContent: false,
       },
-      frame: true,
-      titleBarStyle: "default",
-      title: title,
-      show: false,
+      frame: false,
+      titleBarStyle: "hidden",
     });
 
-    // 创建HTML页面内容
-    const htmlPage = `
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title}</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #fff;
-        }
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-        }
-        * {
-            box-sizing: border-box;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 16px 0;
-            background-color: #fff;
-            border-radius: 6px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        th, td {
-            border: 1px solid #e1e4e8;
-            padding: 12px 16px;
-            text-align: left;
-        }
-        th {
-            background-color: #f6f8fa;
-            font-weight: 600;
-            color: #24292e;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        pre {
-            background-color: #f6f8fa;
-            padding: 16px;
-            border-radius: 6px;
-            overflow-x: auto;
-            border: 1px solid #e1e4e8;
-            margin: 16px 0;
-        }
-        code {
-            background-color: #f6f8fa;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-            font-size: 0.9em;
-            border: 1px solid #e1e4e8;
-        }
-        pre code {
-            background: none;
-            padding: 0;
-            border: none;
-        }
-        h1, h2, h3, h4, h5, h6 {
-            margin-top: 24px;
-            margin-bottom: 16px;
-            font-weight: 600;
-            line-height: 1.25;
-        }
-        h1 {
-            font-size: 2em;
-            border-bottom: 1px solid #e1e4e8;
-            padding-bottom: 10px;
-        }
-        h2 {
-            font-size: 1.5em;
-            border-bottom: 1px solid #e1e4e8;
-            padding-bottom: 8px;
-        }
-        ul, ol {
-            padding-left: 24px;
-            margin: 16px 0;
-        }
-        li {
-            margin: 4px 0;
-        }
-        blockquote {
-            margin: 16px 0;
-            padding: 0 16px;
-            color: #6a737d;
-            border-left: 4px solid #dfe2e5;
-            background-color: #f6f8fa;
-        }
-        a {
-            color: #0366d6;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        .content {
-            animation: fadeIn 0.3s ease-in;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="content">
-            ${htmlContent}
-        </div>
-    </div>
-</body>
-</html>`;
     // 加载HTML内容
-    this.htmlViewerWindow.loadURL(
-      `data:text/html;charset=utf-8,${encodeURIComponent(
-        htmlContent.replace(/```html/g, "").replace(/```/g, "")
-      )}`
-    );
+    // 加载页面
+    try {
+      if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+        logger.debug("加载开发服务器URL", {
+          url: MAIN_WINDOW_VITE_DEV_SERVER_URL,
+        });
+        this.htmlViewerWindow.loadURL(
+          `${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/image-analysis`
+        );
+      } else {
+        const htmlPath = path.join(__dirname, `../renderer/index.html`);
+        logger.debug("加载HTML文件", { htmlPath });
+        this.htmlViewerWindow.loadFile(htmlPath, {
+          hash: "image-analysis",
+        });
+      }
+    } catch (loadError) {
+      logger.error("页面加载失败", {
+        error: loadError.message,
+        stack: loadError.stack,
+      });
+      throw loadError;
+    }
 
     this.htmlViewerWindow.once("ready-to-show", () => {
       if (this.htmlViewerWindow && !this.htmlViewerWindow.isDestroyed()) {
         this.htmlViewerWindow.show();
         this.htmlViewerWindow.focus();
+        this.htmlViewerWindow.webContents.send('image-analysis-result', htmlContent)
       }
     });
 
@@ -464,7 +363,9 @@ export class WindowManager {
         this.createResultWindow(resultContent);
         return { success: true };
       } catch (error) {
-        logger.error("打开结果窗口失败", { error: error instanceof Error ? error.message : "未知错误" });
+        logger.error("打开结果窗口失败", {
+          error: error instanceof Error ? error.message : "未知错误",
+        });
         return {
           success: false,
           error: error instanceof Error ? error.message : "未知错误",
@@ -507,7 +408,9 @@ export class WindowManager {
           this.createScreenshotWindow(screenshotData);
           return { success: true };
         } catch (error) {
-          logger.error("创建截图窗口失败", { error: error instanceof Error ? error.message : "未知错误" });
+          logger.error("创建截图窗口失败", {
+            error: error instanceof Error ? error.message : "未知错误",
+          });
           return {
             success: false,
             error: error instanceof Error ? error.message : "未知错误",
@@ -555,11 +458,19 @@ export class WindowManager {
     ipcMain.handle("is-tray-available", () => {
       try {
         // 检查托盘是否可用（在Windows上通常可用）
-        const isAvailable = process.platform === 'win32' || process.platform === 'linux' || process.platform === 'darwin';
-        logger.debug("检查托盘可用性", { platform: process.platform, isAvailable });
+        const isAvailable =
+          process.platform === "win32" ||
+          process.platform === "linux" ||
+          process.platform === "darwin";
+        logger.debug("检查托盘可用性", {
+          platform: process.platform,
+          isAvailable,
+        });
         return isAvailable;
       } catch (error) {
-        logger.error("检查托盘可用性失败", { error: error instanceof Error ? error.message : "未知错误" });
+        logger.error("检查托盘可用性失败", {
+          error: error instanceof Error ? error.message : "未知错误",
+        });
         return false;
       }
     });
@@ -569,11 +480,16 @@ export class WindowManager {
       "open-html-viewer",
       async (_event, htmlContent: string, title?: string) => {
         try {
-          logger.debug("打开HTML查看器", { contentLength: htmlContent?.length, title });
+          logger.debug("打开HTML查看器", {
+            contentLength: htmlContent?.length,
+            title,
+          });
           this.createHtmlViewerWindow(htmlContent, title);
           return { success: true };
         } catch (error) {
-          logger.error("创建HTML查看器窗口失败", { error: error instanceof Error ? error.message : "未知错误" });
+          logger.error("创建HTML查看器窗口失败", {
+            error: error instanceof Error ? error.message : "未知错误",
+          });
           return {
             success: false,
             error: error instanceof Error ? error.message : "未知错误",
