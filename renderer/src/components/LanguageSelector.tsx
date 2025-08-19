@@ -24,6 +24,7 @@ export const LanguageSelector = ({
     <div className="language-selector-container">
       <select
         className="language-select"
+        disabled
         value={sourceLang}
         onChange={(e) => onSourceLangChange(e.target.value)}
       >

@@ -1,8 +1,23 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Row, Col, Typography, Card, Image, Flex, Tabs, TabsProps } from "antd";
-import { TitleBar } from "../components";
+import { TitleBar, LanguageSelector } from "../components";
+import { translate } from "../utils/translate";
+import "../assets/styles/language-selector.css";
 
 const { Paragraph } = Typography;
+
+// 语言选项配置
+const languageOptions = [
+  { value: "auto", label: "自动检测" },
+  { value: "zh", label: "中文" },
+  { value: "en", label: "English" },
+  { value: "ja", label: "日本語" },
+  { value: "ko", label: "한국어" },
+  { value: "fr", label: "Français" },
+  { value: "de", label: "Deutsch" },
+  { value: "ru", label: "Русский" },
+  { value: "es", label: "Español" },
+];
 
 /**
  * 去除markdown格式，只保留纯文本内容
@@ -61,9 +76,66 @@ type TabKeyType = "text" | "translate";
 export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
   const [imageUrl, setImageUrl] = useState<string>("");
   const [analysisText, setAnalysisText] = useState<string>("");
-  const [translateText, setTranslateText] = useState("");
+  const [translateText, setTranslateText] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
   const [tabActive, setTabActive] = useState<TabKeyType>("text");
+  const [sourceLang, setSourceLang] = useState<string>("auto");
+  const [targetLang, setTargetLang] = useState<string>("zh");
+
+  // 翻译处理函数
+  const handleTranslate = useCallback(async (
+    originalText: string,
+    sourceLang: string,
+    targetLang: string,
+    setTranslatedText: (text: string) => void,
+    setIsTranslating: (loading: boolean) => void
+  ) => {
+    if (!originalText) return;
+
+    setIsTranslating(true);
+    try {
+      const result = await translate({
+        text: originalText,
+        sourceLang,
+        targetLang,
+      });
+      setTranslatedText(result);
+    } catch (error) {
+      setTranslatedText("翻译失败");
+    } finally {
+      setIsTranslating(false);
+    }
+  }, []);
+
+  // 切换语言函数
+  const handleSwitchLanguages = useCallback((
+    sourceLang: string,
+    targetLang: string,
+    setSourceLang: (lang: string) => void,
+    setTargetLang: (lang: string) => void
+  ) => {
+    if (sourceLang === "auto") return;
+    const temp = sourceLang;
+    setSourceLang(targetLang);
+    setTargetLang(temp);
+  }, []);
+
+  // 加载配置
+  const loadConfig = useCallback(async (
+    setSourceLang: (lang: string) => void,
+    setTargetLang: (lang: string) => void
+  ) => {
+    try {
+      const result = await window.electronAPI.loadConfig();
+      if (result.success && result.config) {
+        setSourceLang(result.config.sourceLang || "auto");
+        setTargetLang(result.config.targetLang || "zh");
+      }
+    } catch (error) {
+      console.error("加载配置失败:", error);
+    }
+  }, []);
 
   const tabShowContent = useMemo(() => {
     switch (tabActive) {
@@ -92,6 +164,24 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
     setTabActive(key);
   };
 
+  // 当切换到翻译tab时，自动翻译文本
+  useEffect(() => {
+    if (tabActive === "translate" && analysisText && !translateText) {
+      handleTranslate(analysisText, sourceLang, targetLang, setTranslateText, setIsTranslating);
+    }
+  }, [tabActive, analysisText, translateText, sourceLang, targetLang, handleTranslate]);
+
+  // 当语言设置改变时，重新翻译
+  useEffect(() => {
+    if (tabActive === "translate" && analysisText) {
+      const timer = setTimeout(() => {
+        handleTranslate(analysisText, sourceLang, targetLang, setTranslateText, setIsTranslating);
+      }, 500); // Debounce translation trigger
+
+      return () => clearTimeout(timer);
+    }
+  }, [analysisText, sourceLang, targetLang, tabActive, handleTranslate]);
+
   useEffect(() => {
     // 从 LocalStorage 获取选中的图片数据
     const selectedImageData = localStorage.getItem("selectedImageData");
@@ -109,7 +199,12 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
         setLoading(true);
         window.electronAPI.onImageAnalysisResult((data) => {
           if (data) {
-            setAnalysisText(removeMarkdownFormat(data) || "");
+            const cleanText = removeMarkdownFormat(data) || "";
+            setAnalysisText(cleanText);
+            // 如果当前在翻译tab，清空翻译文本，触发重新翻译
+            if (tabActive === "translate") {
+              setTranslateText("");
+            }
           }
         });
       } catch (error) {
@@ -119,8 +214,14 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
       }
     };
 
+    // 加载配置
+    loadConfig(setSourceLang, setTargetLang);
     fetchAnalysisData();
-  }, []);
+  }, [loadConfig, tabActive]);
+
+  const handleSwitchLanguagesWrapper = () => {
+    handleSwitchLanguages(sourceLang, targetLang, setSourceLang, setTargetLang);
+  };
 
   return (
     <Flex
@@ -208,7 +309,25 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
               },
             }}
           >
-            {tabShowContent}
+            {tabActive === "translate" && (
+              <div style={{ marginBottom: "16px" }}>
+                <LanguageSelector
+                  sourceLang={sourceLang}
+                  targetLang={targetLang}
+                  onSourceLangChange={setSourceLang}
+                  onTargetLangChange={setTargetLang}
+                  onSwitchLanguages={handleSwitchLanguagesWrapper}
+                  languageOptions={languageOptions}
+                />
+              </div>
+            )}
+            {tabActive === "translate" && isTranslating ? (
+              <div style={{ textAlign: "center", color: "#999" }}>
+                <div>翻译中...</div>
+              </div>
+            ) : (
+              tabShowContent
+            )}
           </Card>
         </Col>
       </Row>
