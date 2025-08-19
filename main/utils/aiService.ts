@@ -1,17 +1,20 @@
-import { createOpenAI, OpenAIProvider as VercelOpenAIProvider } from '@ai-sdk/openai';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { createAnthropic } from '@ai-sdk/anthropic';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { createModuleLogger } from './logger';
-import { ConfigManager } from '../managers/configManager';
-import { generateText, LanguageModel } from 'ai';
-import { getTranslationSystemPrompt, getTranslationUserPrompt } from './prompts';
+import { createOpenAI } from "@ai-sdk/openai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { createModuleLogger } from "./logger";
+import { ConfigManager } from "../managers/configManager";
+import { generateText, LanguageModel } from "ai";
+import {
+  buildTranslationSystemPrompt,
+  buildTranslationUserPrompt,
+} from "./prompts";
 
-const logger = createModuleLogger('AIService');
+const logger = createModuleLogger("AIService");
 
 // --- 统一的接口定义 ---
 
-export type AIProvider = 'openai' | 'google' | 'anthropic';
+export type AIProvider = "openai" | "google" | "anthropic";
 
 export interface APIConfig {
   apiKey: string;
@@ -67,7 +70,7 @@ abstract class BaseAIService implements IAiService {
       if (!targetLang) {
         const configManager = new ConfigManager();
         const globalConfig = configManager.getLatestConfigWithDefaults();
-        targetLang = globalConfig.targetLang || 'zh';
+        targetLang = globalConfig.targetLang || "zh";
       }
 
       // logger.info('Image analysis request', { request });
@@ -78,11 +81,11 @@ abstract class BaseAIService implements IAiService {
         system: system_prompt,
         messages: [
           {
-            role: 'user',
+            role: "user",
             content: [
-              { type: 'text', text: request.prompt },
+              { type: "text", text: request.prompt },
               {
-                type: 'image',
+                type: "image",
                 image: request.imageData,
               },
             ],
@@ -92,7 +95,6 @@ abstract class BaseAIService implements IAiService {
         maxOutputTokens: request.maxTokens || 10000,
       });
 
-
       return {
         content: text,
         usage: {
@@ -102,20 +104,30 @@ abstract class BaseAIService implements IAiService {
         },
       };
     } catch (error) {
-      logger.error('Image analysis failed', { error });
+      logger.error("Image analysis failed", { error });
       return {
-        content: '',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        content: "",
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   async translateText(request: TranslateRequest): Promise<AIResponse> {
     try {
+      const system = buildTranslationSystemPrompt();
+
+      const prompt = buildTranslationUserPrompt({
+        targetLang: request.targetLang,
+        text: request.text,
+      });
+
+      logger.info("translateText", { system, prompt });
       const { text, usage } = await generateText({
         model: this.model,
-        system: getTranslationSystemPrompt(),
-        prompt: getTranslationUserPrompt(request.targetLang, request.text),
+        system,
+        prompt,
+        temperature: 0,
+        maxOutputTokens: 10000,
       });
       return {
         content: text,
@@ -126,10 +138,12 @@ abstract class BaseAIService implements IAiService {
         },
       };
     } catch (error) {
-      logger.error(`${this.constructor.name} text translation failed`, { error });
+      logger.error(`${this.constructor.name} text translation failed`, {
+        error,
+      });
       return {
-        content: '',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        content: "",
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -144,18 +158,19 @@ class OpenAIService extends BaseAIService {
     super();
     this.config = config;
 
-    const officialBaseUrl = 'https://api.openai.com';
-    const useCompatible = config.apiUrl && !config.apiUrl.startsWith(officialBaseUrl);
+    const officialBaseUrl = "https://api.openai.com";
+    const useCompatible =
+      config.apiUrl && !config.apiUrl.startsWith(officialBaseUrl);
 
     if (useCompatible) {
-      logger.info('Using OpenAI compatible provider');
+      logger.info("Using OpenAI compatible provider");
       this.provider = createOpenAICompatible({
-        name: 'openai-compatible',
+        name: "openai-compatible",
         baseURL: config.apiUrl,
         apiKey: config.apiKey,
       });
     } else {
-      logger.info('Using official OpenAI provider');
+      logger.info("Using official OpenAI provider");
       this.provider = createOpenAI({
         apiKey: config.apiKey,
         baseURL: config.apiUrl,
@@ -163,30 +178,30 @@ class OpenAIService extends BaseAIService {
     }
 
     this.model = this.provider(this.getModelId());
-    logger.info('OpenAI Service initialized');
+    logger.info("OpenAI Service initialized");
   }
 
   private getModelId(): string {
-    return this.config.customModel || this.config.model || 'gpt-4o';
+    return this.config.customModel || this.config.model || "gpt-4o";
   }
 
   async validateConfig(): Promise<boolean> {
     try {
       await generateText({
         model: this.model,
-        prompt: 'Health check',
+        prompt: "Health check",
         maxOutputTokens: 1,
       });
       return true;
     } catch (error) {
-      logger.error('API config validation failed', { error });
+      logger.error("API config validation failed", { error });
       return false;
     }
   }
 
   async getAvailableModels(): Promise<string[]> {
-    logger.warn('getAvailableModels now returns a predefined list for OpenAI.');
-    return ['gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo'];
+    logger.warn("getAvailableModels now returns a predefined list for OpenAI.");
+    return ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"];
   }
 }
 
@@ -195,8 +210,8 @@ class GoogleAIService extends BaseAIService {
     super();
     this.config = config;
     const google = createGoogleGenerativeAI({ apiKey: config.apiKey });
-    this.model = google(config.customModel || config.model || 'gemini-pro');
-    logger.info('GoogleAIService initialized');
+    this.model = google(config.customModel || config.model || "gemini-pro");
+    logger.info("GoogleAIService initialized");
   }
 
   // analyzeImage(request: ImageAnalysisRequest): Promise<AIResponse> {
@@ -207,19 +222,19 @@ class GoogleAIService extends BaseAIService {
     try {
       await generateText({
         model: this.model,
-        prompt: 'Health check',
+        prompt: "Health check",
         maxOutputTokens: 1,
       });
       return true;
     } catch (error) {
-      logger.error('Google API config validation failed', { error });
+      logger.error("Google API config validation failed", { error });
       return false;
     }
   }
 
   async getAvailableModels(): Promise<string[]> {
-    logger.warn('getAvailableModels now returns a predefined list for Google.');
-    return ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro'];
+    logger.warn("getAvailableModels now returns a predefined list for Google.");
+    return ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.0-pro"];
   }
 }
 
@@ -228,27 +243,36 @@ class AnthropicAIService extends BaseAIService {
     super();
     this.config = config;
     const anthropic = createAnthropic({ apiKey: config.apiKey });
-    this.model = anthropic(config.customModel || config.model || 'claude-3-opus-20240229');
-    logger.info('AnthropicAIService initialized');
+    this.model = anthropic(
+      config.customModel || config.model || "claude-3-opus-20240229"
+    );
+    logger.info("AnthropicAIService initialized");
   }
 
   async validateConfig(): Promise<boolean> {
     try {
       await generateText({
         model: this.model,
-        prompt: 'Health check',
+        prompt: "Health check",
         maxOutputTokens: 1,
       });
       return true;
     } catch (error) {
-      logger.error('Anthropic API config validation failed', { error });
+      logger.error("Anthropic API config validation failed", { error });
       return false;
     }
   }
 
   async getAvailableModels(): Promise<string[]> {
-    logger.warn('getAvailableModels now returns a predefined list for Anthropic.');
-    return ['claude-3-5-sonnet-20240620', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'];
+    logger.warn(
+      "getAvailableModels now returns a predefined list for Anthropic."
+    );
+    return [
+      "claude-3-5-sonnet-20240620",
+      "claude-3-opus-20240229",
+      "claude-3-sonnet-20240229",
+      "claude-3-haiku-20240307",
+    ];
   }
 }
 
@@ -256,15 +280,15 @@ class AnthropicAIService extends BaseAIService {
 
 export class AIServiceFactory {
   static create(config: APIConfig): IAiService {
-    const provider = config.provider || 'openai';
+    const provider = config.provider || "openai";
     logger.info(`Creating AI service for provider: ${provider}`);
 
     switch (provider) {
-      case 'openai':
+      case "openai":
         return new OpenAIService(config);
-      case 'google':
+      case "google":
         return new GoogleAIService(config);
-      case 'anthropic':
+      case "anthropic":
         return new AnthropicAIService(config);
       default:
         logger.error(`Unsupported AI provider: ${provider}`);
