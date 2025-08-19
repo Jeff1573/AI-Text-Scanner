@@ -9,6 +9,7 @@ import path from "node:path";
 import type { ScreenSource } from "../types";
 import { ScreenshotService } from "../services/screenshotService";
 import { createModuleLogger } from "../utils/logger";
+import { getAppIconPath } from "../utils/iconUtils";
 
 // 创建WindowManager日志器
 const logger = createModuleLogger("WindowManager");
@@ -41,7 +42,7 @@ export class WindowManager {
     try {
       logger.info("开始创建主窗口...");
 
-      const iconPath = path.join(__dirname, "./static/icons8-camera-256.ico");
+      const iconPath = getAppIconPath();
       logger.debug("图标路径", { iconPath });
 
       this.mainWindow = new BrowserWindow({
@@ -55,7 +56,7 @@ export class WindowManager {
           nodeIntegration: false,
           contextIsolation: true,
         },
-        icon: iconPath,
+        icon: getAppIconPath(),
       });
 
       logger.debug("主窗口创建成功", {
@@ -139,6 +140,7 @@ export class WindowManager {
       alwaysOnTop: true,
       skipTaskbar: true,
       autoHideMenuBar: true,
+      icon: getAppIconPath(),
       webPreferences: {
         preload: path.join(__dirname, "./preload.js"),
         nodeIntegration: false,
@@ -225,6 +227,7 @@ export class WindowManager {
       height: 400,
       alwaysOnTop: true,
       autoHideMenuBar: true,
+      icon: getAppIconPath(),
       webPreferences: {
         preload: path.join(__dirname, "./preload.js"),
         nodeIntegration: false,
@@ -275,6 +278,7 @@ export class WindowManager {
       height: 500,
       alwaysOnTop: true,
       autoHideMenuBar: true,
+      icon: getAppIconPath(),
       webPreferences: {
         preload: path.join(__dirname, "./preload.js"),
         nodeIntegration: false,

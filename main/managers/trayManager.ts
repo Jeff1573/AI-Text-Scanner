@@ -5,6 +5,7 @@ import type { ConfigManager } from "./configManager";
 import type { HotkeyConfig } from "../types";
 import { ScreenshotService } from "../services/screenshotService";
 import { createModuleLogger } from "../utils/logger";
+import { getAppIconPath } from "../utils/iconUtils";
 
 const logger = createModuleLogger('TrayManager');
 
@@ -24,10 +25,10 @@ export class TrayManager {
       screenshotHotkey: cfg.screenshotHotkey || "CommandOrControl+Shift+S",
     };
 
-    const iconPath = path.join(__dirname, "./static/icons8-camera-256.ico");
+    const iconPath = getAppIconPath();
 
     logger.debug("托盘图标路径", { __dirname, iconPath });
-    const icon = nativeImage.createFromPath(iconPath);
+    const icon = nativeImage.createFromPath(getAppIconPath());
 
     this.tray = new Tray(icon);
     this.tray.setToolTip("AI Text Scanner - AI文字识别工具");
