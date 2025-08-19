@@ -63,7 +63,8 @@ export const ScreenshotViewer = () => {
     if (analysisResult && !analysisError) {
       console.log("analysisResult", analysisResult);
       // 调用主进程创建HTML查看器窗口
-      window.electronAPI.openHtmlViewer(analysisResult, "AI 分析结果")
+      window.electronAPI
+        .openHtmlViewer(analysisResult, "AI 分析结果")
         .then((result: { success: boolean; error?: string }) => {
           if (result.success) {
             console.log("HTML查看器窗口创建成功");
@@ -84,10 +85,6 @@ export const ScreenshotViewer = () => {
       resetSelection();
     }
   }, [analysisResult, analysisError, clearAnalysis, resetSelection]);
-
-
-
-
 
   const handleCancel = useCallback(() => {
     resetSelection();
@@ -199,8 +196,16 @@ export const ScreenshotViewer = () => {
       }
     };
     img.src = screenshotData.thumbnail;
+    // 隐藏窗口
+    try {
+      // 使用 windowClose 方法关闭当前截图窗口
+      await window.electronAPI.windowMinimize();
+    } catch (error) {
+      console.error("隐藏窗口失败:", error);
+      // 如果IPC调用失败，使用原生window.close()作为备选方案
+      window.close();
+    }
   }, [screenshotData, selection, analyzeImage, resetSelection]);
-
 
   if (loading) {
     return <LoadingState />;
@@ -231,7 +236,7 @@ export const ScreenshotViewer = () => {
           />
         )}
 
-        {isAnalyzing && (
+        {/* {isAnalyzing && (
           <>
             <div className="stage-dim"></div>
             <div className="analysis-inline-overlay">
@@ -240,7 +245,7 @@ export const ScreenshotViewer = () => {
               <p>请稍候，AI正在分析您选择的区域</p>
             </div>
           </>
-        )}
+        )} */}
       </div>
     </div>
   );

@@ -126,37 +126,61 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
     <Flex
       gap={10}
       vertical
-      style={{ height: "100vh", padding: 10, paddingTop: 60 }}
+      style={{ height: "100vh", padding: 10, paddingTop: 60, overflow: "hidden" }}
     >
       <TitleBar />
-      <Row gutter={16} style={{ flex: 1 }}>
-        <Col span={12} style={{ display: "flex", flexDirection: "column" }}>
+      <Row gutter={16} style={{ flex: 1, minHeight: 0, maxHeight: "calc(100vh - 60px)" }}>
+        <Col span={12} style={{ display: "flex", flexDirection: "column", minHeight: 0, maxHeight: "100%" }}>
           <Card
             title="选中区域图片"
             style={{
               flex: 1,
               display: "flex",
               flexDirection: "column",
+              minHeight: 0,
+              maxHeight: "100%",
+              height: "100%",
             }}
             styles={{
               body: {
                 flex: 1,
+                minHeight: 0,
+                maxHeight: "calc(100% - 57px)", // 减去Card标题高度
                 padding: 0,
-                display: "flex", // 保持flex布局，但允许内容自然撑开
-                justifyContent: "center", // 居中图片
-                alignItems: "center", // 垂直居中图片
+                overflow: "hidden",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                position: "relative",
               },
             }}
           >
             {loading ? (
               <div>加载中...</div>
             ) : imageUrl ? (
-              <Image
-                height={"100%"}
-                style={{ objectFit: "contain" }} // 添加此行
-                src={imageUrl}
-                alt="选中区域图片"
-              />
+              <div style={{ 
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex", 
+                justifyContent: "center", 
+                alignItems: "center",
+                overflow: "hidden"
+              }}>
+                <Image
+                  style={{ 
+                    maxWidth: "100%", 
+                    maxHeight: "100%", 
+                    objectFit: "contain",
+                    width: "auto",
+                    height: "auto"
+                  }}
+                  src={imageUrl}
+                  alt="选中区域图片"
+                />
+              </div>
             ) : (
               <div style={{ textAlign: "center", color: "#999" }}>
                 <div style={{ fontSize: "48px", marginBottom: "16px" }}>🖼️</div>
@@ -165,9 +189,9 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
             )}
           </Card>
         </Col>
-        <Col span={12} style={{ display: "flex", flexDirection: "column" }}>
+        <Col span={12} style={{ display: "flex", flexDirection: "column", minHeight: 0, maxHeight: "100%" }}>
           <Card
-            style={{ flex: 1, display: "flex", flexDirection: "column" }}
+            style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, maxHeight: "100%", height: "100%" }}
             title={
               <Tabs defaultActiveKey="1" items={items} onChange={onChange} />
             }
@@ -175,20 +199,16 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
               body: {
                 paddingTop: 0,
                 flex: 1,
+                minHeight: 0,
+                maxHeight: "calc(100% - 57px)", // 减去Card标题高度
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                overflow: "auto",
+                padding: "16px",
               },
             }}
           >
-            <div
-              style={{
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                height: "100%",
-                overflow: "auto",
-                padding: "16px",
-              }}
-            >
-              {tabShowContent}
-            </div>
+            {tabShowContent}
           </Card>
         </Col>
       </Row>
