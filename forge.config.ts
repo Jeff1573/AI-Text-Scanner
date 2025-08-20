@@ -6,13 +6,29 @@ import { MakerRpm } from '@electron-forge/maker-rpm';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import { join } from 'path'
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    icon: join(__dirname, 'main/static/icons8-camera-256'),
   },
   rebuildConfig: {},
-  makers: [new MakerSquirrel({}), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],
+  makers: [new MakerSquirrel({
+    setupIcon: join(__dirname, 'main/static/icons8-camera-256.ico'),
+  }), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'cat9L',
+          name: 'fast-ocr'
+        },
+        prerelease: true
+      }
+    }
+  ],
   plugins: [
     new VitePlugin({
       // `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.

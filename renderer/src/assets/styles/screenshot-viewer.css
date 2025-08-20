@@ -1,0 +1,265 @@
+/* 截图查看器样式 */
+.screenshot-viewer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+  /* 确保完全独立于主界面 */
+  isolation: isolate;
+  /* 重置可能继承的样式 */
+  font-family: inherit;
+  color: inherit;
+  /* 确保完全覆盖，无缝隙 */
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* 确保截图查看器内的所有元素都不会受到外部样式影响 */
+.screenshot-viewer * {
+  box-sizing: border-box;
+}
+
+.screenshot-viewer.loading {
+  justify-content: center;
+  align-items: center;
+  background: #1a1a1a;
+}
+
+.loading-spinner {
+  color: #fff;
+  font-size: 1.5rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loading-text {
+  color: #fff;
+  font-size: 1.5rem;
+  margin-top: 1rem;
+}
+
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.screenshot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.screenshot-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.header-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.cancel-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.close-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+.screenshot-content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0; /* 移除padding，消除四周缝隙 */
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+.screenshot-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 改为cover确保完全填满 */
+  border-radius: 0; /* 移除圆角 */
+  box-shadow: none; /* 移除阴影 */
+  user-select: none;
+  pointer-events: none;
+}
+
+/* 选择框样式 */
+.selection-box {
+  position: absolute;
+  border: 2px solid #007bff;
+  background-color: rgba(0, 123, 255, 0.2);
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}
+
+/* 选择提示样式 */
+.selection-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 999;
+  animation: fadeInOut 2s ease-in-out infinite;
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* 识别提示效果样式 */
+.analysis-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  backdrop-filter: blur(5px);
+}
+
+.analysis-loading-content {
+  text-align: center;
+  color: white;
+  max-width: 400px;
+  padding: 2rem;
+}
+
+.analysis-loading-content h3 {
+  margin: 1rem 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.analysis-loading-content p {
+  margin: 0.5rem 0 0 0;
+  font-size: 1rem;
+  color: #ccc;
+  line-height: 1.5;
+}
+
+.analysis-loading-content .loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+} 
+
+/* 舞台容器，承载图片与内联加载层 */
+.screenshot-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* 轻度变暗层，仅覆盖图片区域容器 */
+.stage-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+  z-index: 9000;
+}
+
+/* 内联加载提示卡片 */
+.analysis-inline-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9001;
+  background: rgba(22, 22, 24, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  border-radius: 12px;
+  padding: 20px 24px;
+  width: 320px;
+  text-align: center;
+  color: #fff;
+}
+
+.analysis-inline-overlay h3 {
+  margin: 12px 0 6px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.analysis-inline-overlay p {
+  margin: 0;
+  font-size: 13px;
+  color: #c8c8c8;
+}
+
+.analysis-inline-overlay .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 10px auto;
+}

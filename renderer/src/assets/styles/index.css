@@ -1,0 +1,11 @@
+/* 导入所有样式文件 */
+@import './base.css';
+@import './layout.css';
+@import './sidebar.css';
+@import './titlebar.css';
+@import './capture-button.css';
+@import './image-display.css';
+@import './screenshot-viewer.css';
+@import './settings.css';
+@import './responsive.css';
+@import './animations.css'; 

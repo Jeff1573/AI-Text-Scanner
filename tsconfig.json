@@ -10,6 +10,18 @@
     "baseUrl": ".",
     "outDir": "dist",
     "moduleResolution": "node",
-    "resolveJsonModule": true
-  }
+    "resolveJsonModule": true,
+    "strict": false,
+    "noEmit": true,
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [
+    "main/**/*",
+    "renderer/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
