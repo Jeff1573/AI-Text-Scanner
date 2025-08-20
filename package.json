@@ -7,7 +7,7 @@
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "make": "npm run clean && electron-forge make",
+    "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
     "clean": "iObitUnlocker /Delete /Advanced E:\\jf\\fast-ocr\\out\\",
