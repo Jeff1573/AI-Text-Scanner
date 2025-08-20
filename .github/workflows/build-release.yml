@@ -67,8 +67,6 @@ jobs:
       with:
         files: |
           artifacts/*.exe
-          artifacts/*.nupkg
-          artifacts/RELEASES
         draft: false
         prerelease: false
         generate_release_notes: true
