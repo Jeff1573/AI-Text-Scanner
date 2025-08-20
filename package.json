@@ -13,10 +13,6 @@
     "clean": "rimraf .vite/build"
   },
   "keywords": [],
-  "author": {
-    "name": "jf",
-    "email": "https://gitlab.hunantianxing.com/"
-  },
   "license": "MIT",
   "devDependencies": {
     "@electron-forge/cli": "^7.8.2",
