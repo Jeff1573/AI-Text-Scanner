@@ -157,7 +157,7 @@ export const useSettingsLogic = () => {
     }
     
     setIsSaving(true);
-    setIsValidating(true); // 同���设置验证状态
+    setIsValidating(true); // 同时设置验证状态
     clearErrors();
 
     try {
@@ -166,6 +166,7 @@ export const useSettingsLogic = () => {
       
       // 2. 保存配置到磁盘
       const saveResult = await window.electronAPI.saveConfig(formData);
+      
       if (!saveResult.success) {
         setFieldError('apiUrl', saveResult.error || '保存失败');
         return { success: false };
@@ -173,10 +174,17 @@ export const useSettingsLogic = () => {
       
       // 3. 处理开机自启设置
       const currentConfig = await window.electronAPI.getConfig();
-      if (currentConfig.success && currentConfig.config?.autoLaunch !== formData.autoLaunch) {
-        const autoLaunchResult = await window.electronAPI.setLoginItemSettings(formData.autoLaunch);
-        if (!autoLaunchResult.success || !autoLaunchResult.verified) {
-          setFieldError('autoLaunch', autoLaunchResult.error || '开机自启设置失败');
+      
+      if (currentConfig.success) {
+        try {
+          const autoLaunchResult = await window.electronAPI.setLoginItemSettings(formData.autoLaunch);
+          
+          if (!autoLaunchResult.success || !autoLaunchResult.verified) {
+            setFieldError('autoLaunch', autoLaunchResult.error || '开机自启设置失败');
+            return { success: false };
+          }
+        } catch (autoLaunchError) {
+          setFieldError('autoLaunch', `开机自启设置异常: ${autoLaunchError instanceof Error ? autoLaunchError.message : String(autoLaunchError)}`);
           return { success: false };
         }
       }
@@ -187,6 +195,7 @@ export const useSettingsLogic = () => {
       }
 
       const validationResult = await window.electronAPI.validateApiConfig();
+      
       if (!validationResult.success) {
         const errorMessage = getDetailedErrorMessage(validationResult.error);
         setFieldError('apiKey', errorMessage);

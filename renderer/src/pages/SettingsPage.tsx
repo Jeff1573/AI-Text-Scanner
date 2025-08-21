@@ -70,6 +70,7 @@ export const SettingsPage = () => {
     
     try {
       const result = await handleSaveSettings();
+      
       hideLoading();
       
       if (result.success) {
