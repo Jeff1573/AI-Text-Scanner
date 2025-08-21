@@ -50,7 +50,8 @@ export class IPCHandlers {
           const apiConfig: APIConfig = {
             apiKey: config.apiKey,
             apiUrl: config.apiUrl,
-            model: config.customModel || config.model,
+            model: config.model,
+            customModel: config.customModel,
             provider: config.provider as any,
           };
           
@@ -77,7 +78,8 @@ export class IPCHandlers {
           const apiConfig: APIConfig = {
             apiKey: config.apiKey,
             apiUrl: config.apiUrl,
-            model: config.customModel || config.model,
+            model: config.model,
+            customModel: config.customModel,
             provider: config.provider as any,
           };
           
@@ -107,7 +109,8 @@ export class IPCHandlers {
         const apiConfig: APIConfig = {
           apiKey: config.apiKey,
           apiUrl: config.apiUrl,
-          model: config.customModel || config.model,
+          model: config.model,
+          customModel: config.customModel,
           provider: config.provider as any,
         };
         
@@ -115,6 +118,7 @@ export class IPCHandlers {
           provider: apiConfig.provider,
           apiUrl: apiConfig.apiUrl,
           hasApiKey: !!apiConfig.apiKey,
+          model: apiConfig.model,
         });
 
         const aiService = AIServiceFactory.create(apiConfig);
@@ -138,7 +142,8 @@ export class IPCHandlers {
         const apiConfig: APIConfig = {
           apiKey: config.apiKey,
           apiUrl: config.apiUrl,
-          model: config.customModel || config.model,
+          model: config.model,
+          customModel: config.customModel,
           provider: config.provider as any,
         };
         

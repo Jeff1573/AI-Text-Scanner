@@ -1,4 +1,4 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { createOpenAI, openai } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
@@ -61,8 +61,28 @@ abstract class BaseAIService implements IAiService {
   protected model: LanguageModel;
   protected config: APIConfig;
 
-  abstract validateConfig(): Promise<boolean>;
   abstract getAvailableModels(): Promise<string[]>;
+
+  async validateConfig(): Promise<boolean> {
+    try {
+      // 使用与 translateText 相同的调用方式进行验证
+      const { text } = await generateText({
+        model: this.model,
+        system: "You are a helpful assistant.",
+        prompt: "Please respond with 'OK' to confirm the API is working.",
+        temperature: 0,
+        maxOutputTokens: 100,
+      });
+      
+      // 验证返回内容不为空
+      return text && text.trim().length > 0;
+    } catch (error) {
+      logger.error(`${this.constructor.name} API config validation failed`, {
+        error,
+      });
+      return false;
+    }
+  }
 
   async analyzeImage(request: ImageAnalysisRequest): Promise<AIResponse> {
     try {
@@ -121,7 +141,7 @@ abstract class BaseAIService implements IAiService {
         text: request.text,
       });
 
-      logger.info("translateText", { system, prompt });
+      // logger.info("translateText", { model: this.model });
       const { text, usage } = await generateText({
         model: this.model,
         system,
@@ -185,19 +205,7 @@ class OpenAIService extends BaseAIService {
     return this.config.customModel || this.config.model || "gpt-4o";
   }
 
-  async validateConfig(): Promise<boolean> {
-    try {
-      await generateText({
-        model: this.model,
-        prompt: "Health check",
-        maxOutputTokens: 1,
-      });
-      return true;
-    } catch (error) {
-      logger.error("API config validation failed", { error });
-      return false;
-    }
-  }
+
 
   async getAvailableModels(): Promise<string[]> {
     logger.warn("getAvailableModels now returns a predefined list for OpenAI.");
@@ -218,19 +226,7 @@ class GoogleAIService extends BaseAIService {
   //   throw new Error('Method not implemented.');
   // }
 
-  async validateConfig(): Promise<boolean> {
-    try {
-      await generateText({
-        model: this.model,
-        prompt: "Health check",
-        maxOutputTokens: 1,
-      });
-      return true;
-    } catch (error) {
-      logger.error("Google API config validation failed", { error });
-      return false;
-    }
-  }
+
 
   async getAvailableModels(): Promise<string[]> {
     logger.warn("getAvailableModels now returns a predefined list for Google.");
@@ -249,19 +245,7 @@ class AnthropicAIService extends BaseAIService {
     logger.info("AnthropicAIService initialized");
   }
 
-  async validateConfig(): Promise<boolean> {
-    try {
-      await generateText({
-        model: this.model,
-        prompt: "Health check",
-        maxOutputTokens: 1,
-      });
-      return true;
-    } catch (error) {
-      logger.error("Anthropic API config validation failed", { error });
-      return false;
-    }
-  }
+
 
   async getAvailableModels(): Promise<string[]> {
     logger.warn(
