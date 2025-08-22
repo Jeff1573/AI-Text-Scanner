@@ -1,7 +1,7 @@
 {
   "name": "ai-text-scanner",
   "productName": "AI Text Scanner",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "AI-powered text scanner with OCR and translation capabilities",
   "main": ".vite/build/main.js",
   "scripts": {
@@ -17,6 +17,10 @@
   "keywords": [],
   "author": {
     "name": "jf"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jeff1573/AI-Text-Scanner.git"
   },
   "license": "MIT",
   "devDependencies": {
