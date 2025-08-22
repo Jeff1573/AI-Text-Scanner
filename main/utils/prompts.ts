@@ -1,3 +1,5 @@
+import logger from "./logger";
+
 /**
  * Glossary mapping item used for terminology consistency.
  */
@@ -95,14 +97,39 @@ export const buildTranslationSystemPrompt = (): string => {
 
 /**
  * Build a user prompt to explicitly request translation to the target language.
- * This function remains the same as it's meant to be a simple wrapper for the text to be translated.
+ * This function maps language codes to language names for better AI understanding.
  */
 export const buildTranslationUserPrompt = (params: {
   targetLang: string;
   text: string;
 }): string => {
   const { targetLang, text } = params;
-  return `请将以下文本准确并保持格式地翻译为「${targetLang}」：\n\n${text}`;
+  
+  // 语言代码到语言名称的映射
+  const languageMap: Record<string, string> = {
+    'zh': '简体中文',
+    'en': '英语',
+    'ja': '日语',
+    'ko': '韩语',
+    'fr': '法语',
+    'de': '德语',
+    'ru': '俄语',
+    'es': '西班牙语',
+    '简体中文': '简体中文',
+    '英语': '英语',
+    '日语': '日语',
+    '韩语': '韩语',
+    '法语': '法语',
+    '德语': '德语',
+    '俄语': '俄语',
+    '西班牙语': '西班牙语'
+  };
+  
+  // 获取语言名称，如果映射中没有则直接使用原值
+  const languageName = languageMap[targetLang] || targetLang;
+  logger.info("目标语言名称", { languageName });
+  
+  return `请将以下文本准确并保持格式地翻译为「${languageName}」：\n\n${text}`;
 };
 
 /**
