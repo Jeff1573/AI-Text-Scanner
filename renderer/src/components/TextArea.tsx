@@ -1,4 +1,7 @@
 import { RefObject } from "react";
+import { Input } from "antd";
+
+const { TextArea: AntTextArea } = Input;
 
 interface TextAreaProps {
   type: "original" | "translated";
@@ -29,13 +32,19 @@ export const TextArea = ({
     <div className="text-area-container">
       <h3 className="area-title">{title}</h3>
       {type === "original" ? (
-        <textarea
+        <AntTextArea
           ref={ref as RefObject<HTMLTextAreaElement | null>}
           className="text-area original-text"
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
           onScroll={onScroll}
           placeholder={placeholder}
+          allowClear
+          autoSize={{ minRows: 3, maxRows: 10 }}
+          style={{
+            resize: 'vertical',
+            fontFamily: 'inherit'
+          }}
         />
       ) : (
         <>

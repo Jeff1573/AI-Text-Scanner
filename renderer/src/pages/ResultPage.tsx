@@ -70,11 +70,42 @@ export const ResultPage = () => {
     const timer = setTimeout(() => {
       if (originalText) {
         handleTranslate(originalText, sourceLang, targetLang, setTranslatedText, setIsTranslating);
+      } else {
+        // 当输入框为空时，清空翻译结果
+        setTranslatedText("");
       }
     }, 500); // Debounce translation trigger
 
     return () => clearTimeout(timer);
   }, [originalText, sourceLang, targetLang, handleTranslate, setTranslatedText, setIsTranslating]);
+
+  // 支持按 ESC 键关闭窗口
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        console.log("按下ESC键，关闭快捷翻译窗口");
+        window.close();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  const handleClearInput = () => {
+    setOriginalText("");
+    setTranslatedText("");
+  };
+
+  const handleOriginalTextChange = (value: string) => {
+    setOriginalText(value);
+    // 当输入框被清空时，同时清空翻译结果
+    if (!value) {
+      setTranslatedText("");
+    }
+  };
 
   const handleSwitchLanguagesWrapper = () => {
     handleSwitchLanguages(sourceLang, targetLang, setSourceLang, setTargetLang);
@@ -97,7 +128,7 @@ export const ResultPage = () => {
           type="original"
           title="原文"
           value={originalText}
-          onChange={setOriginalText}
+          onChange={handleOriginalTextChange}
           onScroll={() => handleScrollWrapper("original")}
           ref={originalRef}
           placeholder="请输入或粘贴待翻译的文本"
