@@ -105,7 +105,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          artifacts/*.exe
+          artifacts/*
         body_path: release_notes.md
         draft: false
         prerelease: false
