@@ -56,6 +56,45 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && github.event.inputs.test_mode != 'true'
 
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get tag information
+      id: tag_info
+      run: |
+        $tag = "${{ github.ref_name }}"
+        $tagMessage = git tag -l --format='%(contents)' $tag
+        if ([string]::IsNullOrWhiteSpace($tagMessage)) {
+          $tagMessage = "Release $tag"
+        }
+        
+        # 获取上一个tag
+        $previousTag = git describe --tags --abbrev=0 $tag^
+        
+        # 生成更新日志
+        $changelog = "## 📋 更新内容`n`n"
+        $changelog += "$tagMessage`n`n"
+        $changelog += "## 🔄 代码变更`n`n"
+        
+        if ($previousTag) {
+          $commits = git log --pretty=format:"- %s" "$previousTag..$tag"
+          if ($commits) {
+            $changelog += $commits -join "`n"
+          } else {
+            $changelog += "- 初始版本发布"
+          }
+          $changelog += "`n`n## 📊 完整变更日志`n`n[查看完整变更记录](${{ github.server_url }}/${{ github.repository }}/compare/$previousTag...$tag)"
+        } else {
+          $changelog += "- 初始版本发布`n`n"
+        }
+        
+        # 将内容写入文件以避免特殊字符问题
+        $changelog | Out-File -FilePath "release_notes.md" -Encoding utf8
+        echo "PREVIOUS_TAG=$previousTag" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
@@ -67,9 +106,10 @@ jobs:
       with:
         files: |
           artifacts/*.exe
+        body_path: release_notes.md
         draft: false
         prerelease: false
-        generate_release_notes: true
+        generate_release_notes: false
       env:
         GITHUB_TOKEN: ${{ github.token }}
 
