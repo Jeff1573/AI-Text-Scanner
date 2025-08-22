@@ -12,8 +12,6 @@ import {
   Alert,
   Card,
   Space,
-  Divider,
-  Badge,
 } from "antd";
 import {
   SaveOutlined,
@@ -21,8 +19,6 @@ import {
   CheckCircleOutlined,
   LoadingOutlined,
   ExclamationCircleOutlined,
-  DownloadOutlined,
-  SyncOutlined,
 } from "@ant-design/icons";
 import type { CollapseProps } from "antd";
 import { ConfigDisplay } from "../components/ConfigDisplay";
@@ -44,44 +40,12 @@ export const SettingsPage = () => {
   // 焦点状态管理
   const [focusedHotkey, setFocusedHotkey] = useState<string | null>(null);
   
-  // 自动更新状态
-  const [updateStatus, setUpdateStatus] = useState<{
-    checking: boolean;
-    available: boolean;
-    downloading: boolean;
-    downloaded: boolean;
-    error: string | null;
-    currentVersion: string;
-  }>({
-    checking: false,
-    available: false,
-    downloading: false,
-    downloaded: false,
-    error: null,
-    currentVersion: ''
-  });
+
 
   // 使用 Hook 方式获取 message API
   const [messageApi, contextHolder] = message.useMessage();
   
-  // 获取当前应用版本
-  useEffect(() => {
-    const getCurrentVersion = async () => {
-      try {
-        const result = await window.electronAPI.getVersion();
-        if (result.success && result.version) {
-          setUpdateStatus(prev => ({
-            ...prev,
-            currentVersion: result.version || ''
-          }));
-        }
-      } catch (error) {
-        console.error('获取版本失败:', error);
-      }
-    };
-    
-    getCurrentVersion();
-  }, []);
+
 
   // 当全局配置仍在加载时，显示加载指示器
   if (isLoading) {
@@ -215,82 +179,7 @@ export const SettingsPage = () => {
     setFocusedHotkey(null);
   };
   
-  // 自动更新处理函数
-  const handleCheckUpdate = async () => {
-    setUpdateStatus(prev => ({ ...prev, checking: true, error: null }));
-    try {
-      const result = await window.electronAPI.checkForUpdates();
-      if (result.success) {
-        setUpdateStatus(prev => ({ 
-          ...prev, 
-          checking: false,
-          available: result.updateAvailable || false
-        }));
-        
-        if (result.updateAvailable) {
-          messageApi.success('发现新版本可供下载！');
-        } else {
-          messageApi.info('当前已是最新版本');
-        }
-      } else {
-        setUpdateStatus(prev => ({ 
-          ...prev, 
-          checking: false,
-          error: result.error || '检查更新失败'
-        }));
-        messageApi.error('检查更新失败：' + (result.error || '未知错误'));
-      }
-    } catch (error) {
-      setUpdateStatus(prev => ({ 
-        ...prev, 
-        checking: false,
-        error: '检查更新时发生错误'
-      }));
-      messageApi.error('检查更新时发生错误');
-    }
-  };
-  
-  const handleDownloadUpdate = async () => {
-    setUpdateStatus(prev => ({ ...prev, downloading: true, error: null }));
-    try {
-      const result = await window.electronAPI.downloadUpdate();
-      if (result.success) {
-        setUpdateStatus(prev => ({ 
-          ...prev, 
-          downloading: false,
-          downloaded: true
-        }));
-        messageApi.success('更新下载完成，可以安装了！');
-      } else {
-        setUpdateStatus(prev => ({ 
-          ...prev, 
-          downloading: false,
-          error: result.error || '下载更新失败'
-        }));
-        messageApi.error('下载更新失败：' + (result.error || '未知错误'));
-      }
-    } catch (error) {
-      setUpdateStatus(prev => ({ 
-        ...prev, 
-        downloading: false,
-        error: '下载更新时发生错误'
-      }));
-      messageApi.error('下载更新时发生错误');
-    }
-  };
-  
-  const handleInstallUpdate = async () => {
-    try {
-      const result = await window.electronAPI.installUpdate();
-      if (result.success) {
-        messageApi.success('正在重启应用以完成更新...');
-      } else {
-        messageApi.error('安装更新失败：' + (result.error || '未知错误'));
-      }
-    } catch (error) {
-      messageApi.error('安装更新时发生错误');
-    }
-  };
+
 
   const items: CollapseProps["items"] = [
     {
@@ -469,68 +358,7 @@ export const SettingsPage = () => {
               </div>
             </Form.Item>
             
-            <Divider />
-            
-            <Form.Item label="应用更新">
-              <Card size="small" style={{ backgroundColor: '#fafafa' }}>
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 500 }}>当前版本</div>
-                      <div style={{ color: '#666', fontSize: 12 }}>
-                        v{updateStatus.currentVersion || '获取中...'}
-                      </div>
-                    </div>
-                    {updateStatus.available && (
-                      <Badge status="success" text="有新版本" />
-                    )}
-                  </div>
-                  
-                  {updateStatus.error && (
-                    <Alert
-                      message="更新检查失败"
-                      description={updateStatus.error}
-                      type="error"
-                      // size="small"
-                      showIcon
-                    />
-                  )}
-                  
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <Button
-                      size="small"
-                      icon={updateStatus.checking ? <LoadingOutlined /> : <SyncOutlined />}
-                      loading={updateStatus.checking}
-                      onClick={handleCheckUpdate}
-                    >
-                      {updateStatus.checking ? '检查中...' : '检查更新'}
-                    </Button>
-                    
-                    {updateStatus.available && !updateStatus.downloaded && (
-                      <Button
-                        size="small"
-                        type="primary"
-                        icon={updateStatus.downloading ? <LoadingOutlined /> : <DownloadOutlined />}
-                        loading={updateStatus.downloading}
-                        onClick={handleDownloadUpdate}
-                      >
-                        {updateStatus.downloading ? '下载中...' : '下载更新'}
-                      </Button>
-                    )}
-                    
-                    {updateStatus.downloaded && (
-                      <Button
-                        size="small"
-                        type="primary"
-                        onClick={handleInstallUpdate}
-                      >
-                        重启并安装
-                      </Button>
-                    )}
-                  </div>
-                </Space>
-              </Card>
-            </Form.Item>
+
           </Form>
         )
       }

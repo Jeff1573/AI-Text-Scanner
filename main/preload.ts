@@ -205,25 +205,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
     });
   },
   
-  // 自动更新相关API
-  checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
-  downloadUpdate: () => ipcRenderer.invoke("download-update"),
-  installUpdate: () => ipcRenderer.invoke("install-update"),
-  getUpdateStatus: () => ipcRenderer.invoke("get-update-status"),
-  
-  // 自动更新事件监听
-  onUpdateAvailable: (callback: (info: any) => void) => {
-    ipcRenderer.on("update-available", (event, info) => callback(info));
-  },
-  onUpdateDownloaded: (callback: (info: any) => void) => {
-    ipcRenderer.on("update-downloaded", (event, info) => callback(info));
-  },
-  onUpdateError: (callback: (error: string) => void) => {
-    ipcRenderer.on("update-error", (event, error) => callback(error));
-  },
-  removeUpdateListeners: () => {
-    ipcRenderer.removeAllListeners("update-available");
-    ipcRenderer.removeAllListeners("update-downloaded");
-    ipcRenderer.removeAllListeners("update-error");
-  },
+
 });
