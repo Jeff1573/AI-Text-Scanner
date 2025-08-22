@@ -217,25 +217,31 @@ export class IPCHandlers {
           const exeName = path.basename(process.execPath);
           logger.info("应用路径信息", { appFolder, exeName });
 
-          // 改进的路径检测策略，优先使用 Squirrel 方式
+          // 改进的路径检测策略，优先使用 Direct Executable（直接 EXE）
           const pathStrategies = [
-            // 策略1: Squirrel Update.exe 方式 (推荐用于打包应用)
+            // 策略1: 直接使用当前可执行文件（对多数环境最稳妥）
             {
-              name: 'Squirrel Update.exe',
-              path: path.resolve(appFolder, '..', 'Update.exe'),
-              args: ['--processStart', exeName]
+              name: 'Direct Executable',
+              path: process.execPath,
+              args: undefined
             },
-            // 策略2: Squirrel 标准启动器
+            // 策略2: Squirrel 标准启动器（部分发行包格式）
             {
               name: 'Squirrel Standard',
               path: path.resolve(appFolder, '..', exeName),
               args: undefined
             },
-            // 策略3: 直接使用当前可执行文件 (开发环境)
+            // 策略3: Squirrel Update.exe 方式（固定应用名称）
             {
-              name: 'Direct Executable',
-              path: process.execPath,
-              args: undefined
+              name: 'Squirrel Update.exe (FixedName)',
+              path: path.resolve(appFolder, '..', 'Update.exe'),
+              args: ['--processStart', 'AI Text Scanner.exe']
+            },
+            // 策略4: Squirrel Update.exe 方式（动态名称）
+            {
+              name: 'Squirrel Update.exe (DynamicName)',
+              path: path.resolve(appFolder, '..', 'Update.exe'),
+              args: ['--processStart', exeName]
             }
           ];
 
@@ -310,13 +316,13 @@ export class IPCHandlers {
           const exeName = path.basename(process.execPath);
           logger.info("应用路径信息", { appFolder, exeName });
 
-          // 改进的路径检测策略，优先使用 Squirrel Update.exe 方式
+          // 改进的路径检测策略，优先使用 Direct Executable（直接 EXE）
           const pathStrategies = [
-            // 策略1: Squirrel Update.exe 方式 (推荐用于打包应用)
+            // 策略1: 直接使用当前可执行文件（最稳妥）
             {
-              name: 'Squirrel Update.exe',
-              path: path.resolve(appFolder, '..', 'Update.exe'),
-              args: ['--processStart', exeName]
+              name: 'Direct Executable',
+              path: process.execPath,
+              args: undefined
             },
             // 策略2: Squirrel 标准启动器
             {
@@ -324,29 +330,22 @@ export class IPCHandlers {
               path: path.resolve(appFolder, '..', exeName),
               args: undefined
             },
-            // 策略3: 直接使用当前可执行文件 (开发环境)
+            // 策略3: Squirrel Update.exe（固定名）
             {
-              name: 'Direct Executable',
-              path: process.execPath,
-              args: undefined
+              name: 'Squirrel Update.exe (FixedName)',
+              path: path.resolve(appFolder, '..', 'Update.exe'),
+              args: ['--processStart', 'AI Text Scanner.exe']
+            },
+            // 策略4: Squirrel Update.exe（动态名）
+            {
+              name: 'Squirrel Update.exe (DynamicName)',
+              path: path.resolve(appFolder, '..', 'Update.exe'),
+              args: ['--processStart', exeName]
             }
           ];
 
-          let selectedStrategy = null;
-          
-          // 按优先级检测可用策略
-          for (const strategy of pathStrategies) {
-            logger.debug("检测策略", { name: strategy.name, path: strategy.path });
-            if (fs.existsSync(strategy.path)) {
-              selectedStrategy = strategy;
-              logger.info("选择策略", { name: strategy.name });
-              break;
-            }
-          }
-
-          if (!selectedStrategy) {
-            throw new Error('无法找到有效的应用启动路径');
-          }
+          // 逐策略尝试设置 + 验证，直到成功或全部失败
+          const tried: Array<{ name: string; path: string; ok: boolean }> = [];
 
           // 如果要禁用开机自启，先清除所有可能的设置
           if (!enable) {
@@ -357,52 +356,50 @@ export class IPCHandlers {
                   openAtLogin: false,
                   path: strategy.path
                 };
-                if (strategy.args) {
-                  clearOptions.args = strategy.args;
-                }
+                if (strategy.args) clearOptions.args = strategy.args;
                 app.setLoginItemSettings(clearOptions);
-                logger.debug("清除策略", { name: strategy.name });
+                tried.push({ name: strategy.name, path: strategy.path, ok: true });
               }
+            }
+            return { success: true, openAtLogin: false, strategy: 'AllCleared', path: '' , verified: true };
+          }
+
+          for (const strategy of pathStrategies) {
+            if (!fs.existsSync(strategy.path)) {
+              tried.push({ name: strategy.name, path: strategy.path, ok: false });
+              continue;
+            }
+
+            const loginSettings: { openAtLogin: boolean; path: string; args?: string[] } = {
+              openAtLogin: true,
+              path: strategy.path
+            };
+            if (strategy.args) loginSettings.args = strategy.args;
+
+            logger.debug("尝试设置", { strategy: strategy.name, loginSettings });
+            app.setLoginItemSettings(loginSettings);
+
+            const confirmOptions: { path: string; args?: string[] } = { path: strategy.path };
+            if (strategy.args) confirmOptions.args = strategy.args;
+
+            const confirmed = app.getLoginItemSettings(confirmOptions);
+            const ok = confirmed.openAtLogin === true;
+            tried.push({ name: strategy.name, path: strategy.path, ok });
+            logger.debug("验证结果", { strategy: strategy.name, ok, confirmed });
+
+            if (ok) {
+              return {
+                success: true,
+                openAtLogin: true,
+                strategy: strategy.name,
+                path: strategy.path,
+                verified: true
+              };
             }
           }
 
-          // 设置开机自启
-          const loginSettings: { openAtLogin: boolean; path: string; args?: string[] } = {
-            openAtLogin: enable,
-            path: selectedStrategy.path
-          };
-          
-          if (selectedStrategy.args) {
-            loginSettings.args = selectedStrategy.args;
-          }
-
-          logger.debug("设置参数", loginSettings);
-          app.setLoginItemSettings(loginSettings);
-
-          // 验证设置结果
-          const confirmOptions: { path: string; args?: string[] } = {
-            path: selectedStrategy.path
-          };
-          if (selectedStrategy.args) {
-            confirmOptions.args = selectedStrategy.args;
-          }
-
-          const confirmed = app.getLoginItemSettings(confirmOptions);
-          logger.debug("验证结果", confirmed);
-
-          // 额外验证：检查是否真的设置成功
-          const isActuallySet = confirmed.openAtLogin === enable;
-          if (!isActuallySet) {
-            logger.warn("设置验证失败", { expected: enable, actual: confirmed.openAtLogin });
-          }
-
-          return { 
-            success: isActuallySet, 
-            openAtLogin: confirmed.openAtLogin,
-            strategy: selectedStrategy.name,
-            path: selectedStrategy.path,
-            verified: isActuallySet
-          };
+          logger.warn("所有策略均尝试失败", { tried });
+          return { success: false, error: '无法设置开机自启（所有策略失败）' };
         } else {
           // 非 Windows 平台
           app.setLoginItemSettings({ openAtLogin: enable });

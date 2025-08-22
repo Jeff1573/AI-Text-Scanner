@@ -33,12 +33,13 @@ export async function validateAutoLaunchStatus(): Promise<AutoLaunchValidationRe
     
     logger.info("系统路径信息", { execPath, appFolder, exeName });
 
-    // 定义所有可能的策略，优先使用 Squirrel Update.exe 方式
+    // 定义所有可能的策略，优先使用 Direct Executable（直接 EXE）
+    // 许多环境下无法通过 Squirrel 的 Update.exe 启动，此时直接 EXE 更可靠
     const strategies = [
       {
-        name: 'Squirrel Update.exe',
-        path: path.resolve(appFolder, '..', 'Update.exe'),
-        args: ['--processStart', exeName]
+        name: 'Direct Executable',
+        path: execPath,
+        args: undefined
       },
       {
         name: 'Squirrel Standard',
@@ -46,9 +47,14 @@ export async function validateAutoLaunchStatus(): Promise<AutoLaunchValidationRe
         args: undefined
       },
       {
-        name: 'Direct Executable',
-        path: execPath,
-        args: undefined
+        name: 'Squirrel Update.exe (FixedName)',
+        path: path.resolve(appFolder, '..', 'Update.exe'),
+        args: ['--processStart', 'AI Text Scanner.exe']
+      },
+      {
+        name: 'Squirrel Update.exe (DynamicName)',
+        path: path.resolve(appFolder, '..', 'Update.exe'),
+        args: ['--processStart', exeName]
       }
     ];
 
