@@ -7,7 +7,6 @@ import { HotkeyManager } from "./managers/hotkeyManager";
 import { TrayManager } from "./managers/trayManager";
 import { IPCHandlers } from "./managers/ipcHandlers";
 import { createModuleLogger } from "./utils/logger";
-import * as log from "electron-log";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -75,7 +74,7 @@ app.on("ready", () => {
           repo: "Jeff1573/AI-Text-Scanner",
         },
         updateInterval: "5 minutes",
-        logger: log,
+        logger: console,
         notifyUser: true,
       });
       logger.info("自动更新已配置");
