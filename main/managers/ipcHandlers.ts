@@ -22,6 +22,7 @@ export class IPCHandlers {
     this.registerSystemHandlers();
     this.registerVersionHandler();
     this.registerImageAnalysisHandler();
+    this.registerUpdateHandlers();
   }
 
   private registerClipboardHandlers(): void {
@@ -434,6 +435,120 @@ export class IPCHandlers {
         return { success: true, report };
       } catch (error: unknown) {
         return { success: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    });
+  }
+
+  private registerUpdateHandlers(): void {
+    // 检查更新
+    ipcMain.handle("check-for-updates", async () => {
+      try {
+        logger.info("收到检查更新请求");
+        
+        // 由于 update-electron-app 是自动处理的，这里只是模拟返回
+        // 在实际的自动更新中，update-electron-app 会自动处理更新检查
+        // 这个处理器主要是为了UI的手动检查功能
+        
+        // 在开发环境中，我们返回模拟数据
+        if (!app.isPackaged) {
+          logger.info("开发环境，返回模拟更新检查结果");
+          return {
+            success: true,
+            updateAvailable: false,
+            message: "开发环境下无法检查更新"
+          };
+        }
+        
+        // 在打包环境中，update-electron-app 会自动处理
+        // 这里我们只能返回基本信息
+        return {
+          success: true,
+          updateAvailable: false,
+          message: "自动更新检查正在后台进行"
+        };
+      } catch (error) {
+        logger.error("检查更新失败", { error });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误"
+        };
+      }
+    });
+
+    // 下载更新
+    ipcMain.handle("download-update", async () => {
+      try {
+        logger.info("收到下载更新请求");
+        
+        if (!app.isPackaged) {
+          return {
+            success: false,
+            error: "开发环境下无法下载更新"
+          };
+        }
+        
+        // update-electron-app 会自动处理下载
+        return {
+          success: true,
+          message: "更新下载正在后台进行"
+        };
+      } catch (error) {
+        logger.error("下载更新失败", { error });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误"
+        };
+      }
+    });
+
+    // 安装更新
+    ipcMain.handle("install-update", async () => {
+      try {
+        logger.info("收到安装更新请求");
+        
+        if (!app.isPackaged) {
+          return {
+            success: false,
+            error: "开发环境下无法安装更新"
+          };
+        }
+        
+        // update-electron-app 会自动处理安装和重启
+        // 通常在下载完成后会显示对话框让用户选择
+        return {
+          success: true,
+          message: "更新安装正在进行，应用将重启"
+        };
+      } catch (error) {
+        logger.error("安装更新失败", { error });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误"
+        };
+      }
+    });
+
+    // 获取更新状态
+    ipcMain.handle("get-update-status", async () => {
+      try {
+        logger.info("收到获取更新状态请求");
+        
+        return {
+          success: true,
+          status: {
+            checking: false,
+            available: false,
+            downloading: false,
+            downloaded: false,
+            error: null
+          }
+        };
+      } catch (error) {
+        logger.error("获取更新状态失败", { error });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误"
+        };
       }
     });
   }

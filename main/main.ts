@@ -1,5 +1,6 @@
 import { app, BrowserWindow } from "electron";
 import started from "electron-squirrel-startup";
+import { updateElectronApp, UpdateSourceType } from "update-electron-app";
 import { WindowManager } from "./managers/windowManager";
 import { ConfigManager } from "./managers/configManager";
 import { HotkeyManager } from "./managers/hotkeyManager";
@@ -63,6 +64,23 @@ const initializeManagers = () => {
 app.on("ready", () => {
   try {
     logger.info('应用启动，开始初始化...');
+    
+    // 初始化自动更新（仅在打包后的应用中）
+    if (app.isPackaged) {
+      logger.info('启用自动更新检查...');
+      updateElectronApp({
+        updateSource: {
+          type: UpdateSourceType.ElectronPublicUpdateService,
+          repo: 'Jeff1573/AI-Text-Scanner'
+        },
+        updateInterval: '5 minutes',
+        // logger: logger,
+        notifyUser: true
+      });
+      logger.info('自动更新已配置');
+    } else {
+      logger.info('开发环境，跳过自动更新配置');
+    }
     
     // 初始化管理器
     initializeManagers();

@@ -106,6 +106,15 @@ export interface ElectronAPI {
   getVersion: () => Promise<{ success: boolean; version?: string; error?: string }>;
   // 获取图片分析结果
   onImageAnalysisResult: (callback: (data) => void) => void;
+  // 自动更新相关API
+  checkForUpdates: () => Promise<{ success: boolean; updateAvailable?: boolean; error?: string }>;
+  downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
+  installUpdate: () => Promise<{ success: boolean; error?: string }>;
+  getUpdateStatus: () => Promise<{ success: boolean; status?: any; error?: string }>;
+  onUpdateAvailable: (callback: (info: any) => void) => void;
+  onUpdateDownloaded: (callback: (info: any) => void) => void;
+  onUpdateError: (callback: (error: string) => void) => void;
+  removeUpdateListeners: () => void;
 }
 
 declare global {
