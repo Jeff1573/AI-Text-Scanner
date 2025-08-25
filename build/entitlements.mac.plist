@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- 基础权限 -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <key>com.apple.security.cs.disable-executable-page-protection</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+    
+    <!-- 网络权限 -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <key>com.apple.security.network.server</key>
+    <false/>
+    
+    <!-- 文件系统权限 -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+    <key>com.apple.security.files.downloads.read-write</key>
+    <true/>
+    
+    <!-- 屏幕录制权限 (用于截图功能) -->
+    <key>com.apple.security.device.camera</key>
+    <true/>
+    <key>com.apple.security.device.microphone</key>
+    <false/>
+    
+    <!-- 辅助功能权限 (用于全局快捷键) -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
+    
+    <!-- 硬化运行时 -->
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <false/>
+    
+    <!-- 打印权限 -->
+    <key>com.apple.security.print</key>
+    <true/>
+    
+    <!-- 通知权限 -->
+    <key>com.apple.security.temporary-exception.mach-register.global-name</key>
+    <string>com.apple.distributed_notifications@1</string>
+</dict>
+</plist>

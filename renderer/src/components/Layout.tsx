@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ConfigProvider } from "antd";
-import zhCN from "antd/locale/zh_CN";
+import zhCN from "antd/es/locale/zh_CN";
 import { useMainAppState } from "../hooks/useMainAppState";
 import { TitleBar } from "./TitleBar";
 import "../assets/styles/index.css";
