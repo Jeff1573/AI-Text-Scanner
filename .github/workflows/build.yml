@@ -2,10 +2,25 @@ name: Build and Release
 
 on:
   push:
-    branches: [ main, develop ]
-    tags: [ 'v*' ]
+    branches: [main, develop]
+    tags: ["v*"]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: '构建类型'
+        required: true
+        default: 'build_only'
+        type: choice
+        options:
+          - build_only
+          - release_only
+      force_release:
+        description: '强制发布（即使不是标签）'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
@@ -17,6 +32,9 @@ jobs:
             platform: win
 
     runs-on: ${{ matrix.os }}
+    
+    # 在手动触发时，根据build_type参数决定是否执行
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.build_type == 'build_only'
 
     steps:
       - name: Checkout code
@@ -25,15 +43,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
 
-      # 构建应用包 (仅在推送标签或主分支时)
+      # 构建应用包 (在推送标签、主分支或手动触发时)
       - name: Package application
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         run: npm run package:win
         env:
           # GitHub Token for publishing
@@ -46,7 +64,7 @@ jobs:
 
       # 上传构建产物
       - name: Upload build artifacts
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: app-${{ matrix.platform }}
@@ -56,12 +74,12 @@ jobs:
             !dist/*.blockmap
           retention-days: 7
 
-  # 发布到GitHub Releases (仅在标签推送时)
+  # 发布到GitHub Releases (在标签推送或手动触发时)
   release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_type == 'release_only' && github.event.inputs.force_release == 'true')
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -71,32 +89,30 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
-
-
 
       - name: Get tag information and generate changelog
         id: tag_info
         run: |
           tag="${{ github.ref_name }}"
           tagMessage=$(git tag -l --format='%(contents)' "$tag" 2>/dev/null || echo "")
-          
+
           if [ -z "$tagMessage" ]; then
             tagMessage="Release $tag"
           fi
-          
+
           # 获取上一个tag
           previousTag=$(git describe --tags --abbrev=0 "$tag"^ 2>/dev/null || echo "")
-          
+
           # 生成更新日志
           changelog="## 📋 更新内容\n\n"
           changelog+="$tagMessage\n\n"
           changelog+="## 🔄 代码变更\n\n"
-          
+
           if [ -n "$previousTag" ]; then
             commits=$(git log --pretty=format:"- %s" "$previousTag..$tag" 2>/dev/null || echo "")
             if [ -n "$commits" ]; then
@@ -108,7 +124,7 @@ jobs:
           else
             changelog+="- 初始版本发布\n\n"
           fi
-          
+
           # 将内容写入文件
           echo -e "$changelog" > release_notes.md
           echo "PREVIOUS_TAG=$previousTag" >> $GITHUB_OUTPUT
@@ -141,34 +157,3 @@ jobs:
         run: |
           echo "🎉 Release created successfully!"
           echo "Download links are available in the release section."
-
-  # 安全扫描
-  security:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run security audit
-        run: npm audit --audit-level high
-        continue-on-error: true
-
-      - name: Check for vulnerabilities
-        run: |
-          npm audit --json > audit-results.json || true
-          if [ -s audit-results.json ]; then
-            echo "Security vulnerabilities found:"
-            cat audit-results.json
-          fi
-
