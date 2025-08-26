@@ -72,13 +72,14 @@ jobs:
           path: |
             dist/**/*
             !dist/mac-universal
+            !dist/win-unpacked
             !dist/*.blockmap
           retention-days: 7
 
   # 发布到GitHub Releases (在标签推送或手动触发时)
   release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && (github.event.inputs.build_type == 'release_only' || github.event.inputs.build_type == 'build_and_release') && github.event.inputs.force_release == 'true')
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_type == 'build_and_release') || (github.event_name == 'workflow_dispatch' && github.event.inputs.build_type == 'release_only' && github.event.inputs.force_release == 'true')
     runs-on: ubuntu-latest
 
     steps:
@@ -87,47 +88,59 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
       - name: Get tag information and generate changelog
         id: tag_info
         run: |
-          tag="${{ github.ref_name }}"
-          tagMessage=$(git tag -l --format='%(contents)' "$tag" 2>/dev/null || echo "")
+          # 获取当前标签或版本信息
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            # 标签推送情况
+            tag="${{ github.ref_name }}"
+            tagMessage=$(git tag -l --format='%(contents)' "$tag" 2>/dev/null || echo "")
+          else
+            # 手动触发情况，使用package.json中的版本号
+            if [ -f package.json ]; then
+              version=$(node -p "require('./package.json').version" 2>/dev/null || echo "1.0.0")
+              tag="v$version"
+              tagMessage="Release $tag - Manual Release"
+            else
+              tag="v1.0.0"
+              tagMessage="Release $tag - Manual Release"
+            fi
+          fi
 
           if [ -z "$tagMessage" ]; then
             tagMessage="Release $tag"
           fi
 
-          # 获取上一个tag
-          previousTag=$(git describe --tags --abbrev=0 "$tag"^ 2>/dev/null || echo "")
+          # 获取上一个标签
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            previousTag=$(git describe --tags --abbrev=0 "$tag"^ 2>/dev/null || echo "")
+            compareRef="$tag"
+          else
+            previousTag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            compareRef="${{ github.sha }}"
+          fi
 
           # 生成更新日志
           changelog="## 📋 更新内容\n\n"
           changelog+="$tagMessage\n\n"
           changelog+="## 🔄 代码变更\n\n"
 
-          if [ -n "$previousTag" ]; then
-            commits=$(git log --pretty=format:"- %s" "$previousTag..$tag" 2>/dev/null || echo "")
+          if [ -n "$previousTag" ] && [ "$previousTag" != "$tag" ]; then
+            commits=$(git log --pretty=format:"- %s" "$previousTag..$compareRef" 2>/dev/null || echo "")
             if [ -n "$commits" ]; then
               changelog+="$commits"
             else
-              changelog+="- 初始版本发布"
+              changelog+="- 无显著变更"
             fi
-            changelog+="\n\n## 📊 完整变更日志\n\n[查看完整变更记录](https://github.com/${{ github.repository }}/compare/$previousTag...$tag)"
+            changelog+="\n\n## 📊 完整变更日志\n\n[查看完整变更记录](https://github.com/${{ github.repository }}/compare/$previousTag..$compareRef)"
           else
             changelog+="- 初始版本发布\n\n"
           fi
 
           # 将内容写入文件
           echo -e "$changelog" > release_notes.md
+          echo "TAG_NAME=$tag" >> $GITHUB_OUTPUT
           echo "PREVIOUS_TAG=$previousTag" >> $GITHUB_OUTPUT
 
       - name: Download Windows artifacts
@@ -136,15 +149,10 @@ jobs:
           name: app-win
           path: artifacts/windows/
 
-      - name: Build and publish
-        run: npm run publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-
       - name: Create Release with changelog
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.tag_info.outputs.TAG_NAME }}
           files: |
             artifacts/**/*
           body_path: release_notes.md
