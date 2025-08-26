@@ -38,16 +38,10 @@ jobs:
         run: npm run lint
         continue-on-error: true
 
-      # Windows specific steps  
-      - name: Setup Windows build environment
-        run: |
-          # 确保使用正确的构建工具
-          npm config set msvs_version 2022 --global
-
       # 构建应用包 (仅在推送标签或主分支时)
       - name: Package application
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
-        run: npm run package
+        run: npm run package:win
         env:
           # 禁用代码签名 (CI环境)
           CSC_IDENTITY_AUTO_DISCOVERY: false
