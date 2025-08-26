@@ -39,19 +39,18 @@ export const SettingsPage = () => {
 
   // 焦点状态管理
   const [focusedHotkey, setFocusedHotkey] = useState<string | null>(null);
-  
-
 
   // 使用 Hook 方式获取 message API
   const [messageApi, contextHolder] = message.useMessage();
-  
-
 
   // 当全局配置仍在加载时，显示加载指示器
   if (isLoading) {
     return (
       <div className="page" id="settings-page">
-        <div className="content-area" style={{ textAlign: 'center', paddingTop: 100 }}>
+        <div
+          className="content-area"
+          style={{ textAlign: "center", paddingTop: 100 }}
+        >
           <Spin size="large" tip="正在加载配置..." />
         </div>
       </div>
@@ -61,22 +60,26 @@ export const SettingsPage = () => {
   // 如果加载配置时发生错误，显示错误信息
   if (configError) {
     return (
-        <div className="page" id="settings-page">
-            <div className="content-area" style={{ padding: 50 }}>
-                <Alert message={`加载配置失败: ${configError}`} type="error" showIcon />
-            </div>
+      <div className="page" id="settings-page">
+        <div className="content-area" style={{ padding: 50 }}>
+          <Alert
+            message={`加载配置失败: ${configError}`}
+            type="error"
+            showIcon
+          />
         </div>
+      </div>
     );
   }
 
   const handleSave = async () => {
-    const hideLoading = messageApi.loading('正在保存并验证设置...', 0);
-    
+    const hideLoading = messageApi.loading("正在保存并验证设置...", 0);
+
     try {
       const result = await handleSaveSettings();
-      
+      console.log(result);
       hideLoading();
-      
+
       if (result.success) {
         if (result.validationSuccess) {
           messageApi.success({
@@ -111,12 +114,12 @@ export const SettingsPage = () => {
 
   const handleValidate = async () => {
     // 显示验证开始的提示
-    const hideLoading = messageApi.loading('正在验证API配置...', 0);
-    
+    const hideLoading = messageApi.loading("正在验证API配置...", 0);
+
     try {
       const ok = await validateApiConfig();
       hideLoading();
-      
+
       if (ok) {
         messageApi.success({
           content: "API配置验证成功！连接正常，可以正常使用。",
@@ -150,7 +153,7 @@ export const SettingsPage = () => {
   ) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const parts: string[] = [];
     if (e.ctrlKey || e.metaKey) parts.push("CommandOrControl");
     if (e.altKey) parts.push("Alt");
@@ -159,10 +162,10 @@ export const SettingsPage = () => {
     const key = e.key.toUpperCase();
     const isModifier = ["SHIFT", "CONTROL", "ALT", "META"].includes(key);
     if (isModifier) return;
-    
+
     parts.push(key);
     const accelerator = parts.join("+");
-    
+
     if (accelerator) {
       handleInputChange(field, accelerator);
       // 设置完快捷键后移除焦点状态
@@ -178,8 +181,6 @@ export const SettingsPage = () => {
   const handleHotkeyBlur = () => {
     setFocusedHotkey(null);
   };
-  
-
 
   const items: CollapseProps["items"] = [
     {
@@ -188,7 +189,11 @@ export const SettingsPage = () => {
       children: (
         <Form layout="vertical" style={{ padding: "16px 0" }}>
           {/* 表单项与之前类似，但value和onChange直接来自重构后的hook */}
-          <Form.Item label="提供商" validateStatus={errors.provider ? "error" : ""} help={errors.provider}>
+          <Form.Item
+            label="提供商"
+            validateStatus={errors.provider ? "error" : ""}
+            help={errors.provider}
+          >
             <Select
               value={formData.provider}
               onChange={(value) => handleInputChange("provider", value)}
@@ -204,9 +209,19 @@ export const SettingsPage = () => {
             validateStatus={errors.apiUrl ? "error" : ""}
             help={errors.apiUrl}
             extra={
-              <div style={{ fontSize: 12, color: '#999', marginTop: 6 }}>
-                {(() => { const b = (((formData.apiUrl || '').trim() || 'https://api.openai.com').replace(/\/+$/, '')); const suffix = /\/v1$/i.test(b) ? '/chat/completions' : '/v1/chat/completions'; return `${b}${suffix}`; })()}
-                <span style={{ marginLeft: 8, color: '#bbb' }}>(其中 v1 可选，可省略)</span>
+              <div style={{ fontSize: 12, color: "#999", marginTop: 6 }}>
+                {(() => {
+                  const b = (
+                    (formData.apiUrl || "").trim() || "https://api.openai.com"
+                  ).replace(/\/+$/, "");
+                  const suffix = /\/v1$/i.test(b)
+                    ? "/chat/completions"
+                    : "/v1/chat/completions";
+                  return `${b}${suffix}`;
+                })()}
+                <span style={{ marginLeft: 8, color: "#bbb" }}>
+                  (其中 v1 可选，可省略)
+                </span>
               </div>
             }
           >
@@ -216,14 +231,22 @@ export const SettingsPage = () => {
               size="large"
             />
           </Form.Item>
-          <Form.Item label="API密钥" validateStatus={errors.apiKey ? "error" : ""} help={errors.apiKey}>
+          <Form.Item
+            label="API密钥"
+            validateStatus={errors.apiKey ? "error" : ""}
+            help={errors.apiKey}
+          >
             <Input.Password
               value={formData.apiKey}
               onChange={(e) => handleInputChange("apiKey", e.target.value)}
               size="large"
             />
           </Form.Item>
-          <Form.Item label="模型选择" validateStatus={errors.model ? "error" : ""} help={errors.model}>
+          <Form.Item
+            label="模型选择"
+            validateStatus={errors.model ? "error" : ""}
+            help={errors.model}
+          >
             <Select
               value={formData.model}
               onChange={(value) => handleInputChange("model", value)}
@@ -235,38 +258,58 @@ export const SettingsPage = () => {
             </Select>
           </Form.Item>
           {formData.model === "custom" && (
-            <Form.Item 
-              label="自定义模型名称" 
-              validateStatus={errors.customModel ? "error" : ""} 
+            <Form.Item
+              label="自定义模型名称"
+              validateStatus={errors.customModel ? "error" : ""}
               help={errors.customModel}
             >
               <Input
                 value={formData.customModel}
-                onChange={(e) => handleInputChange("customModel", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("customModel", e.target.value)
+                }
                 placeholder="请输入模型名称，如 gpt-3.5-turbo"
                 size="large"
               />
             </Form.Item>
           )}
-          
+
           {/* 验证状态提示 */}
           {isValidating && (
-            <Card size="small" style={{ marginTop: 16, backgroundColor: '#f6ffed', border: '1px solid #b7eb8f' }}>
+            <Card
+              size="small"
+              style={{
+                marginTop: 16,
+                backgroundColor: "#f6ffed",
+                border: "1px solid #b7eb8f",
+              }}
+            >
               <Space>
-                <LoadingOutlined style={{ color: '#52c41a' }} />
-                <span style={{ color: '#389e0d' }}>正在验证API配置，请稍候...</span>
+                <LoadingOutlined style={{ color: "#52c41a" }} />
+                <span style={{ color: "#389e0d" }}>
+                  正在验证API配置，请稍候...
+                </span>
               </Space>
             </Card>
           )}
-          
+
           {/* 错误提示增强 */}
           {errors.apiKey && (
-            <Card size="small" style={{ marginTop: 16, backgroundColor: '#fff2f0', border: '1px solid #ffccc7' }}>
+            <Card
+              size="small"
+              style={{
+                marginTop: 16,
+                backgroundColor: "#fff2f0",
+                border: "1px solid #ffccc7",
+              }}
+            >
               <Space>
-                <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+                <ExclamationCircleOutlined style={{ color: "#ff4d4f" }} />
                 <div>
-                  <div style={{ color: '#cf1322', fontWeight: 500 }}>验证失败</div>
-                  <div style={{ color: '#8c8c8c', fontSize: 12, marginTop: 4 }}>
+                  <div style={{ color: "#cf1322", fontWeight: 500 }}>
+                    验证失败
+                  </div>
+                  <div style={{ color: "#8c8c8c", fontSize: 12, marginTop: 4 }}>
                     {errors.apiKey}
                   </div>
                 </div>
@@ -280,102 +323,129 @@ export const SettingsPage = () => {
       key: "3",
       label: "快捷键设置",
       children: (
-        <Form layout="vertical" style={{ padding: '16px 0' }}>
-          <Form.Item 
-            label="打开结果窗口快捷键" 
-            validateStatus={errors.resultHotkey ? 'error' : ''} 
+        <Form layout="vertical" style={{ padding: "16px 0" }}>
+          <Form.Item
+            label="打开结果窗口快捷键"
+            validateStatus={errors.resultHotkey ? "error" : ""}
             help={errors.resultHotkey}
             extra={
-              <div style={{ fontSize: 12, color: focusedHotkey === 'resultHotkey' ? '#1890ff' : '#666', marginTop: 4 }}>
-                {focusedHotkey === 'resultHotkey' 
-                  ? '🎯 已选中，请按下组合键...' 
-                  : '点击输入框并按下组合键来设置快捷键，例如：Ctrl+Alt+R'
-                }
+              <div
+                style={{
+                  fontSize: 12,
+                  color: focusedHotkey === "resultHotkey" ? "#1890ff" : "#666",
+                  marginTop: 4,
+                }}
+              >
+                {focusedHotkey === "resultHotkey"
+                  ? "🎯 已选中，请按下组合键..."
+                  : "点击输入框并按下组合键来设置快捷键，例如：Ctrl+Alt+R"}
               </div>
             }
           >
             <Input
               value={formData.resultHotkey}
-              onKeyDown={(e) => handleHotkeyKeyDown(e, 'resultHotkey')}
-              onFocus={() => handleHotkeyFocus('resultHotkey')}
+              onKeyDown={(e) => handleHotkeyKeyDown(e, "resultHotkey")}
+              onFocus={() => handleHotkeyFocus("resultHotkey")}
               onBlur={handleHotkeyBlur}
               placeholder="点击此处并按下组合键"
               size="large"
               readOnly
-              style={{ 
-                cursor: 'pointer',
-                borderColor: focusedHotkey === 'resultHotkey' ? '#1890ff' : undefined,
-                boxShadow: focusedHotkey === 'resultHotkey' ? '0 0 0 2px rgba(24, 144, 255, 0.2)' : undefined,
-                backgroundColor: focusedHotkey === 'resultHotkey' ? '#f6ffed' : undefined
+              style={{
+                cursor: "pointer",
+                borderColor:
+                  focusedHotkey === "resultHotkey" ? "#1890ff" : undefined,
+                boxShadow:
+                  focusedHotkey === "resultHotkey"
+                    ? "0 0 0 2px rgba(24, 144, 255, 0.2)"
+                    : undefined,
+                backgroundColor:
+                  focusedHotkey === "resultHotkey" ? "#f6ffed" : undefined,
               }}
             />
           </Form.Item>
-          <Form.Item 
-            label="截图识别快捷键" 
-            validateStatus={errors.screenshotHotkey ? 'error' : ''} 
+          <Form.Item
+            label="截图识别快捷键"
+            validateStatus={errors.screenshotHotkey ? "error" : ""}
             help={errors.screenshotHotkey}
             extra={
-              <div style={{ fontSize: 12, color: focusedHotkey === 'screenshotHotkey' ? '#1890ff' : '#666', marginTop: 4 }}>
-                {focusedHotkey === 'screenshotHotkey' 
-                  ? '🎯 已选中，请按下组合键...' 
-                  : '点击输入框并按下组合键来设置快捷键，例如：Ctrl+Alt+S'
-                }
+              <div
+                style={{
+                  fontSize: 12,
+                  color:
+                    focusedHotkey === "screenshotHotkey" ? "#1890ff" : "#666",
+                  marginTop: 4,
+                }}
+              >
+                {focusedHotkey === "screenshotHotkey"
+                  ? "🎯 已选中，请按下组合键..."
+                  : "点击输入框并按下组合键来设置快捷键，例如：Ctrl+Alt+S"}
               </div>
             }
           >
             <Input
               value={formData.screenshotHotkey}
-              onKeyDown={(e) => handleHotkeyKeyDown(e, 'screenshotHotkey')}
-              onFocus={() => handleHotkeyFocus('screenshotHotkey')}
+              onKeyDown={(e) => handleHotkeyKeyDown(e, "screenshotHotkey")}
+              onFocus={() => handleHotkeyFocus("screenshotHotkey")}
               onBlur={handleHotkeyBlur}
               placeholder="点击此处并按下组合键"
               size="large"
               readOnly
-              style={{ 
-                cursor: 'pointer',
-                borderColor: focusedHotkey === 'screenshotHotkey' ? '#1890ff' : undefined,
-                boxShadow: focusedHotkey === 'screenshotHotkey' ? '0 0 0 2px rgba(24, 144, 255, 0.2)' : undefined,
-                backgroundColor: focusedHotkey === 'screenshotHotkey' ? '#f6ffed' : undefined
+              style={{
+                cursor: "pointer",
+                borderColor:
+                  focusedHotkey === "screenshotHotkey" ? "#1890ff" : undefined,
+                boxShadow:
+                  focusedHotkey === "screenshotHotkey"
+                    ? "0 0 0 2px rgba(24, 144, 255, 0.2)"
+                    : undefined,
+                backgroundColor:
+                  focusedHotkey === "screenshotHotkey" ? "#f6ffed" : undefined,
               }}
             />
           </Form.Item>
         </Form>
-      )
+      ),
     },
     {
-        key: '4',
-        label: '启动与系统',
-        children: (
-          <Form layout="vertical" style={{ padding: '16px 0' }}>
-            <Form.Item label="开机自启动">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Switch
-                  checked={formData.autoLaunch}
-                  loading={isSaving}
-                  onChange={(checked) => handleInputChange('autoLaunch', checked)}
-                />
-                <span style={{ color: '#888' }}>在系统登录时自动启动应用。</span>
-              </div>
-            </Form.Item>
-            
-
-          </Form>
-        )
-      }
+      key: "4",
+      label: "启动与系统",
+      children: (
+        <Form layout="vertical" style={{ padding: "16px 0" }}>
+          <Form.Item label="开机自启动">
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Switch
+                checked={formData.autoLaunch}
+                loading={isSaving}
+                onChange={(checked) => handleInputChange("autoLaunch", checked)}
+              />
+              <span style={{ color: "#888" }}>在系统登录时自动启动应用。</span>
+            </div>
+          </Form.Item>
+        </Form>
+      ),
+    },
   ];
 
   return (
     <div className="page" id="settings-page">
       {/* Message contextHolder 必须放在组件树中 */}
       {contextHolder}
-      
+
       <div className="page-header">
         <h1>设置</h1>
       </div>
 
       <div className="content-area">
         <Collapse items={items} defaultActiveKey={["1", "3", "4"]} />
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "flex-end", marginTop: 32 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+            marginTop: 32,
+          }}
+        >
           <Button
             type="primary"
             icon={<SaveOutlined />}
@@ -392,7 +462,7 @@ export const SettingsPage = () => {
             disabled={isSaving || isValidating}
             size="large"
           >
-            {isValidating ? '验证中...' : '验证配置'}
+            {isValidating ? "验证中..." : "验证配置"}
           </Button>
           <Button
             icon={<ReloadOutlined />}
@@ -403,7 +473,7 @@ export const SettingsPage = () => {
             重置
           </Button>
         </div>
-        
+
         <div style={{ marginTop: 32 }}>
           <UpdateChecker />
           <ConfigDisplay />

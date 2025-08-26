@@ -444,6 +444,7 @@ export class IPCHandlers {
         
         return {
           success: true,
+          verified: currentSettings.openAtLogin === enable,
           settings: {
             openAtLogin: currentSettings.openAtLogin,
             openAsHidden: currentSettings.openAsHidden,
@@ -456,6 +457,7 @@ export class IPCHandlers {
         logger.error("设置开机自启失败", { enable, error });
         return {
           success: false,
+          verified: false,
           error: error instanceof Error ? error.message : "未知错误",
         };
       }
