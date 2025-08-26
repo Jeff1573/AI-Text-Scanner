@@ -31,9 +31,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build application
-        run: npm run build
-
       # 构建应用包 (仅在推送标签或主分支时)
       - name: Package application
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
