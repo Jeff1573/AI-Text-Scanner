@@ -1,5 +1,12 @@
 name: Build and Release
 
+# 添加权限配置
+permissions:
+  contents: write
+  actions: read
+  id-token: write
+  packages: write
+
 on:
   push:
     branches: [main, develop]
@@ -96,12 +103,26 @@ jobs:
             # 标签推送情况
             tag="${{ github.ref_name }}"
             tagMessage=$(git tag -l --format='%(contents)' "$tag" 2>/dev/null || echo "")
+            echo "Using existing tag: $tag"
           else
             # 手动触发情况，使用package.json中的版本号
             if [ -f package.json ]; then
               version=$(node -p "require('./package.json').version" 2>/dev/null || echo "1.0.0")
               tag="v$version"
               tagMessage="Release $tag - Manual Release"
+              echo "Creating new tag: $tag"
+              
+              # 检查标签是否已存在
+              if git rev-parse "$tag" >/dev/null 2>&1; then
+                echo "Tag $tag already exists"
+                tagMessage=$(git tag -l --format='%(contents)' "$tag" 2>/dev/null || echo "Release $tag")
+              else
+                echo "Creating new tag $tag"
+                git config user.name "github-actions[bot]"
+                git config user.email "github-actions[bot]@users.noreply.github.com"
+                git tag -a "$tag" -m "$tagMessage"
+                git push origin "$tag"
+              fi
             else
               tag="v1.0.0"
               tagMessage="Release $tag - Manual Release"
@@ -149,16 +170,32 @@ jobs:
           name: app-win
           path: artifacts/windows/
 
+      - name: Debug information
+        run: |
+          echo "Debug Information:"
+          echo "TAG_NAME: ${{ steps.tag_info.outputs.TAG_NAME }}"
+          echo "PREVIOUS_TAG: ${{ steps.tag_info.outputs.PREVIOUS_TAG }}"
+          echo "GitHub Ref: ${{ github.ref }}"
+          echo "GitHub Ref Name: ${{ github.ref_name }}"
+          echo "GitHub Event Name: ${{ github.event_name }}"
+          echo "\nRelease Notes Content:"
+          cat release_notes.md
+          echo "\nArtifacts Directory:"
+          ls -la artifacts/ || echo "No artifacts directory"
+          find artifacts/ -type f 2>/dev/null || echo "No files in artifacts"
+
       - name: Create Release with changelog
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag_info.outputs.TAG_NAME }}
+          name: ${{ steps.tag_info.outputs.TAG_NAME }}
           files: |
             artifacts/**/*
           body_path: release_notes.md
           draft: false
           prerelease: false
           generate_release_notes: false
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
