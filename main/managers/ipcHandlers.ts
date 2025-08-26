@@ -2,6 +2,7 @@ import { ipcMain, clipboard, app, dialog, shell } from "electron";
 import path from "node:path";
 import fs from "node:fs";
 import type { ConfigManager } from "./configManager";
+import type { UpdateManager } from "./updateManager";
 import {
   AIServiceFactory,
   type APIConfig,
@@ -15,7 +16,10 @@ import { BrowserWindow } from "electron";
 const logger = createModuleLogger('IPCHandlers');
 
 export class IPCHandlers {
-  constructor(private configManager: ConfigManager) {}
+  constructor(
+    private configManager: ConfigManager,
+    private updateManager?: UpdateManager
+  ) {}
 
   registerAllHandlers(): void {
     this.registerClipboardHandlers();
@@ -23,6 +27,7 @@ export class IPCHandlers {
     this.registerSystemHandlers();
     this.registerVersionHandler();
     this.registerImageAnalysisHandler();
+    this.registerUpdateHandlers();
   }
 
   private registerClipboardHandlers(): void {
@@ -200,6 +205,99 @@ export class IPCHandlers {
         };
       } catch (error) {
         logger.error("获取图片分析数据失败", { error });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误",
+        };
+      }
+    });
+  }
+
+  private registerUpdateHandlers(): void {
+    // 检查更新
+    ipcMain.handle("check-for-updates", async () => {
+      try {
+        if (!this.updateManager) {
+          return {
+            success: false,
+            error: "更新管理器未初始化",
+          };
+        }
+
+        const result = await this.updateManager.checkForUpdates();
+        logger.info("检查更新结果", { result });
+        return result;
+      } catch (error) {
+        logger.error("检查更新失败", { error });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误",
+        };
+      }
+    });
+
+    // 下载更新
+    ipcMain.handle("download-update", async () => {
+      try {
+        if (!this.updateManager) {
+          return {
+            success: false,
+            error: "更新管理器未初始化",
+          };
+        }
+
+        const result = await this.updateManager.downloadUpdate();
+        logger.info("下载更新结果", { result });
+        return result;
+      } catch (error) {
+        logger.error("下载更新失败", { error });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误",
+        };
+      }
+    });
+
+    // 安装更新
+    ipcMain.handle("install-update", async () => {
+      try {
+        if (!this.updateManager) {
+          return {
+            success: false,
+            error: "更新管理器未初始化",
+          };
+        }
+
+        const result = await this.updateManager.installUpdate();
+        logger.info("安装更新结果", { result });
+        return result;
+      } catch (error) {
+        logger.error("安装更新失败", { error });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误",
+        };
+      }
+    });
+
+    // 获取更新状态
+    ipcMain.handle("get-update-status", async () => {
+      try {
+        if (!this.updateManager) {
+          return {
+            success: false,
+            error: "更新管理器未初始化",
+          };
+        }
+
+        const status = this.updateManager.getStatus();
+        logger.info("获取更新状态", { status });
+        return {
+          success: true,
+          status,
+        };
+      } catch (error) {
+        logger.error("获取更新状态失败", { error });
         return {
           success: false,
           error: error instanceof Error ? error.message : "未知错误",

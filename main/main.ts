@@ -4,6 +4,7 @@ import { WindowManager } from "./managers/windowManager";
 import { ConfigManager } from "./managers/configManager";
 import { HotkeyManager } from "./managers/hotkeyManager";
 import { TrayManager } from "./managers/trayManager";
+import { UpdateManager } from "./managers/updateManager";
 import { IPCHandlers } from "./managers/ipcHandlers";
 import { createModuleLogger } from "./utils/logger";
 
@@ -17,6 +18,7 @@ let windowManager: WindowManager;
 let configManager: ConfigManager;
 let hotkeyManager: HotkeyManager;
 let trayManager: TrayManager;
+let updateManager: UpdateManager;
 let ipcHandlers: IPCHandlers;
 
 // 创建主进程日志器
@@ -40,7 +42,8 @@ const initializeManagers = () => {
   configManager = new ConfigManager();
   hotkeyManager = new HotkeyManager(windowManager, configManager);
   trayManager = new TrayManager(windowManager, configManager);
-  ipcHandlers = new IPCHandlers(configManager);
+  updateManager = new UpdateManager();
+  ipcHandlers = new IPCHandlers(configManager, updateManager);
 
   // 注册 IPC 处理器
   windowManager.registerIPCHandlers();

@@ -213,6 +213,8 @@ const config = {
       repo: "AI-Text-Scanner",
       private: false,
       releaseType: "release", // 'draft', 'prerelease', 'release'
+      // 启用自动更新
+      updaterCacheDirName: "ai-text-scanner-updater",
     },
   ],
 

@@ -13,4 +13,5 @@ export { NoDataState } from "./NoDataState";
 export { AnalysisResult } from "./AnalysisResult";
 export { ConfigDisplay } from "./ConfigDisplay";
 export { LanguageSelector } from "./LanguageSelector";
-export { TextArea } from "./TextArea"; 
+export { TextArea } from "./TextArea";
+export { UpdateChecker } from "./UpdateChecker"; 

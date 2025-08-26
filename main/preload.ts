@@ -205,5 +205,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     });
   },
   
+  // 更新相关API
+  checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
+  downloadUpdate: () => ipcRenderer.invoke("download-update"),
+  installUpdate: () => ipcRenderer.invoke("install-update"),
+  getUpdateStatus: () => ipcRenderer.invoke("get-update-status"),
 
 });

@@ -21,7 +21,7 @@ import {
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import type { CollapseProps } from "antd";
-import { ConfigDisplay } from "../components/ConfigDisplay";
+import { ConfigDisplay, UpdateChecker } from "../components";
 
 export const SettingsPage = () => {
   const {
@@ -405,6 +405,7 @@ export const SettingsPage = () => {
         </div>
         
         <div style={{ marginTop: 32 }}>
+          <UpdateChecker />
           <ConfigDisplay />
         </div>
       </div>
