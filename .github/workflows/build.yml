@@ -11,14 +11,10 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest]
         include:
-          - os: ubuntu-latest
-            platform: linux
           - os: windows-latest
             platform: win
-          - os: macos-latest
-            platform: mac
 
     runs-on: ${{ matrix.os }}
 
@@ -42,26 +38,11 @@ jobs:
         run: npm run lint
         continue-on-error: true
 
-      # Linux specific steps
-      - name: Install Linux dependencies
-        if: matrix.platform == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y rpm libopenjp2-tools
-
       # Windows specific steps  
       - name: Setup Windows build environment
-        if: matrix.platform == 'win'
         run: |
           # 确保使用正确的构建工具
           npm config set msvs_version 2022 --global
-
-      # macOS specific steps
-      - name: Setup macOS build environment
-        if: matrix.platform == 'mac'
-        run: |
-          # 安装必要的macOS构建工具
-          echo "macOS build environment ready"
 
       # 构建应用包 (仅在推送标签或主分支时)
       - name: Package application
