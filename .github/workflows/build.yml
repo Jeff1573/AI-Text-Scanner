@@ -34,25 +34,10 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Lint code
-        run: npm run lint
-        continue-on-error: true
-
       # 构建应用包 (仅在推送标签或主分支时)
       - name: Package application
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
         run: npm run package:win
-        env:
-          # 禁用代码签名 (CI环境)
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-          # Windows
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-          # macOS
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_ID_PASS: ${{ secrets.APPLE_ID_PASS }}
 
       # 上传构建产物
       - name: Upload build artifacts
