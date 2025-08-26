@@ -79,7 +79,8 @@ async function packageApp(platform = '') {
   log(`开始打包应用${platform ? ` (${platform})` : ''}...`);
   try {
     const platformFlag = platform ? `--${platform}` : '';
-    execSync(`npx electron-builder ${platformFlag} --config electron-builder.config.js`, { 
+    // 使用 --publish never 确保不会尝试自动发布
+    execSync(`npx electron-builder ${platformFlag} --publish never --config electron-builder.config.js`, { 
       stdio: 'inherit' 
     });
     log('应用打包完成');

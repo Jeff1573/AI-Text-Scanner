@@ -205,18 +205,8 @@ const config = {
     ],
   },
 
-  // 发布配置
-  publish: [
-    {
-      provider: "github",
-      owner: "Jeff1573",
-      repo: "AI-Text-Scanner",
-      private: false,
-      releaseType: "release", // 'draft', 'prerelease', 'release'
-      // 启用自动更新
-      updaterCacheDirName: "ai-text-scanner-updater",
-    },
-  ],
+  // 发布配置 - 在CI环境中禁用自动发布
+  publish: null, // 禁用自动发布，在GitHub Actions中手动处理
 
   // 删除包脚本以减小大小
   removePackageScripts: true,
