@@ -205,8 +205,14 @@ const config = {
     ],
   },
 
-  // 发布配置 - 在CI环境中禁用自动发布
-  publish: null, // 禁用自动发布，在GitHub Actions中手动处理
+  // 发布配置 - 支持GitHub Releases自动更新
+  publish: {
+    provider: "github",
+    owner: "Jeff1573",
+    repo: "AI-Text-Scanner",
+    publishAutoUpdate: true,
+    releaseType: "release",
+  },
 
   // 删除包脚本以减小大小
   removePackageScripts: true,

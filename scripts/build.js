@@ -79,8 +79,12 @@ async function packageApp(platform = '') {
   log(`开始打包应用${platform ? ` (${platform})` : ''}...`);
   try {
     const platformFlag = platform ? `--${platform}` : '';
-    // 使用 --publish never 确保不会尝试自动发布
-    execSync(`npx electron-builder ${platformFlag} --publish never --config electron-builder.config.js`, { 
+    
+    // 在CI环境中允许生成发布元数据文件，本地环境禁用发布
+    const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+    const publishFlag = isCI ? '--publish onTagOrDraft' : '--publish never';
+    
+    execSync(`npx electron-builder ${platformFlag} ${publishFlag} --config electron-builder.config.js`, { 
       stdio: 'inherit' 
     });
     log('应用打包完成');

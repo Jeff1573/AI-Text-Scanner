@@ -80,7 +80,6 @@ jobs:
             dist/**/*
             !dist/mac-universal
             !dist/win-unpacked
-            !dist/*.blockmap
           retention-days: 7
 
   # 发布到GitHub Releases (在标签推送或手动触发时)
