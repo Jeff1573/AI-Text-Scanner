@@ -1,0 +1,254 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: windows-latest
+            platform: win
+          - os: macos-latest
+            platform: mac
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Lint code
+        run: npm run lint
+        continue-on-error: true
+
+      # Linux specific steps
+      - name: Install Linux dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm libopenjp2-tools
+
+      # Windows specific steps  
+      - name: Setup Windows build environment
+        if: matrix.platform == 'win'
+        run: |
+          # 确保使用正确的构建工具
+          npm config set msvs_version 2022 --global
+
+      # macOS specific steps
+      - name: Setup macOS build environment
+        if: matrix.platform == 'mac'
+        run: |
+          # 安装必要的macOS构建工具
+          echo "macOS build environment ready"
+
+      # 构建应用包 (仅在推送标签或主分支时)
+      - name: Package application
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        run: npm run package
+        env:
+          # 禁用代码签名 (CI环境)
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          # Windows
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          # macOS
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASS: ${{ secrets.APPLE_ID_PASS }}
+
+      # 上传构建产物
+      - name: Upload build artifacts
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ matrix.platform }}
+          path: |
+            dist/**/*
+            !dist/mac-universal
+            !dist/*.blockmap
+          retention-days: 7
+
+  # 发布到GitHub Releases (仅在标签推送时)
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm libopenjp2-tools
+
+      - name: Get tag information and generate changelog
+        id: tag_info
+        run: |
+          tag="${{ github.ref_name }}"
+          tagMessage=$(git tag -l --format='%(contents)' "$tag" 2>/dev/null || echo "")
+          
+          if [ -z "$tagMessage" ]; then
+            tagMessage="Release $tag"
+          fi
+          
+          # 获取上一个tag
+          previousTag=$(git describe --tags --abbrev=0 "$tag"^ 2>/dev/null || echo "")
+          
+          # 生成更新日志
+          changelog="## 📋 更新内容\n\n"
+          changelog+="$tagMessage\n\n"
+          changelog+="## 🔄 代码变更\n\n"
+          
+          if [ -n "$previousTag" ]; then
+            commits=$(git log --pretty=format:"- %s" "$previousTag..$tag" 2>/dev/null || echo "")
+            if [ -n "$commits" ]; then
+              changelog+="$commits"
+            else
+              changelog+="- 初始版本发布"
+            fi
+            changelog+="\n\n## 📊 完整变更日志\n\n[查看完整变更记录](https://github.com/${{ github.repository }}/compare/$previousTag...$tag)"
+          else
+            changelog+="- 初始版本发布\n\n"
+          fi
+          
+          # 将内容写入文件
+          echo -e "$changelog" > release_notes.md
+          echo "PREVIOUS_TAG=$previousTag" >> $GITHUB_OUTPUT
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: app-linux
+          path: artifacts/linux/
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: app-win
+          path: artifacts/windows/
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: app-mac
+          path: artifacts/macos/
+
+      - name: Build and publish
+        run: npm run publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Create Release with changelog
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on release
+        run: |
+          echo "🎉 Release created successfully!"
+          echo "Download links are available in the release section."
+
+  # 安全扫描
+  security:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: npm audit --audit-level high
+        continue-on-error: true
+
+      - name: Check for vulnerabilities
+        run: |
+          npm audit --json > audit-results.json || true
+          if [ -s audit-results.json ]; then
+            echo "Security vulnerabilities found:"
+            cat audit-results.json
+          fi
+
+  # 代码质量检查
+  quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js  
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Check TypeScript
+        run: npx tsc --noEmit
+
+      - name: Check code formatting
+        run: |
+          # 检查代码格式 (如果有prettier配置)
+          if [ -f ".prettierrc" ] || [ -f "prettier.config.js" ]; then
+            npx prettier --check "**/*.{js,ts,tsx,json,md}"
+          fi
+        continue-on-error: true

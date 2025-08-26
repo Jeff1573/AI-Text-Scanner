@@ -115,8 +115,8 @@ release/
 *.tar.gz
 *.zip
 *.blockmap
-*.yaml
-*.yml
+# *.yaml
+# *.yml
 latest.yml
 latest-mac.yml
 latest-linux.yml
