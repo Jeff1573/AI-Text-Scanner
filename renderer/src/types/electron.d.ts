@@ -1,5 +1,23 @@
 // 统一的Electron API类型定义
 
+// 下载进度接口
+export interface DownloadProgress {
+  bytesPerSecond: number;
+  percent: number;
+  transferred: number;
+  total: number;
+}
+
+// 更新状态接口
+export interface UpdateStatus {
+  isChecking: boolean;
+  updateAvailable: boolean;
+  updateInfo: any;
+  currentVersion: string;
+  isDownloading: boolean;
+  downloadProgress: DownloadProgress | null;
+}
+
 export interface ScreenSource {
   id: string;
   name: string;
@@ -110,7 +128,12 @@ export interface ElectronAPI {
   checkForUpdates: () => Promise<{ success: boolean; checking: boolean; updateAvailable?: boolean; updateInfo?: any; error?: string }>;
   downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
   installUpdate: () => Promise<{ success: boolean; error?: string }>;
-  getUpdateStatus: () => Promise<{ success: boolean; status?: { isChecking: boolean; updateAvailable: boolean; updateInfo: any; currentVersion: string }; error?: string }>;
+  getUpdateStatus: () => Promise<{ success: boolean; status?: UpdateStatus; error?: string }>;
+  getDownloadProgress: () => Promise<{ success: boolean; progress?: DownloadProgress | null; error?: string }>;
+
+  // 监听下载进度更新
+  onDownloadProgress: (callback: (progress: DownloadProgress) => void) => void;
+  removeDownloadProgressListener: () => void;
 
 }
 

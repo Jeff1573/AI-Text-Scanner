@@ -1,5 +1,23 @@
 // 主进程类型定义
 
+// 下载进度接口
+export interface DownloadProgress {
+  bytesPerSecond: number;
+  percent: number;
+  transferred: number;
+  total: number;
+}
+
+// 更新状态接口
+export interface UpdateStatus {
+  isChecking: boolean;
+  updateAvailable: boolean;
+  updateInfo: any;
+  currentVersion: string;
+  isDownloading: boolean;
+  downloadProgress: DownloadProgress | null;
+}
+
 // 屏幕源接口
 export interface ScreenSource {
   id: string;

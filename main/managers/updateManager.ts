@@ -2,6 +2,14 @@ import { autoUpdater } from "electron-updater";
 import { app, dialog, BrowserWindow } from "electron";
 import { createModuleLogger } from "../utils/logger";
 
+// 下载进度接口
+interface DownloadProgress {
+  bytesPerSecond: number;
+  percent: number;
+  transferred: number;
+  total: number;
+}
+
 const logger = createModuleLogger('UpdateManager');
 
 /**
@@ -12,6 +20,9 @@ export class UpdateManager {
   private isChecking = false;
   private updateAvailable = false;
   private updateInfo: any = null;
+  private downloadProgress: DownloadProgress | null = null;
+  private isDownloading = false;
+  private isManualCheck = false; // 标记是否为手动检查
 
   constructor() {
     this.initializeUpdater();
@@ -38,6 +49,7 @@ export class UpdateManager {
       this.updateInfo = info;
       this.isChecking = false;
       this.showUpdateAvailableDialog(info);
+      this.isManualCheck = false; // 重置标记
     });
 
     // 监听更新不可用
@@ -46,26 +58,59 @@ export class UpdateManager {
       this.updateAvailable = false;
       this.updateInfo = null;
       this.isChecking = false;
-      this.showNoUpdateDialog();
+      // 只有手动检查时才显示"已是最新版本"对话框
+      if (this.isManualCheck) {
+        this.showNoUpdateDialog();
+      }
+      this.isManualCheck = false; // 重置标记
     });
 
     // 监听更新错误
     autoUpdater.on('error', (err) => {
       logger.error('更新检查失败', { error: err });
       this.isChecking = false;
-      this.showUpdateErrorDialog(err);
+      // 只有手动检查时才显示错误对话框
+      if (this.isManualCheck) {
+        this.showUpdateErrorDialog(err);
+      }
+      this.isManualCheck = false; // 重置标记
     });
 
     // 监听下载进度
     autoUpdater.on('download-progress', (progressObj) => {
       logger.info('下载进度', { progressObj });
+      this.downloadProgress = progressObj;
+      this.isDownloading = true;
+      
+      // 发送进度更新到渲染进程
+      this.sendProgressToRenderer(progressObj);
     });
 
     // 监听下载完成
     autoUpdater.on('update-downloaded', (info) => {
       logger.info('更新下载完成', { info });
+      this.isDownloading = false;
+      this.downloadProgress = null;
       this.showUpdateReadyDialog(info);
     });
+  }
+
+  /**
+   * 启动时自动检查更新（静默检查，只在有更新时提示）
+   */
+  public async checkForUpdatesOnStartup(): Promise<void> {
+    try {
+      if (this.isChecking) {
+        return;
+      }
+
+      logger.info('应用启动时检查更新');
+      this.isManualCheck = false; // 标记为自动检查
+      await autoUpdater.checkForUpdates();
+    } catch (error) {
+      logger.error('启动时检查更新失败', { error });
+      // 静默失败，不显示错误对话框
+    }
   }
 
   /**
@@ -87,6 +132,7 @@ export class UpdateManager {
       }
 
       logger.info('开始手动检查更新');
+      this.isManualCheck = true; // 标记为手动检查
       await autoUpdater.checkForUpdates();
       
       return {
@@ -95,6 +141,7 @@ export class UpdateManager {
       };
     } catch (error) {
       logger.error('检查更新失败', { error });
+      this.isManualCheck = false; // 重置标记
       return {
         success: false,
         checking: false,
@@ -119,6 +166,10 @@ export class UpdateManager {
       }
 
       logger.info('开始下载更新');
+      // 重置下载状态
+      this.downloadProgress = null;
+      this.isDownloading = true;
+      
       await autoUpdater.downloadUpdate();
       
       return {
@@ -126,6 +177,8 @@ export class UpdateManager {
       };
     } catch (error) {
       logger.error('下载更新失败', { error });
+      this.isDownloading = false;
+      this.downloadProgress = null;
       return {
         success: false,
         error: error instanceof Error ? error.message : '未知错误',
@@ -164,13 +217,41 @@ export class UpdateManager {
     updateAvailable: boolean;
     updateInfo: any;
     currentVersion: string;
+    isDownloading: boolean;
+    downloadProgress: DownloadProgress | null;
   } {
     return {
       isChecking: this.isChecking,
       updateAvailable: this.updateAvailable,
       updateInfo: this.updateInfo,
       currentVersion: app.getVersion(),
+      isDownloading: this.isDownloading,
+      downloadProgress: this.downloadProgress,
     };
+  }
+
+  /**
+   * 获取下载进度
+   */
+  public getDownloadProgress(): DownloadProgress | null {
+    return this.downloadProgress;
+  }
+
+  /**
+   * 发送进度更新到渲染进程
+   */
+  private sendProgressToRenderer(progress: DownloadProgress): void {
+    try {
+      // 获取所有BrowserWindow实例并发送进度更新
+      const windows = BrowserWindow.getAllWindows();
+      windows.forEach(window => {
+        if (!window.isDestroyed()) {
+          window.webContents.send('download-progress-update', progress);
+        }
+      });
+    } catch (error) {
+      logger.error('发送下载进度失败', { error });
+    }
   }
 
   /**

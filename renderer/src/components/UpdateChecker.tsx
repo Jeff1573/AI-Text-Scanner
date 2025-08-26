@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Card, Space, Typography, Alert, Spin, message } from 'antd';
+import { Button, Card, Space, Typography, Alert, Spin, message, Progress } from 'antd';
 import { 
   ReloadOutlined, 
   DownloadOutlined, 
@@ -7,21 +7,16 @@ import {
   ExclamationCircleOutlined,
   InfoCircleOutlined 
 } from '@ant-design/icons';
+import type { UpdateStatus, DownloadProgress } from '../types/electron';
 
 const { Text, Title } = Typography;
-
-interface UpdateStatus {
-  isChecking: boolean;
-  updateAvailable: boolean;
-  updateInfo: any;
-  currentVersion: string;
-}
 
 export const UpdateChecker: React.FC = () => {
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
   const [messageApi, contextHolder] = message.useMessage();
 
   // 获取更新状态
@@ -66,6 +61,7 @@ export const UpdateChecker: React.FC = () => {
   // 下载更新
   const handleDownloadUpdate = async () => {
     setIsDownloading(true);
+    setDownloadProgress(null); // 重置进度
     try {
       const result = await window.electronAPI.downloadUpdate();
       
@@ -74,12 +70,14 @@ export const UpdateChecker: React.FC = () => {
         await fetchUpdateStatus(); // 刷新状态
       } else {
         messageApi.error(`下载更新失败: ${result.error}`);
+        setIsDownloading(false);
+        setDownloadProgress(null);
       }
     } catch (error) {
       messageApi.error('下载更新时发生错误');
       console.error('下载更新失败:', error);
-    } finally {
       setIsDownloading(false);
+      setDownloadProgress(null);
     }
   };
 
@@ -99,12 +97,39 @@ export const UpdateChecker: React.FC = () => {
       console.error('安装更新失败:', error);
     } finally {
       setIsInstalling(false);
+      setIsDownloading(false);
+      setDownloadProgress(null);
     }
   };
 
-  // 组件挂载时获取状态
+  // 格式化文件大小
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // 格式化下载速度
+  const formatSpeed = (bytesPerSecond: number): string => {
+    return formatFileSize(bytesPerSecond) + '/s';
+  };
+
+  // 组件挂载时获取状态和监听下载进度
   useEffect(() => {
     fetchUpdateStatus();
+    
+    // 监听下载进度更新
+    window.electronAPI.onDownloadProgress((progress: DownloadProgress) => {
+      setDownloadProgress(progress);
+      setIsDownloading(true);
+    });
+    
+    // 组件卸载时清理监听器
+    return () => {
+      window.electronAPI.removeDownloadProgressListener();
+    };
   }, []);
 
   return (
@@ -159,6 +184,44 @@ export const UpdateChecker: React.FC = () => {
                     <div>
                       <p>当前版本: {updateStatus.currentVersion}</p>
                       <p>新版本: {updateStatus.updateInfo.version}</p>
+                      
+                      {/* 下载进度显示 */}
+                      {(downloadProgress || updateStatus.isDownloading) && (
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ marginBottom: 8 }}>
+                            <Text strong>下载进度:</Text>
+                          </div>
+                          {downloadProgress ? (
+                            <>
+                              <Progress
+                                percent={Math.round(downloadProgress.percent)}
+                                status={downloadProgress.percent === 100 ? 'success' : 'active'}
+                                strokeColor={{
+                                  '0%': '#108ee9',
+                                  '100%': '#87d068',
+                                }}
+                              />
+                              <div style={{ 
+                                marginTop: 8, 
+                                display: 'flex', 
+                                justifyContent: 'space-between',
+                                fontSize: '12px',
+                                color: '#666'
+                              }}>
+                                <span>
+                                  {formatFileSize(downloadProgress.transferred)} / {formatFileSize(downloadProgress.total)}
+                                </span>
+                                <span>
+                                  {formatSpeed(downloadProgress.bytesPerSecond)}
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <Progress percent={0} status="active" />
+                          )}
+                        </div>
+                      )}
+
                       {updateStatus.updateInfo.releaseNotes && (
                         <details style={{ marginTop: 8 }}>
                           <summary>更新说明</summary>
@@ -174,16 +237,29 @@ export const UpdateChecker: React.FC = () => {
                   icon={<CheckCircleOutlined />}
                   action={
                     <Space>
-                      <Button
-                        size="small"
-                        type="primary"
-                        icon={<DownloadOutlined />}
-                        onClick={handleDownloadUpdate}
-                        loading={isDownloading}
-                        disabled={isDownloading || isInstalling}
-                      >
-                        {isDownloading ? '下载中...' : '下载更新'}
-                      </Button>
+                      {!updateStatus.isDownloading && downloadProgress?.percent !== 100 && (
+                        <Button
+                          size="small"
+                          type="primary"
+                          icon={<DownloadOutlined />}
+                          onClick={handleDownloadUpdate}
+                          loading={isDownloading}
+                          disabled={isDownloading || isInstalling}
+                        >
+                          {isDownloading ? '下载中...' : '下载更新'}
+                        </Button>
+                      )}
+                      {downloadProgress?.percent === 100 && (
+                        <Button
+                          size="small"
+                          type="primary"
+                          onClick={handleInstallUpdate}
+                          loading={isInstalling}
+                          disabled={isInstalling}
+                        >
+                          {isInstalling ? '安装中...' : '立即安装'}
+                        </Button>
+                      )}
                     </Space>
                   }
                 />

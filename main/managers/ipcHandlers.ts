@@ -304,6 +304,31 @@ export class IPCHandlers {
         };
       }
     });
+
+    // 获取下载进度
+    ipcMain.handle("get-download-progress", async () => {
+      try {
+        if (!this.updateManager) {
+          return {
+            success: false,
+            error: "更新管理器未初始化",
+          };
+        }
+
+        const progress = this.updateManager.getDownloadProgress();
+        logger.info("获取下载进度", { progress });
+        return {
+          success: true,
+          progress,
+        };
+      } catch (error) {
+        logger.error("获取下载进度失败", { error });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误",
+        };
+      }
+    });
   }
 
   private registerSystemHandlers(): void {

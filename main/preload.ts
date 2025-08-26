@@ -210,5 +210,27 @@ contextBridge.exposeInMainWorld("electronAPI", {
   downloadUpdate: () => ipcRenderer.invoke("download-update"),
   installUpdate: () => ipcRenderer.invoke("install-update"),
   getUpdateStatus: () => ipcRenderer.invoke("get-update-status"),
+  getDownloadProgress: () => ipcRenderer.invoke("get-download-progress"),
+
+  // 监听下载进度更新
+  onDownloadProgress: (callback: (progress: {
+    bytesPerSecond: number;
+    percent: number;
+    transferred: number;
+    total: number;
+  }) => void) => {
+    ipcRenderer.on("download-progress-update", (e, progress) => {
+      try {
+        callback(progress);
+      } catch (error) {
+        logger.error("下载进度回调函数执行失败", { error });
+      }
+    });
+  },
+
+  // 移除下载进度监听器
+  removeDownloadProgressListener: () => {
+    ipcRenderer.removeAllListeners("download-progress-update");
+  },
 
 });

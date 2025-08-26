@@ -87,6 +87,12 @@ app.on("ready", () => {
     hotkeyManager.applyHotkeysFromConfig();
     logger.info("全局快捷键注册完成");
 
+    // 启动时检查更新（延迟3秒执行，避免影响启动速度）
+    setTimeout(() => {
+      updateManager.checkForUpdatesOnStartup();
+      logger.info("启动时更新检查已开始");
+    }, 3000);
+
     logger.info("应用初始化完成");
   } catch (error) {
     logger.error("应用初始化失败", {
