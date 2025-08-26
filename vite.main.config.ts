@@ -1,9 +1,18 @@
 import { defineConfig } from "vite";
 import { resolve } from "path";
 import { readdirSync, readFileSync } from "fs";
+import { builtinModules } from "module";
+
+// 开发服务器URL配置
+const VITE_DEV_SERVER_URL = 'http://localhost:5173';
 
 // https://vitejs.dev/config
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  // 定义环境变量
+  define: {
+    'process.env.VITE_DEV_SERVER_URL': JSON.stringify(VITE_DEV_SERVER_URL),
+    'process.env.NODE_ENV': JSON.stringify(mode)
+  },
   resolve: {
     // 一些第三方库可能使用 Node.js 模块，需要设置别名
     alias: {
@@ -20,7 +29,12 @@ export default defineConfig({
     outDir: resolve(__dirname, ".vite/build"),
     emptyOutDir: true,
     rollupOptions: {
-      // 主进程需要排除的依赖（这些依赖将在运行时从node_modules加载）
+      // 主进程需要排除的依赖（这些依赖将在运行时从 node_modules 加载）
+      external: [
+        "electron",
+        ...builtinModules,
+        ...builtinModules.map((m) => `node:${m}`),
+      ],
     },
     // 复制静态资源
     copyPublicDir: false,
@@ -47,4 +61,7 @@ export default defineConfig({
       },
     },
   ],
-});
+}));
+
+// 将开发服务器URL导出，以便在其他配置文件中使用
+export { VITE_DEV_SERVER_URL };

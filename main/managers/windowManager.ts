@@ -1,4 +1,5 @@
 import {
+  app,
   BrowserWindow,
   session,
   screen,
@@ -6,6 +7,7 @@ import {
   desktopCapturer,
 } from "electron";
 import path from "node:path";
+import fs from "node:fs";
 import type { ScreenSource } from "../types";
 import { ScreenshotService } from "../services/screenshotService";
 import { createModuleLogger } from "../utils/logger";
@@ -14,8 +16,46 @@ import { getAppIconPath } from "../utils/iconUtils";
 // 创建WindowManager日志器
 const logger = createModuleLogger("WindowManager");
 
-declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
+// 定义开发服务器URL和是否为开发环境的判断
+const isDevelopment = !app.isPackaged;
+const VITE_DEV_SERVER_URL =
+  process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
+logger.debug("开发服务器URL", { VITE_DEV_SERVER_URL, isDevelopment, isPackaged: app.isPackaged });
 
+/**
+ * 获取正确的preload脚本路径
+ * 在开发环境中，preload.js在main目录下
+ * 在production环境中，preload.js在构建目录下
+ */
+function getPreloadPath(): string {
+  const basePath = __dirname;
+  const preloadPath = path.join(basePath, "./preload.js");
+  
+  // 检查文件是否存在
+  if (fs.existsSync(preloadPath)) {
+    logger.debug("找到preload文件", { preloadPath });
+    return preloadPath;
+  }
+  
+  // 如果不存在，尝试其他可能的路径
+  const alternativePaths = [
+    path.join(basePath, "../preload.js"),
+    path.join(basePath, "../../preload.js"),
+    path.join(process.resourcesPath, "app/.vite/build/preload.js"),
+    path.join(process.resourcesPath, "app/main/preload.js"),
+  ];
+  
+  for (const altPath of alternativePaths) {
+    if (fs.existsSync(altPath)) {
+      logger.debug("找到preload文件（备用路径）", { altPath });
+      return altPath;
+    }
+  }
+  
+  // 如果都找不到，返回默认路径并记录警告
+  logger.warn("未找到preload文件，使用默认路径", { defaultPath: preloadPath });
+  return preloadPath;
+}
 export class WindowManager {
   private mainWindow: BrowserWindow | null = null;
   private screenshotWindow: BrowserWindow | null = null;
@@ -52,15 +92,15 @@ export class WindowManager {
         titleBarStyle: "hidden",
         autoHideMenuBar: true,
         webPreferences: {
-          preload: path.join(__dirname, "./preload.js"),
+          preload: getPreloadPath(),
           nodeIntegration: false,
           contextIsolation: true,
         },
         icon: getAppIconPath(),
       });
 
-      logger.debug("主窗口创建成功", {
-        preloadPath: path.join(__dirname, "./preload.js"),
+      logger.info("主窗口创建成功", {
+        preloadPath: getPreloadPath(),
       });
 
       // 设置显示媒体请求处理器
@@ -84,15 +124,40 @@ export class WindowManager {
 
       // 加载页面
       try {
-        if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+        if (isDevelopment) {
           logger.debug("加载开发服务器URL", {
-            url: MAIN_WINDOW_VITE_DEV_SERVER_URL,
+            url: VITE_DEV_SERVER_URL,
           });
-          this.mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+          this.mainWindow.loadURL(VITE_DEV_SERVER_URL);
         } else {
+          // 添加调试信息
+          logger.info("生产环境路径信息", {
+            __dirname,
+            resourcesPath: process.resourcesPath,
+            appPath: app.getAppPath(),
+            isPackaged: app.isPackaged
+          });
+          // 生产环境下的正确路径
           const htmlPath = path.join(__dirname, `../renderer/index.html`);
-          logger.debug("加载HTML文件", { htmlPath });
-          this.mainWindow.loadFile(htmlPath);
+          logger.info("加载HTML文件", { htmlPath });
+          
+          // 检查文件是否存在
+          if (fs.existsSync(htmlPath)) {
+            logger.info("HTML文件存在，开始加载");
+            this.mainWindow.loadFile(htmlPath);
+          } else {
+            // 尝试备用路径
+            const altHtmlPath = path.join(process.resourcesPath, "app/.vite/renderer/index.html");
+            logger.info("尝试备用HTML路径", { altHtmlPath });
+            
+            if (fs.existsSync(altHtmlPath)) {
+              logger.info("备用HTML文件存在，开始加载");
+              this.mainWindow.loadFile(altHtmlPath);
+            } else {
+              logger.error("HTML文件不存在", { htmlPath, altHtmlPath });
+              throw new Error(`HTML文件不存在: ${htmlPath} 或 ${altHtmlPath}`);
+            }
+          }
         }
       } catch (loadError) {
         logger.error("页面加载失败", {
@@ -108,6 +173,22 @@ export class WindowManager {
           event.preventDefault();
           this.mainWindow?.webContents.openDevTools();
         }
+      });
+
+      // 添加页面加载失败的处理
+      this.mainWindow.webContents.on("did-fail-load", (event, errorCode, errorDescription, validatedURL) => {
+        logger.error("页面加载失败", {
+          errorCode,
+          errorDescription,
+          validatedURL,
+          __dirname,
+          resourcesPath: process.resourcesPath
+        });
+      });
+
+      // 添加页面加载完成的处理
+      this.mainWindow.webContents.on("did-finish-load", () => {
+        logger.info("页面加载完成");
       });
 
       logger.info("主窗口创建完成");
@@ -142,25 +223,30 @@ export class WindowManager {
       autoHideMenuBar: true,
       icon: getAppIconPath(),
       webPreferences: {
-        preload: path.join(__dirname, "./preload.js"),
+        preload: getPreloadPath(),
         nodeIntegration: false,
         contextIsolation: true,
         backgroundThrottling: false,
       },
     });
 
-    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-      const url = `${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/screenshot`;
+    if (isDevelopment) {
+      const url = `${VITE_DEV_SERVER_URL}#/screenshot`;
       // this.screenshotWindow.webContents.openDevTools()
       logger.debug("预热加载URL", { url });
       this.screenshotWindow.loadURL(url);
     } else {
-      this.screenshotWindow.loadFile(
-        path.join(__dirname, `../renderer/index.html`),
-        {
+      const htmlPath = path.join(__dirname, `../renderer/index.html`);
+      if (fs.existsSync(htmlPath)) {
+        this.screenshotWindow.loadFile(htmlPath, {
           hash: "/screenshot",
-        }
-      );
+        });
+      } else {
+        const altHtmlPath = path.join(process.resourcesPath, "app/.vite/renderer/index.html");
+        this.screenshotWindow.loadFile(altHtmlPath, {
+          hash: "/screenshot",
+        });
+      }
     }
 
     // // 开发者工具快捷键
@@ -229,7 +315,7 @@ export class WindowManager {
       autoHideMenuBar: true,
       icon: getAppIconPath(),
       webPreferences: {
-        preload: path.join(__dirname, "./preload.js"),
+        preload: getPreloadPath(),
         nodeIntegration: false,
         contextIsolation: true,
       },
@@ -237,15 +323,20 @@ export class WindowManager {
       titleBarStyle: "hidden",
     });
 
-    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-      this.resultWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/result`);
+    if (isDevelopment) {
+      this.resultWindow.loadURL(`${VITE_DEV_SERVER_URL}#/result`);
     } else {
-      this.resultWindow.loadFile(
-        path.join(__dirname, `../renderer/index.html`),
-        {
+      const htmlPath = path.join(__dirname, `../renderer/index.html`);
+      if (fs.existsSync(htmlPath)) {
+        this.resultWindow.loadFile(htmlPath, {
           hash: "/result",
-        }
-      );
+        });
+      } else {
+        const altHtmlPath = path.join(process.resourcesPath, "app/.vite/renderer/index.html");
+        this.resultWindow.loadFile(altHtmlPath, {
+          hash: "/result",
+        });
+      }
     }
 
     this.resultWindow.on("ready-to-show", () => {
@@ -267,6 +358,8 @@ export class WindowManager {
   }
 
   createHtmlViewerWindow(htmlContent: string, title = "AI 分析结果"): void {
+    // 记录标题信息
+    logger.debug("创建HTML查看器窗口", { title });
     // 如果已有HTML查看器窗口，先关闭
     if (this.htmlViewerWindow) {
       this.htmlViewerWindow.close();
@@ -280,7 +373,7 @@ export class WindowManager {
       autoHideMenuBar: true,
       icon: getAppIconPath(),
       webPreferences: {
-        preload: path.join(__dirname, "./preload.js"),
+        preload: getPreloadPath(),
         nodeIntegration: false,
         contextIsolation: true,
       },
@@ -291,19 +384,24 @@ export class WindowManager {
     // 加载HTML内容
     // 加载页面
     try {
-      if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+      if (isDevelopment) {
         logger.debug("加载开发服务器URL", {
-          url: MAIN_WINDOW_VITE_DEV_SERVER_URL,
+          url: VITE_DEV_SERVER_URL,
         });
-        this.htmlViewerWindow.loadURL(
-          `${MAIN_WINDOW_VITE_DEV_SERVER_URL}#/image-analysis`
-        );
+        this.htmlViewerWindow.loadURL(`${VITE_DEV_SERVER_URL}#/image-analysis`);
       } else {
         const htmlPath = path.join(__dirname, `../renderer/index.html`);
         logger.debug("加载HTML文件", { htmlPath });
-        this.htmlViewerWindow.loadFile(htmlPath, {
-          hash: "image-analysis",
-        });
+        if (fs.existsSync(htmlPath)) {
+          this.htmlViewerWindow.loadFile(htmlPath, {
+            hash: "image-analysis",
+          });
+        } else {
+          const altHtmlPath = path.join(process.resourcesPath, "app/.vite/renderer/index.html");
+          this.htmlViewerWindow.loadFile(altHtmlPath, {
+            hash: "image-analysis",
+          });
+        }
       }
     } catch (loadError) {
       logger.error("页面加载失败", {
@@ -317,7 +415,10 @@ export class WindowManager {
       if (this.htmlViewerWindow && !this.htmlViewerWindow.isDestroyed()) {
         this.htmlViewerWindow.show();
         this.htmlViewerWindow.focus();
-        this.htmlViewerWindow.webContents.send('image-analysis-result', htmlContent)
+        this.htmlViewerWindow.webContents.send(
+          "image-analysis-result",
+          htmlContent
+        );
       }
     });
 

@@ -59,9 +59,7 @@ const config = {
       filter: ['**/*']
     }
   ],
-  asar: {
-    smartUnpack: true // 智能解包，只解包必要的原生模块
-  },
+  asar: true,
   
   // 通用图标配置 (electron-builder会自动根据平台选择正确的扩展名)
   icon: 'main/static/icons8-camera-256',

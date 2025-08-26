@@ -6,46 +6,44 @@ import { resolve } from "path";
 export default defineConfig({
   // 使用相对基础路径，确保打包后通过 file:// 协议加载时资源路径正确
   base: "./",
-  plugins: [
-    react({
-      babel: {
-        plugins: ["babel-plugin-react-compiler"],
-      },
-    }),
-  ],
+  plugins: [react()],
   root: resolve(__dirname, "renderer"),
+  optimizeDeps: {
+    // 强制预构建这些依赖，避免版本检测问题
+    include: [
+      'react', 
+      'react-dom', 
+      'antd', 
+      '@ant-design/icons',
+      'react-router-dom',
+      'zustand'
+    ],
+    // 排除可能导致问题的依赖
+    exclude: [],
+    // 强制重新预构建
+    force: true
+  },
   build: {
     outDir: resolve(__dirname, ".vite/renderer"),
     emptyOutDir: true,
-    // 优化打包
-    minify: 'esbuild', // 使用 esbuild 更快且兼容性更好
+    // 简化构建配置
+    minify: 'esbuild',
+    // 添加sourcemap以便调试
+    sourcemap: true,
     rollupOptions: {
-      // 启用 tree-shaking
-      treeshake: {
-        moduleSideEffects: false
-      },
       output: {
-        // 优化的代码分割和 tree-shaking
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
-            }
-            if (id.includes('antd')) {
-              return 'antd-vendor';
-            }
-            if (id.includes('@ant-design/icons')) {
-              return 'icons-vendor';
-            }
-            if (id.includes('ai-sdk') || id.includes('ai')) {
-              return 'ai-vendor';
-            }
-            return 'vendor';
-          }
+        // 暂时禁用代码分割来测试
+        manualChunks: {
+          // 将React相关库打包到一起
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // 将Ant Design相关库打包到一起
+          'antd-vendor': ['antd', '@ant-design/icons'],
+          // 将AI SDK相关库打包到一起
+          'ai-vendor': ['ai', '@ai-sdk/anthropic', '@ai-sdk/google', '@ai-sdk/openai', '@ai-sdk/openai-compatible'],
+          // 其他第三方库
+          'vendor': ['zustand', 'electron-log', 'winston']
         }
       }
-    },
-    // 设置更合理的 chunk 大小警告阈值
-    chunkSizeWarningLimit: 1000
+    }
   }
 });

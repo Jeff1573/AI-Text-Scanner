@@ -2,7 +2,6 @@
 
 const { execSync } = require('child_process');
 const fs = require('fs');
-const path = require('path');
 
 /**
  * 构建脚本 - 协调Vite构建和electron-builder打包
@@ -45,6 +44,8 @@ async function buildRenderer() {
     process.exit(1);
   }
 }
+
+
 
 async function buildMain() {
   log('构建主进程...');
@@ -141,14 +142,7 @@ async function main() {
         await publishApp();
         break;
         
-      case 'dev':
-        // 开发模式，只构建不打包
-        log('开发模式构建...');
-        await buildRenderer();
-        await buildMain();
-        await buildPreload();
-        log('开发构建完成，可以使用 npm start 启动应用');
-        break;
+
         
       default:
         console.log(`
@@ -159,7 +153,6 @@ async function main() {
   build              构建所有代码（不打包）
   package [platform] 构建并打包应用
   publish            构建、打包并发布应用
-  dev                开发模式构建
 
 平台 (可选):
   win                Windows
@@ -185,7 +178,7 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
   error(`未处理的Promise拒绝: ${reason}`);
   process.exit(1);
 });
