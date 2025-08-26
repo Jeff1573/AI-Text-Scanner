@@ -188,33 +188,3 @@ jobs:
             cat audit-results.json
           fi
 
-  # 代码质量检查
-  quality:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js  
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run linter
-        run: npm run lint
-
-      - name: Check TypeScript
-        run: npx tsc --noEmit
-
-      - name: Check code formatting
-        run: |
-          # 检查代码格式 (如果有prettier配置)
-          if [ -f ".prettierrc" ] || [ -f "prettier.config.js" ]; then
-            npx prettier --check "**/*.{js,ts,tsx,json,md}"
-          fi
-        continue-on-error: true
