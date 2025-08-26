@@ -61,6 +61,7 @@ export class WindowManager {
   private screenshotWindow: BrowserWindow | null = null;
   private resultWindow: BrowserWindow | null = null;
   private htmlViewerWindow: BrowserWindow | null = null;
+  private _trayAvailabilityChecked = false;
 
   getMainWindow(): BrowserWindow | null {
     return this.mainWindow;
@@ -567,10 +568,14 @@ export class WindowManager {
           process.platform === "win32" ||
           process.platform === "linux" ||
           process.platform === "darwin";
-        logger.debug("检查托盘可用性", {
-          platform: process.platform,
-          isAvailable,
-        });
+        // 只在首次检查时记录日志，避免重复打印
+        if (!this._trayAvailabilityChecked) {
+          logger.info("检查托盘可用性", {
+            platform: process.platform,
+            isAvailable,
+          });
+          this._trayAvailabilityChecked = true;
+        }
         return isAvailable;
       } catch (error) {
         logger.error("检查托盘可用性失败", {

@@ -30,7 +30,7 @@ export const TrayProvider: React.FC<TrayProviderProps> = ({ children }) => {
   // 初始化时检查托盘可用性
   useEffect(() => {
     actions.checkTrayAvailability();
-  }, [actions]);
+  }, []); // 只在组件挂载时执行一次
 
   const contextValue: TrayContextType = {
     ...state,

@@ -48,19 +48,4 @@ export interface SaveResult {
   hotkeys?: HotkeyConfig;
 }
 
-// 自动更新相关类型
-export interface UpdateInfo {
-  version: string;
-  releaseDate: string;
-  releaseNotes: string;
-  downloadUrl: string;
-}
-
-export interface UpdateStatus {
-  checking: boolean;
-  available: boolean;
-  downloading: boolean;
-  downloaded: boolean;
-  error: string | null;
-  updateInfo: UpdateInfo | null;
-} 
+ 
