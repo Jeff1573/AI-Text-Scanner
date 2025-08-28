@@ -78,12 +78,20 @@ export class UpdateManager {
 
     // 监听下载进度
     autoUpdater.on('download-progress', (progressObj) => {
-      logger.info('下载进度', { progressObj });
-      this.downloadProgress = progressObj;
+      // 确保进度数据的有效性
+      const validProgress = {
+        bytesPerSecond: progressObj.bytesPerSecond || 0,
+        percent: Math.min(Math.max(progressObj.percent || 0, 0), 100), // 确保在0-100之间
+        transferred: progressObj.transferred || 0,
+        total: progressObj.total || 0
+      };
+      
+      logger.info('下载进度', { progressObj: validProgress });
+      this.downloadProgress = validProgress;
       this.isDownloading = true;
       
       // 发送进度更新到渲染进程
-      this.sendProgressToRenderer(progressObj);
+      this.sendProgressToRenderer(validProgress);
     });
 
     // 监听下载完成
@@ -166,9 +174,22 @@ export class UpdateManager {
       }
 
       logger.info('开始下载更新');
-      // 重置下载状态
-      this.downloadProgress = null;
+      
+      // 🎯 关键：在下载开始前通知渲染进程准备进度条显示
+      this.notifyPrepareDownloadUpdate();
+      
+      // 设置初始下载状态，但不重置为null
       this.isDownloading = true;
+      // 设置初始进度而不是null
+      this.downloadProgress = {
+        bytesPerSecond: 0,
+        percent: 0,
+        transferred: 0,
+        total: 0
+      };
+      
+      // 立即发送初始状态到渲染进程
+      this.sendProgressToRenderer(this.downloadProgress);
       
       await autoUpdater.downloadUpdate();
       
@@ -238,15 +259,40 @@ export class UpdateManager {
   }
 
   /**
+   * 通知渲染进程准备下载更新（显示进度条区域）
+   */
+  private notifyPrepareDownloadUpdate(): void {
+    try {
+      const windows = BrowserWindow.getAllWindows();
+      logger.info(`通知 ${windows.length} 个窗口准备下载更新`);
+      
+      windows.forEach((window, index) => {
+        if (!window.isDestroyed()) {
+          window.webContents.send('prepare-download-update', {
+            updateInfo: this.updateInfo,
+            currentVersion: app.getVersion()
+          });
+          logger.debug(`准备下载通知已发送到窗口 ${index + 1}`);
+        }
+      });
+    } catch (error) {
+      logger.error('发送准备下载通知失败', { error });
+    }
+  }
+
+  /**
    * 发送进度更新到渲染进程
    */
   private sendProgressToRenderer(progress: DownloadProgress): void {
     try {
       // 获取所有BrowserWindow实例并发送进度更新
       const windows = BrowserWindow.getAllWindows();
-      windows.forEach(window => {
+      logger.debug(`发送下载进度到 ${windows.length} 个窗口`, { progress });
+      
+      windows.forEach((window, index) => {
         if (!window.isDestroyed()) {
           window.webContents.send('download-progress-update', progress);
+          logger.debug(`进度已发送到窗口 ${index + 1}`);
         }
       });
     } catch (error) {
@@ -270,7 +316,45 @@ export class UpdateManager {
 
     if (result.response === 0) {
       // 用户选择立即更新
-      this.downloadUpdate();
+      logger.info('用户选择立即更新，打开设置页面显示进度');
+      
+      // 先打开设置页面
+      this.openSettingsPageForUpdate();
+      
+      // 稍等一下再开始下载，确保页面已经打开
+      setTimeout(() => {
+        this.downloadUpdate();
+      }, 500);
+    }
+  }
+
+  /**
+   * 打开设置页面以显示更新进度
+   */
+  private openSettingsPageForUpdate(): void {
+    try {
+      // 获取所有窗口
+      const windows = BrowserWindow.getAllWindows();
+      const mainWindow = windows.find(win => !win.isDestroyed() && win.webContents.getURL().includes('localhost'));
+      
+      if (!mainWindow) {
+        // 如果没有主窗口，尝试找到主窗口或创建一个
+        logger.info('未找到主窗口，尝试显示窗口');
+        return;
+      }
+      
+      // 显示窗口
+      if (!mainWindow.isVisible()) {
+        mainWindow.show();
+      }
+      mainWindow.focus();
+      
+      // 发送事件打开设置页面
+      mainWindow.webContents.send('open-settings-page');
+      
+      logger.info('已发送打开设置页面事件');
+    } catch (error) {
+      logger.error('打开设置页面失败', { error });
     }
   }
 

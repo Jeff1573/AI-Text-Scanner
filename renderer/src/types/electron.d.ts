@@ -135,6 +135,13 @@ export interface ElectronAPI {
   onDownloadProgress: (callback: (progress: DownloadProgress) => void) => void;
   removeDownloadProgressListener: () => void;
 
+  // 监听准备下载更新事件
+  onPrepareDownloadUpdate: (callback: (data: {
+    updateInfo: any;
+    currentVersion: string;
+  }) => void) => void;
+  removePrepareDownloadUpdateListener: () => void;
+
 }
 
 declare global {

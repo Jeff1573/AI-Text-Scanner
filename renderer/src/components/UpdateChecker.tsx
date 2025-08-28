@@ -61,12 +61,15 @@ export const UpdateChecker: React.FC = () => {
   // 下载更新
   const handleDownloadUpdate = async () => {
     setIsDownloading(true);
-    setDownloadProgress(null); // 重置进度
+    // 设置初始进度而不是null，避免进度条消失
+    setDownloadProgress({ percent: 0, transferred: 0, total: 0, bytesPerSecond: 0 });
+    
     try {
       const result = await window.electronAPI.downloadUpdate();
       
       if (result.success) {
         messageApi.success('开始下载更新，请稍候...');
+        console.log('下载请求成功，等待进度更新...');
         await fetchUpdateStatus(); // 刷新状态
       } else {
         messageApi.error(`下载更新失败: ${result.error}`);
@@ -120,15 +123,35 @@ export const UpdateChecker: React.FC = () => {
   useEffect(() => {
     fetchUpdateStatus();
     
-    // 监听下载进度更新
+    // 设置下载进度监听器
+    console.log('设置下载进度监听器...');
     window.electronAPI.onDownloadProgress((progress: DownloadProgress) => {
+      console.log('收到下载进度更新:', progress);
       setDownloadProgress(progress);
       setIsDownloading(true);
     });
     
+    // 🎯 关键：设置准备下载更新监听器
+    console.log('设置准备下载更新监听器...');
+    window.electronAPI.onPrepareDownloadUpdate((data) => {
+      console.log('收到准备下载更新事件:', data);
+      
+      // 立即设置下载状态和初始进度，显示进度条区域
+      setIsDownloading(true);
+      setDownloadProgress({ percent: 0, transferred: 0, total: 0, bytesPerSecond: 0 });
+      
+      // 刷新更新状态，确保显示最新信息
+      fetchUpdateStatus();
+      
+      messageApi.info('准备下载更新，请稍候...');
+    });
+    
     // 组件卸载时清理监听器
     return () => {
+      console.log('清理下载进度监听器...');
       window.electronAPI.removeDownloadProgressListener();
+      console.log('清理准备下载更新监听器...');
+      window.electronAPI.removePrepareDownloadUpdateListener();
     };
   }, []);
 
@@ -164,6 +187,15 @@ export const UpdateChecker: React.FC = () => {
             {isChecking ? '检查中...' : '检查更新'}
           </Button>
 
+          {/* 添加调试信息 */}
+          {process.env.NODE_ENV === 'development' && (
+            <div style={{ fontSize: '12px', color: '#999', marginTop: 8 }}>
+              调试信息: isDownloading={isDownloading.toString()}, 
+              downloadProgress={downloadProgress ? `${downloadProgress.percent}%` : 'null'}, 
+              updateStatus.isDownloading={updateStatus?.isDownloading?.toString()}
+            </div>
+          )}
+
           {/* 更新状态显示 */}
           {updateStatus && (
             <>
@@ -186,12 +218,12 @@ export const UpdateChecker: React.FC = () => {
                       <p>新版本: {updateStatus.updateInfo.version}</p>
                       
                       {/* 下载进度显示 */}
-                      {(downloadProgress || updateStatus.isDownloading) && (
+                      {(downloadProgress || updateStatus.isDownloading || isDownloading) && (
                         <div style={{ marginTop: 12 }}>
                           <div style={{ marginBottom: 8 }}>
                             <Text strong>下载进度:</Text>
                           </div>
-                          {downloadProgress ? (
+                          {downloadProgress && downloadProgress.total > 0 ? (
                             <>
                               <Progress
                                 percent={Math.round(downloadProgress.percent)}
@@ -217,7 +249,17 @@ export const UpdateChecker: React.FC = () => {
                               </div>
                             </>
                           ) : (
-                            <Progress percent={0} status="active" />
+                            <>
+                              <Progress percent={0} status="active" />
+                              <div style={{ 
+                                marginTop: 8, 
+                                fontSize: '12px',
+                                color: '#666',
+                                textAlign: 'center'
+                              }}>
+                                准备下载中...
+                              </div>
+                            </>
                           )}
                         </div>
                       )}
@@ -237,7 +279,7 @@ export const UpdateChecker: React.FC = () => {
                   icon={<CheckCircleOutlined />}
                   action={
                     <Space>
-                      {!updateStatus.isDownloading && downloadProgress?.percent !== 100 && (
+                      {!updateStatus.isDownloading && !isDownloading && downloadProgress?.percent !== 100 && (
                         <Button
                           size="small"
                           type="primary"
@@ -246,7 +288,17 @@ export const UpdateChecker: React.FC = () => {
                           loading={isDownloading}
                           disabled={isDownloading || isInstalling}
                         >
-                          {isDownloading ? '下载中...' : '下载更新'}
+                          下载更新
+                        </Button>
+                      )}
+                      {(updateStatus.isDownloading || isDownloading) && downloadProgress?.percent !== 100 && (
+                        <Button
+                          size="small"
+                          type="primary"
+                          loading={true}
+                          disabled={true}
+                        >
+                          下载中... {downloadProgress?.percent ? Math.round(downloadProgress.percent) + '%' : ''}
                         </Button>
                       )}
                       {downloadProgress?.percent === 100 && (

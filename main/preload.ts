@@ -219,8 +219,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
     transferred: number;
     total: number;
   }) => void) => {
+    // 先移除已有的监听器，避免重复注册
+    ipcRenderer.removeAllListeners("download-progress-update");
+    
+    logger.info("注册下载进度监听器");
     ipcRenderer.on("download-progress-update", (e, progress) => {
       try {
+        logger.debug("收到下载进度事件", { progress });
         callback(progress);
       } catch (error) {
         logger.error("下载进度回调函数执行失败", { error });
@@ -230,7 +235,33 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   // 移除下载进度监听器
   removeDownloadProgressListener: () => {
+    logger.info("移除下载进度监听器");
     ipcRenderer.removeAllListeners("download-progress-update");
+  },
+
+  // 监听准备下载更新事件
+  onPrepareDownloadUpdate: (callback: (data: {
+    updateInfo: any;
+    currentVersion: string;
+  }) => void) => {
+    // 先移除已有的监听器，避免重复注册
+    ipcRenderer.removeAllListeners("prepare-download-update");
+    
+    logger.info("注册准备下载更新监听器");
+    ipcRenderer.on("prepare-download-update", (e, data) => {
+      try {
+        logger.info("收到准备下载更新事件", { data });
+        callback(data);
+      } catch (error) {
+        logger.error("准备下载更新回调函数执行失败", { error });
+      }
+    });
+  },
+
+  // 移除准备下载更新监听器
+  removePrepareDownloadUpdateListener: () => {
+    logger.info("移除准备下载更新监听器");
+    ipcRenderer.removeAllListeners("prepare-download-update");
   },
 
 });
