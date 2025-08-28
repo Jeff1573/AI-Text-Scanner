@@ -57,17 +57,7 @@ export class TrayManager {
           try {
             await this.windowManager.hideAllWindows();
             const screenshotData = await ScreenshotService.captureScreen();
-
-            const mainWindow = this.windowManager.getMainWindow();
-            if (mainWindow && !mainWindow.isDestroyed()) {
-              mainWindow.show();
-              mainWindow.setAlwaysOnTop(true);
-              mainWindow.maximize();
-              mainWindow.webContents.send(
-                "open-screenshot-viewer",
-                screenshotData
-              );
-            }
+            this.windowManager.createScreenshotWindow(screenshotData);
           } catch (error) {
             logger.error("截图过程中发生错误", { error });
             this.windowManager.showMainWindow();
