@@ -80,9 +80,8 @@ async function packageApp(platform = '') {
   try {
     const platformFlag = platform ? `--${platform}` : '';
     
-    // 在CI环境中允许生成发布元数据文件，本地环境禁用发布
-    const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
-    const publishFlag = isCI ? '--publish onTagOrDraft' : '--publish never';
+    // 禁用所有自动发布，统一由GitHub Actions处理
+    const publishFlag = '--publish never';
     
     execSync(`npx electron-builder ${platformFlag} ${publishFlag} --config electron-builder.config.js`, { 
       stdio: 'inherit' 

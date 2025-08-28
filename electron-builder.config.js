@@ -78,6 +78,8 @@ const config = {
     icon: "main/static/icons8-camera-256.ico",
     publisherName: "AI Text Scanner",
     verifyUpdateCodeSignature: false,
+    // 强制使用统一的文件名格式（使用短横线替代空格）
+    artifactName: "${name}-Setup-${version}.${ext}",
   },
 
   // NSIS 安装程序配置
@@ -205,14 +207,14 @@ const config = {
     ],
   },
 
-  // 发布配置 - 支持GitHub Releases自动更新
-  publish: {
-    provider: "github",
-    owner: "Jeff1573",
-    repo: "AI-Text-Scanner",
-    publishAutoUpdate: true,
-    releaseType: "release",
-  },
+  // 发布配置 - 由GitHub Actions统一处理，禁用electron-builder自动发布
+  // publish: {
+  //   provider: "github",
+  //   owner: "Jeff1573",
+  //   repo: "AI-Text-Scanner",
+  //   publishAutoUpdate: true,
+  //   releaseType: "release",
+  // },
 
   // 删除包脚本以减小大小
   removePackageScripts: true,
