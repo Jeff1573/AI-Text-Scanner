@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Row, Col, Typography, Card, Image, Flex, Tabs, TabsProps } from "antd";
+import { Row, Col, Typography, Card, Image, Flex, Tabs, TabsProps, Button, message } from "antd";
+import { CopyOutlined } from "@ant-design/icons";
 import { TitleBar, LanguageSelector } from "../components";
 import { translate } from "../utils/translate";
 import "../assets/styles/language-selector.css";
@@ -82,6 +83,30 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
   const [tabActive, setTabActive] = useState<TabKeyType>("text");
   const [sourceLang, setSourceLang] = useState<string>("auto");
   const [targetLang, setTargetLang] = useState<string>("zh");
+
+  // 复制文本到剪切板
+  const handleCopyText = useCallback(async () => {
+    if (!analysisText) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(analysisText);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = analysisText;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      message.success("已复制到剪切板");
+    } catch (err) {
+      console.error("复制失败:", err);
+      message.error("复制失败，请手动复制");
+    }
+  }, [analysisText]);
 
   // 翻译处理函数
   const handleTranslate = useCallback(async (
@@ -295,6 +320,13 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
             style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, maxHeight: "100%", height: "100%" }}
             title={
               <Tabs defaultActiveKey="1" items={items} onChange={onChange} />
+            }
+            extra={
+              tabActive === "text" && analysisText ? (
+                <Button size="small" icon={<CopyOutlined />} onClick={handleCopyText}>
+                  复制文本
+                </Button>
+              ) : null
             }
             styles={{
               body: {

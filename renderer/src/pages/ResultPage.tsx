@@ -123,6 +123,17 @@ export const ResultPage = () => {
     <div className="result-page">
       <TitleBar />
 
+      <div className="controls-section">
+        <LanguageSelector
+          sourceLang={sourceLang}
+          targetLang={targetLang}
+          onSourceLangChange={setSourceLang}
+          onTargetLangChange={setTargetLang}
+          onSwitchLanguages={handleSwitchLanguagesWrapper}
+          languageOptions={languageOptions}
+        />
+      </div>
+
       <div className="translation-container">
         <TextArea
           type="original"
@@ -135,15 +146,6 @@ export const ResultPage = () => {
         />
 
         <div className="divider"></div>
-        
-        <LanguageSelector
-          sourceLang={sourceLang}
-          targetLang={targetLang}
-          onSourceLangChange={setSourceLang}
-          onTargetLangChange={setTargetLang}
-          onSwitchLanguages={handleSwitchLanguagesWrapper}
-          languageOptions={languageOptions}
-        />
 
         <TextArea
           type="translated"
