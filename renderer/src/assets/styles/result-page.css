@@ -53,6 +53,7 @@
   flex-direction: column;
   position: relative; /* For positioning the copy button */
   min-width: 0; /* Prevents flexbox overflow */
+  min-height: 0; /* Avoid nested scrollbars in flex items */
 }
 
 .area-title {
@@ -79,7 +80,7 @@
   line-height: 1.6;
   border-radius: 8px;
   box-sizing: border-box;
-  overflow-y: auto;
+  overflow-y: visible; /* let inner elements control scrolling */
   white-space: pre-wrap;
   word-wrap: break-word;
   transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -102,6 +103,8 @@
   background-color: #f8f9fa;
   border: 1px solid #e9ecef;
   color: #333333;
+  overflow-y: auto; /* only the translated panel scrolls */
+  padding-right: 56px; /* space for copy button */
 }
 
 .placeholder {
@@ -110,8 +113,8 @@
 
 .copy-button {
   position: absolute;
-  top: -45px;
-  right: 0;
+  top: 8px;         /* keep inside the panel so it won't be clipped */
+  right: 8px;
   background-color: #007aff;
   color: white;
   border: none;
@@ -123,7 +126,7 @@
   opacity: 0.9;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 10;
+  z-index: 10;      /* ensure visible when page is zoomed */
 }
 
 .copy-button:hover {
@@ -206,7 +209,8 @@
   }
 
   .copy-button {
-    top: -40px;
+    top: 8px;
+    right: 8px;
     font-size: 10px;
     padding: 5px 10px;
   }

@@ -87,8 +87,8 @@ export class WindowManager {
       logger.debug("图标路径", { iconPath });
 
       this.mainWindow = new BrowserWindow({
-        width: 800,
-        height: 600,
+        width: 1100,
+        height: 720,
         frame: false,
         titleBarStyle: "hidden",
         autoHideMenuBar: true,
@@ -310,8 +310,8 @@ export class WindowManager {
     }
 
     this.resultWindow = new BrowserWindow({
-      width: 600,
-      height: 400,
+      width: 980,
+      height: 640,
       alwaysOnTop: true,
       autoHideMenuBar: true,
       icon: getAppIconPath(),

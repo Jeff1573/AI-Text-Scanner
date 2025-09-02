@@ -42,7 +42,7 @@ export const TextArea = ({
           allowClear
           autoSize={{ minRows: 3, maxRows: 10 }}
           style={{
-            resize: 'vertical',
+            resize: 'none',
             fontFamily: 'inherit'
           }}
         />
