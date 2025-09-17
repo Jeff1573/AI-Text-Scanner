@@ -24,11 +24,14 @@
 !macro customInit
   !system "echo 'Custom initialization for AI Text Scanner' > ${BUILD_RESOURCES_DIR}/customInit"
   
-  ; 检查是否已经安装了其他版本
+  ; ===== 安装模式检测 =====
+  ; 此宏仅在安装过程中执行，不会在卸载过程中执行
+  ; 检查是否已经安装了其他版本，如果已安装则静默覆盖安装
+  ; 不再询问用户是否先卸载，直接进行覆盖安装以保留用户配置
   ReadRegStr $R0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_APP_KEY}" "DisplayName"
-  StrCmp $R0 "" +3
-    MessageBox MB_YESNO|MB_ICONQUESTION "检测到已安装的版本，是否先卸载？" IDYES +2
-    Abort
+  StrCmp $R0 "" +2
+    ; 检测到已安装版本，静默继续安装（覆盖安装）
+    ; 这样可以保留用户配置和数据，避免用户误触
 !macroend
 
 ; 自定义安装宏
@@ -82,6 +85,8 @@
 
 ; 自定义卸载宏
 !macro customUnInstall
+  ; ===== 卸载模式检测 =====
+  ; 此宏仅在卸载过程中执行，不会在安装过程中执行
   ; 删除开始菜单快捷方式
   Delete "$SMPROGRAMS\AI Text Scanner\AI Text Scanner.lnk"
   Delete "$SMPROGRAMS\AI Text Scanner\卸载 AI Text Scanner.lnk" 
@@ -103,9 +108,12 @@
   DeleteRegKey HKCU "Software\AI Text Scanner"
   
   ; 删除用户数据（可选，询问用户）
-  MessageBox MB_YESNO|MB_ICONQUESTION "是否删除用户配置和数据？" IDNO +3
+  ; 只有在用户明确选择"是"时才删除用户配置和数据
+  MessageBox MB_YESNO|MB_ICONQUESTION "是否删除用户配置和数据？$\r$\n$\r$\n选择"是"将删除所有用户设置、缓存和配置文件。$\r$\n选择"否"将保留用户数据，但应用程序将被卸载。" IDNO +3
+    ; 用户选择删除数据
     RMDir /r "$APPDATA\AI Text Scanner"
     RMDir /r "$LOCALAPPDATA\AI Text Scanner"
+    ; 用户选择保留数据，跳过删除步骤
 !macroend
 
 ; 检查是否需要重启

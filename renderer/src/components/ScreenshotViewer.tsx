@@ -91,6 +91,16 @@ export const ScreenshotViewer = () => {
     setShowToolbar(false);
   }, [resetSelection]);
 
+  // 处理复制成功后关闭截图窗口
+  const handleCopySuccess = useCallback(() => {
+    try {
+      // 关闭当前截图窗口
+      window.close();
+    } catch (error) {
+      console.error("关闭窗口失败:", error);
+    }
+  }, []);
+
   // 复制选中区域图片到剪切板
   const handleCopySelectedImage = useCallback(async (): Promise<void> => {
     if (!screenshotData) {
@@ -309,6 +319,7 @@ export const ScreenshotViewer = () => {
             onConfirm={handleGetSelectedContent}
             onCancel={handleCancel}
             onCopy={handleCopySelectedImage}
+            onCopySuccess={handleCopySuccess}
             selection={selection}
           />
         )}

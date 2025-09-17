@@ -211,3 +211,4 @@ settings.local.json
 *.tmp
 *.temp
 out/
+.workflow/

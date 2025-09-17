@@ -6,6 +6,8 @@ interface FloatingToolbarProps {
   onCancel: () => void;
   /** 复制选中区域图片到剪切板 */
   onCopy: () => Promise<void>;
+  /** 复制成功后的回调函数，用于关闭截图窗口 */
+  onCopySuccess?: () => void;
   selection: {
     x: number;
     y: number;
@@ -18,6 +20,7 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
   onConfirm,
   onCancel,
   onCopy,
+  onCopySuccess,
   selection,
 }) => {
   const [copySuccess, setCopySuccess] = useState(false);
@@ -30,10 +33,12 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
     try {
       await onCopy();
       setCopySuccess(true);
-      // 2秒后隐藏成功提示
+      
+      // 复制成功后，延迟1秒关闭截图窗口（给用户时间看到成功提示）
       setTimeout(() => {
         setCopySuccess(false);
-      }, 2000);
+        onCopySuccess?.();
+      }, 1000);
     } catch (error) {
       console.error("复制失败:", error);
     } finally {
