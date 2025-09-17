@@ -91,6 +91,82 @@ export const ScreenshotViewer = () => {
     setShowToolbar(false);
   }, [resetSelection]);
 
+  // 复制选中区域图片到剪切板
+  const handleCopySelectedImage = useCallback(async (): Promise<void> => {
+    if (!screenshotData) {
+      throw new Error("没有截图数据");
+    }
+    
+    return new Promise<void>((resolve, reject) => {
+      try {
+        const imgElement = getImageElement();
+        if (!imgElement) {
+          reject(new Error("找不到图片元素"));
+          return;
+        }
+        
+        const displayRect = imgElement.getBoundingClientRect();
+        const img = new Image();
+        
+        img.onload = async () => {
+          try {
+            const originalWidth = img.naturalWidth;
+            const originalHeight = img.naturalHeight;
+            const displayWidth = displayRect.width;
+            const displayHeight = displayRect.height;
+            
+            const cropCoords = calculateCropCoordinates(
+              selection,
+              originalWidth,
+              originalHeight,
+              displayWidth,
+              displayHeight
+            );
+            
+            const selectedImageData = await cropImage(
+              screenshotData.thumbnail,
+              cropCoords
+            );
+            
+            // 检查浏览器是否支持剪切板API
+            if (!navigator.clipboard || !navigator.clipboard.write) {
+              reject(new Error("您的浏览器不支持复制图片到剪切板"));
+              return;
+            }
+
+            // 将base64图片转换为Blob
+            const response = await fetch(selectedImageData);
+            const blob = await response.blob();
+            
+            // 创建ClipboardItem
+            const clipboardItem = new ClipboardItem({
+              [blob.type]: blob
+            });
+            
+            // 写入剪切板
+            await navigator.clipboard.write([clipboardItem]);
+            
+            console.log("图片已复制到剪切板");
+            resolve();
+            
+          } catch (error) {
+            console.error("复制图片失败:", error);
+            reject(error);
+          }
+        };
+        
+        img.onerror = () => {
+          reject(new Error("图片加载失败"));
+        };
+        
+        img.src = screenshotData.thumbnail;
+      } catch (error) {
+        console.error("复制选中区域失败:", error);
+        reject(error);
+      }
+    });
+  }, [screenshotData, selection]);
+
   // 支持按 ESC 关闭窗口
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -232,6 +308,7 @@ export const ScreenshotViewer = () => {
           <FloatingToolbar
             onConfirm={handleGetSelectedContent}
             onCancel={handleCancel}
+            onCopy={handleCopySelectedImage}
             selection={selection}
           />
         )}

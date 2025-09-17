@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import "../assets/styles/floating-toolbar.css";
 
 interface FloatingToolbarProps {
   onConfirm: () => void;
   onCancel: () => void;
+  /** 复制选中区域图片到剪切板 */
+  onCopy: () => Promise<void>;
   selection: {
     x: number;
     y: number;
@@ -15,8 +17,30 @@ interface FloatingToolbarProps {
 export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
   onConfirm,
   onCancel,
+  onCopy,
   selection,
 }) => {
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
+
+  const handleCopy = async () => {
+    if (isCopying) return;
+    
+    setIsCopying(true);
+    try {
+      await onCopy();
+      setCopySuccess(true);
+      // 2秒后隐藏成功提示
+      setTimeout(() => {
+        setCopySuccess(false);
+      }, 2000);
+    } catch (error) {
+      console.error("复制失败:", error);
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
   const toolbarStyle: React.CSSProperties = {
     position: "absolute",
     left: `${selection.x + selection.width - 10}px`,
@@ -25,15 +49,41 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
   };
 
   return (
-    <div className="floating-toolbar" style={toolbarStyle}>
-      <button onClick={onCancel} className="toolbar-button cancel">
-        <span className="toolbar-icon">❌</span>
-        {/* <span className="toolbar-text">取消</span> */}
-      </button>
-      <button onClick={onConfirm} className="toolbar-button confirm">
-        <span className="toolbar-icon">✅</span>
-        {/* <span className="toolbar-text">确认</span> */}
-      </button>
-    </div>
+    <>
+      <div className="floating-toolbar" style={toolbarStyle}>
+        <button onClick={onCancel} className="toolbar-button cancel">
+          <span className="toolbar-icon">❌</span>
+          {/* <span className="toolbar-text">取消</span> */}
+        </button>
+        <button 
+          onClick={handleCopy} 
+          className={`toolbar-button copy ${copySuccess ? 'success' : ''}`}
+          disabled={isCopying}
+        >
+          <span className="toolbar-icon">
+            {isCopying ? "⏳" : "📋"}
+          </span>
+          {/* <span className="toolbar-text">复制</span> */}
+        </button>
+        <button onClick={onConfirm} className="toolbar-button confirm">
+          <span className="toolbar-icon">✅</span>
+          {/* <span className="toolbar-text">确认</span> */}
+        </button>
+      </div>
+      
+      {copySuccess && (
+        <div 
+          className="copy-success-tooltip" 
+          style={{
+            position: "absolute",
+            left: `${selection.x + selection.width / 2}px`,
+            top: `${selection.y - 40}px`,
+            zIndex: 1001,
+          }}
+        >
+          图片已复制到剪切板
+        </div>
+      )}
+    </>
   );
 };
