@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Row, Col, Typography, Card, Image, Flex, Tabs, TabsProps, Button, message } from "antd";
-import { CopyOutlined } from "@ant-design/icons";
+import { CopyOutlined, PictureOutlined } from "@ant-design/icons";
 import { TitleBar, LanguageSelector } from "../components";
 import { translate } from "../utils/translate";
 import "../assets/styles/language-selector.css";
@@ -107,6 +107,36 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
       message.error("复制失败，请手动复制");
     }
   }, [analysisText]);
+
+  // 复制图片到剪切板
+  const handleCopyImage = useCallback(async () => {
+    if (!imageUrl) return;
+    
+    try {
+      // 检查浏览器是否支持剪切板API
+      if (!navigator.clipboard || !navigator.clipboard.write) {
+        message.error("您的浏览器不支持复制图片到剪切板");
+        return;
+      }
+
+      // 将base64图片转换为Blob
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      // 创建ClipboardItem
+      const clipboardItem = new ClipboardItem({
+        [blob.type]: blob
+      });
+      
+      // 写入剪切板
+      await navigator.clipboard.write([clipboardItem]);
+      message.success("图片已复制到剪切板");
+    } catch (err) {
+      console.error("复制图片失败:", err);
+      // 提供备用方案的提示
+      message.error("复制图片失败，请右键图片手动复制");
+    }
+  }, [imageUrl]);
 
   // 翻译处理函数
   const handleTranslate = useCallback(async (
@@ -259,6 +289,13 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
         <Col span={12} style={{ display: "flex", flexDirection: "column", minHeight: 0, maxHeight: "100%" }}>
           <Card
             title="选中区域图片"
+            extra={
+              imageUrl ? (
+                <Button size="small" icon={<PictureOutlined />} onClick={handleCopyImage}>
+                  复制图片
+                </Button>
+              ) : null
+            }
             style={{
               flex: 1,
               display: "flex",
