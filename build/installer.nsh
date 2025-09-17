@@ -95,7 +95,7 @@
   ; 删除桌面快捷方式
   Delete "$DESKTOP\AI Text Scanner.lnk"
   
-  ; 删除文件关联
+  ; 删除文件关联（保持原逻辑）
   DeleteRegKey HKCR ".png\AITextScanner.Image"
   DeleteRegKey HKCR ".jpg\AITextScanner.Image" 
   DeleteRegKey HKCR ".jpeg\AITextScanner.Image"
@@ -108,12 +108,16 @@
   DeleteRegKey HKCU "Software\AI Text Scanner"
   
   ; 删除用户数据（可选，询问用户）
-  ; 只有在用户明确选择"是"时才删除用户配置和数据
-  MessageBox MB_YESNO|MB_ICONQUESTION "是否删除用户配置和数据？$\r$\n$\r$\n选择"是"将删除所有用户设置、缓存和配置文件。$\r$\n选择"否"将保留用户数据，但应用程序将被卸载。" IDNO +3
-    ; 用户选择删除数据
-    RMDir /r "$APPDATA\AI Text Scanner"
+  ; 只有在用户明确选择$"是$"时才删除用户配置和数据
+  MessageBox MB_YESNO|MB_ICONQUESTION "是否删除用户配置和数据？$\r$\n$\r$\n选择$\"是$\"将删除所有用户设置、缓存和配置文件。$\r$\n$\r$\n选择$\"否$\"将保留用户数据，但应用程序将被卸载。" IDYES delete_user_data IDNO skip_delete_user_data
+  delete_user_data:
+    ; 安全删除常见用户数据目录
     RMDir /r "$LOCALAPPDATA\AI Text Scanner"
+    RMDir /r "$APPDATA\AI Text Scanner"
+    Goto end_user_data_prompt
+  skip_delete_user_data:
     ; 用户选择保留数据，跳过删除步骤
+  end_user_data_prompt:
 !macroend
 
 ; 检查是否需要重启
@@ -121,3 +125,4 @@
   ; 通常 Electron 应用不需要重启
   SetRebootFlag false
 !macroend
+
