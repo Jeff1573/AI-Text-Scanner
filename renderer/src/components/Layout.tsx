@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { ConfigProvider } from "antd";
+import { ConfigProvider, Modal, Button, Typography, Space, message, Alert } from "antd";
 import zhCN from "antd/es/locale/zh_CN";
 import { useMainAppState } from "../hooks/useMainAppState";
+import type { UpdateAvailableNotice } from "../types/electron";
 import { TitleBar } from "./TitleBar";
 import "../assets/styles/index.css";
 
@@ -11,6 +12,11 @@ export const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [version, setVersion] = useState<string | null>(null);
+  const [updateNotice, setUpdateNotice] = useState<UpdateAvailableNotice | null>(null);
+  const [isDownloadLoading, setIsDownloadLoading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [messageApi, messageContextHolder] = message.useMessage();
+  const { Paragraph, Text } = Typography;
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -26,6 +32,76 @@ export const Layout = () => {
 
     fetchVersion();
   }, []);
+
+  useEffect(() => {
+    if (!window.electronAPI?.onUpdateAvailableNotice) {
+      return;
+    }
+
+    // 监听主进程推送的更新事件，用于自动提醒用户
+    const handleNotice = (data: UpdateAvailableNotice) => {
+      // 同步通知其它前端模块（如设置页）刷新状态
+      window.dispatchEvent(
+        new CustomEvent("app-update-available-notice", { detail: data })
+      );
+
+      if (data.source !== "automatic") {
+        return;
+      }
+
+      setDownloadError(null);
+      setIsDownloadLoading(false);
+      setUpdateNotice(data);
+
+      const versionLabel = data.updateInfo?.version
+        ? ` ${data.updateInfo.version}`
+        : "";
+      messageApi.info(`发现新版本${versionLabel}，请及时更新。`);
+    };
+
+    window.electronAPI.onUpdateAvailableNotice(handleNotice);
+
+    return () => {
+      window.electronAPI.removeUpdateAvailableNoticeListener();
+    };
+  }, [messageApi]);
+
+  const handleMenuClick = (path: string) => {
+    navigate(path);
+  };
+
+  const handleDownloadUpdate = async () => {
+    setIsDownloadLoading(true);
+    setDownloadError(null);
+    try {
+      const result = await window.electronAPI.downloadUpdate();
+      if (result.success) {
+        messageApi.success("开始下载更新，已打开设置页以便查看进度。");
+        setUpdateNotice(null);
+        window.location.hash = "#/settings";
+      } else {
+        setDownloadError(result.error || "下载更新失败");
+      }
+    } catch (error) {
+      setDownloadError(
+        error instanceof Error ? error.message : String(error)
+      );
+    } finally {
+      setIsDownloadLoading(false);
+    }
+  };
+
+  const handleRemindLater = () => {
+    setUpdateNotice(null);
+    setDownloadError(null);
+    messageApi.info("可稍后在设置页手动下载更新。");
+  };
+
+  const handleOpenSettings = () => {
+    window.location.hash = "#/settings";
+    setUpdateNotice(null);
+    setDownloadError(null);
+  };
 
   // 根据当前路径确定活动菜单项
   const isHomeActive = location.pathname === "/";
@@ -49,13 +125,10 @@ export const Layout = () => {
     },
   ];
 
-  const handleMenuClick = (path: string) => {
-    navigate(path);
-  };
-
   return (
     <ConfigProvider locale={zhCN}>
       <div className="app-container">
+        {messageContextHolder}
         {/* 自定义标题栏 */}
         <TitleBar />
 
@@ -98,6 +171,68 @@ export const Layout = () => {
             </footer>
           )}
         </div>
+
+        {updateNotice && (
+          <Modal
+            open
+            title={`发现新版本 ${updateNotice.updateInfo?.version ?? ""}`}
+            okText="立即下载"
+            cancelText="稍后提醒"
+            onOk={handleDownloadUpdate}
+            onCancel={handleRemindLater}
+            confirmLoading={isDownloadLoading}
+            maskClosable={!isDownloadLoading}
+            closable={!isDownloadLoading}
+            cancelButtonProps={{ disabled: isDownloadLoading }}
+            destroyOnClose
+          >
+            <Paragraph>
+              <Text>检测到应用存在可用更新。</Text>
+            </Paragraph>
+            <Paragraph>
+              <Text type="secondary">当前版本：</Text>
+              <Text> {updateNotice.currentVersion}</Text>
+              <br />
+              <Text type="secondary">新版本：</Text>
+              <Text>
+                {" "}
+                {updateNotice.updateInfo?.version ?? "未知"}
+              </Text>
+            </Paragraph>
+            {updateNotice.updateInfo?.releaseNotes && (
+              <Paragraph>
+                <Text strong>更新说明：</Text>
+                <pre
+                  style={{
+                    marginTop: 8,
+                    background: "#f5f5f5",
+                    padding: "8px 12px",
+                    borderRadius: 4,
+                    maxHeight: 200,
+                    overflow: "auto",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {String(updateNotice.updateInfo.releaseNotes)}
+                </pre>
+              </Paragraph>
+            )}
+            {downloadError && (
+              <Alert
+                type="error"
+                showIcon
+                message="下载更新失败"
+                description={downloadError}
+                style={{ marginTop: 12 }}
+              />
+            )}
+            <Space style={{ marginTop: 16 }}>
+              <Button type="link" onClick={handleOpenSettings}>
+                查看设置页
+              </Button>
+            </Space>
+          </Modal>
+        )}
       </div>
     </ConfigProvider>
   );

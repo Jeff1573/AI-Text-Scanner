@@ -239,6 +239,32 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.removeAllListeners("download-progress-update");
   },
 
+  // 监听更新可用通知
+  onUpdateAvailableNotice: (callback: (data: {
+    updateInfo: any;
+    currentVersion: string;
+    source: 'manual' | 'automatic';
+    timestamp: number;
+  }) => void) => {
+    ipcRenderer.removeAllListeners('update-available-notification');
+
+    logger.info('注册更新可用通知监听器');
+    ipcRenderer.on('update-available-notification', (e, data) => {
+      try {
+        logger.info('收到更新可用通知事件', { source: data?.source });
+        callback(data);
+      } catch (error) {
+        logger.error('更新可用通知回调执行失败', { error });
+      }
+    });
+  },
+
+  // 移除更新可用通知监听器
+  removeUpdateAvailableNoticeListener: () => {
+    logger.info('移除更新可用通知监听器');
+    ipcRenderer.removeAllListeners('update-available-notification');
+  },
+
   // 监听准备下载更新事件
   onPrepareDownloadUpdate: (callback: (data: {
     updateInfo: any;

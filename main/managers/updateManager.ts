@@ -23,6 +23,8 @@ export class UpdateManager {
   private downloadProgress: DownloadProgress | null = null;
   private isDownloading = false;
   private isManualCheck = false; // 标记是否为手动检查
+  private pollingTimer: NodeJS.Timeout | null = null;
+  private pollingIntervalMs = 5 * 60 * 1000; // 默认间隔为5分钟
 
   constructor() {
     this.initializeUpdater();
@@ -48,7 +50,17 @@ export class UpdateManager {
       this.updateAvailable = true;
       this.updateInfo = info;
       this.isChecking = false;
-      this.showUpdateAvailableDialog(info);
+
+      const source: 'manual' | 'automatic' = this.isManualCheck ? 'manual' : 'automatic';
+      this.notifyUpdateAvailable(info, source);
+
+      if (source === 'manual') {
+        void this.showUpdateAvailableDialog(info);
+      } else {
+        // 自动轮询场景下停止计时器，避免重复提示
+        this.stopBackgroundPolling();
+      }
+
       this.isManualCheck = false; // 重置标记
     });
 
@@ -104,20 +116,102 @@ export class UpdateManager {
   }
 
   /**
+   * 执行自动更新检查，避免与手动检查/下载冲突
+   */
+  private async performAutomaticCheck(context: "startup" | "polling"): Promise<void> {
+    if (this.isChecking) {
+      logger.debug("已有检查任务进行中，跳过自动检查", { context });
+      return;
+    }
+
+    if (this.isDownloading) {
+      logger.debug("正在下载更新，跳过自动检查", { context });
+      return;
+    }
+
+    if (this.updateAvailable) {
+      logger.debug("已有可用更新，无需重复检查", { context });
+      return;
+    }
+
+    try {
+      logger.info("执行自动更新检查", { context, intervalMs: this.pollingIntervalMs });
+      this.isManualCheck = false;
+      this.isChecking = true;
+      await autoUpdater.checkForUpdates();
+    } catch (error) {
+      this.isChecking = false;
+      logger.error("自动更新检查失败", { context, error });
+    }
+  }
+
+  /**
    * 启动时自动检查更新（静默检查，只在有更新时提示）
    */
   public async checkForUpdatesOnStartup(): Promise<void> {
-    try {
-      if (this.isChecking) {
-        return;
-      }
+    await this.performAutomaticCheck("startup");
+  }
 
-      logger.info('应用启动时检查更新');
-      this.isManualCheck = false; // 标记为自动检查
-      await autoUpdater.checkForUpdates();
+  /**
+   * 启动后台轮询任务，按照指定间隔执行自动检查
+   */
+  public startBackgroundPolling(intervalMs?: number): void {
+    const effectiveInterval = intervalMs && intervalMs > 0 ? intervalMs : this.pollingIntervalMs;
+
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer);
+      this.pollingTimer = null;
+      logger.debug("发现已有轮询计时器，已重新初始化");
+    }
+
+    this.pollingIntervalMs = effectiveInterval;
+    logger.info("启动更新轮询", { intervalMs: effectiveInterval });
+
+    const runCheck = () => {
+      void this.performAutomaticCheck("polling");
+    };
+
+    this.pollingTimer = setInterval(runCheck, this.pollingIntervalMs);
+    this.pollingTimer.unref?.();
+  }
+
+  /**
+   * 停止后台轮询任务
+   */
+  public stopBackgroundPolling(): void {
+    if (!this.pollingTimer) {
+      logger.debug("未找到轮询计时器，无需停止");
+      return;
+    }
+
+    clearInterval(this.pollingTimer);
+    this.pollingTimer = null;
+    logger.info("更新轮询已停止");
+  }
+
+  /**
+   * 将可用更新事件广播给渲染进程，由前端决定提示样式
+   */
+  private notifyUpdateAvailable(info: any, source: 'manual' | 'automatic'): void {
+    try {
+      const payload = {
+        updateInfo: info,
+        currentVersion: app.getVersion(),
+        source,
+        timestamp: Date.now(),
+      };
+
+      const windows = BrowserWindow.getAllWindows();
+      logger.info(`广播更新可用事件`, { source, windowCount: windows.length });
+
+      windows.forEach((window, index) => {
+        if (!window.isDestroyed()) {
+          window.webContents.send('update-available-notification', payload);
+          logger.debug(`更新可用事件已发送到窗口 ${index + 1}`, { source });
+        }
+      });
     } catch (error) {
-      logger.error('启动时检查更新失败', { error });
-      // 静默失败，不显示错误对话框
+      logger.error('发送更新可用事件失败', { error, source });
     }
   }
 

@@ -18,6 +18,15 @@ export interface UpdateStatus {
   downloadProgress: DownloadProgress | null;
 }
 
+export type UpdateNotificationSource = 'manual' | 'automatic';
+
+export interface UpdateAvailableNotice {
+  updateInfo: any;
+  currentVersion: string;
+  source: UpdateNotificationSource;
+  timestamp: number;
+}
+
 export interface ScreenSource {
   id: string;
   name: string;
@@ -134,6 +143,8 @@ export interface ElectronAPI {
   // 监听下载进度更新
   onDownloadProgress: (callback: (progress: DownloadProgress) => void) => void;
   removeDownloadProgressListener: () => void;
+  onUpdateAvailableNotice: (callback: (data: UpdateAvailableNotice) => void) => void;
+  removeUpdateAvailableNoticeListener: () => void;
 
   // 监听准备下载更新事件
   onPrepareDownloadUpdate: (callback: (data: {

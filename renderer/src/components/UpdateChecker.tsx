@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Card, Space, Typography, Alert, Spin, message, Progress } from 'antd';
 import { 
   ReloadOutlined, 
@@ -20,7 +20,7 @@ export const UpdateChecker: React.FC = () => {
   const [messageApi, contextHolder] = message.useMessage();
 
   // 获取更新状态
-  const fetchUpdateStatus = async () => {
+  const fetchUpdateStatus = useCallback(async () => {
     try {
       const result = await window.electronAPI.getUpdateStatus();
       if (result.success && result.status) {
@@ -29,7 +29,7 @@ export const UpdateChecker: React.FC = () => {
     } catch (error) {
       console.error('获取更新状态失败:', error);
     }
-  };
+  }, []);
 
   // 检查更新
   const handleCheckForUpdates = async () => {
@@ -153,7 +153,19 @@ export const UpdateChecker: React.FC = () => {
       console.log('清理准备下载更新监听器...');
       window.electronAPI.removePrepareDownloadUpdateListener();
     };
-  }, []);
+  }, [fetchUpdateStatus, messageApi]);
+
+  useEffect(() => {
+    // 响应全局更新通知，确保设置页状态及时刷新
+    const syncStatus = () => {
+      fetchUpdateStatus();
+    };
+
+    window.addEventListener('app-update-available-notice', syncStatus);
+    return () => {
+      window.removeEventListener('app-update-available-notice', syncStatus);
+    };
+  }, [fetchUpdateStatus]);
 
   return (
     <>
