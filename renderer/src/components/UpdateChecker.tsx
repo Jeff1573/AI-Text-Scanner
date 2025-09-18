@@ -8,6 +8,7 @@ import {
   InfoCircleOutlined 
 } from '@ant-design/icons';
 import type { UpdateStatus, DownloadProgress } from '../types/electron';
+import { ReleaseNotesViewer } from './ReleaseNotesViewer';
 
 const { Text, Title } = Typography;
 
@@ -279,8 +280,8 @@ export const UpdateChecker: React.FC = () => {
                       {updateStatus.updateInfo.releaseNotes && (
                         <details style={{ marginTop: 8 }}>
                           <summary>更新说明</summary>
-                          <div style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>
-                            {updateStatus.updateInfo.releaseNotes}
+                          <div style={{ marginTop: 4 }}>
+                            <ReleaseNotesViewer html={String(updateStatus.updateInfo.releaseNotes)} />
                           </div>
                         </details>
                       )}

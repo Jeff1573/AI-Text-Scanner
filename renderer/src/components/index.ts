@@ -15,3 +15,4 @@ export { ConfigDisplay } from "./ConfigDisplay";
 export { LanguageSelector } from "./LanguageSelector";
 export { TextArea } from "./TextArea";
 export { UpdateChecker } from "./UpdateChecker"; 
+export { ReleaseNotesViewer } from "./ReleaseNotesViewer";

@@ -1,0 +1,32 @@
+.release-notes {
+  font-size: 14px; /* 保持当前页面字体大小 */
+  line-height: 1.6; /* 保持当前页面行高感觉 */
+  color: #333;
+  max-height: 260px; /* 适度限制高度，避免撑爆布局 */
+  overflow: auto;
+}
+
+.release-notes h1,
+.release-notes h2,
+.release-notes h3 {
+  margin: 12px 0 8px;
+  font-weight: 600;
+}
+
+.release-notes p { margin: 8px 0; }
+.release-notes ul, .release-notes ol { margin: 8px 0 8px 20px; }
+.release-notes li { margin: 4px 0; }
+.release-notes a { color: #1677ff; text-decoration: underline; }
+.release-notes code { background: #f5f5f5; padding: 0 4px; border-radius: 3px; }
+.release-notes pre { background: #f5f5f5; padding: 8px 12px; border-radius: 4px; overflow: auto; }
+.release-notes table { border-collapse: collapse; margin: 8px 0; width: 100%; }
+.release-notes th, .release-notes td { border: 1px solid #e8e8e8; padding: 4px 8px; text-align: left; }
+.release-notes .rn-empty { color: #999; font-style: italic; }
+
+@media (prefers-color-scheme: dark) {
+  .release-notes { color: #ddd; }
+  .release-notes a { color: #69b1ff; }
+  .release-notes code, .release-notes pre { background: #262626; }
+  .release-notes th, .release-notes td { border-color: #434343; }
+}
+

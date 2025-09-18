@@ -198,6 +198,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   // 获取应用版本
   getVersion: () => ipcRenderer.invoke("get-version"),
+  
+  // 打开外部链接（渲染进程不直接接触 shell.openExternal）
+  openExternal: (url: string) => ipcRenderer.invoke("open-external", url),
   // 获取图片分析结果
   onImageAnalysisResult: (callback: (data: string) => void) => {
     ipcRenderer.on("image-analysis-result", (e, data) => {

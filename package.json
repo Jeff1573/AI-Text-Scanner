@@ -1,7 +1,7 @@
 {
   "name": "ai-text-scanner",
   "productName": "AI Text Scanner",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "AI-powered text scanner with OCR and translation capabilities",
   "main": ".vite/build/main.js",
   "homepage": "https://github.com/Jeff1573/AI-Text-Scanner",
@@ -64,6 +64,7 @@
     "ai": "^5.0.15",
     "antd": "^5.26.7",
     "cross-env": "^10.0.0",
+    "dompurify": "^3.2.7",
     "electron-log": "^5.4.3",
     "electron-squirrel-startup": "^1.0.1",
     "electron-updater": "^6.6.2",

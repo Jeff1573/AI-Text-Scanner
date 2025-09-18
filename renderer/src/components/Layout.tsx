@@ -5,6 +5,7 @@ import zhCN from "antd/es/locale/zh_CN";
 import { useMainAppState } from "../hooks/useMainAppState";
 import type { UpdateAvailableNotice } from "../types/electron";
 import { TitleBar } from "./TitleBar";
+import { ReleaseNotesViewer } from "./ReleaseNotesViewer";
 import "../assets/styles/index.css";
 
 export const Layout = () => {
@@ -202,19 +203,9 @@ export const Layout = () => {
             {updateNotice.updateInfo?.releaseNotes && (
               <Paragraph>
                 <Text strong>更新说明：</Text>
-                <pre
-                  style={{
-                    marginTop: 8,
-                    background: "#f5f5f5",
-                    padding: "8px 12px",
-                    borderRadius: 4,
-                    maxHeight: 200,
-                    overflow: "auto",
-                    whiteSpace: "pre-wrap",
-                  }}
-                >
-                  {String(updateNotice.updateInfo.releaseNotes)}
-                </pre>
+                <div style={{ marginTop: 8 }}>
+                  <ReleaseNotesViewer html={String(updateNotice.updateInfo.releaseNotes)} />
+                </div>
               </Paragraph>
             )}
             {downloadError && (

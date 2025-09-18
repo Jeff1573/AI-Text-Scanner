@@ -131,6 +131,8 @@ export interface ElectronAPI {
   openHtmlViewer: (htmlContent: string, title?: string) => Promise<{ success: boolean; error?: string }>;
   // 获取应用版本
   getVersion: () => Promise<{ success: boolean; version?: string; error?: string }>;
+  // 打开外部链接
+  openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
   // 获取图片分析结果
   onImageAnalysisResult: (callback: (data) => void) => void;
   // 更新相关API
