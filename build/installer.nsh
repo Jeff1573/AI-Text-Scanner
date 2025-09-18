@@ -1,128 +1,39 @@
-; AI Text Scanner NSIS 安装程序自定义脚本
-; 这个文件包含了用于定制Windows安装程序的NSIS宏
+; AI Text Scanner NSIS 自定义脚本（精简版）
+; 目标：仅使用 electron-builder 官方支持钩子，避免修改安装头/压缩参数。
+; 说明：快捷方式/文件关联等由 electron-builder 配置负责，此处不重复创建。
 
-; 自定义头部信息
+; 自定义头部（不做改写，保留扩展点）
 !macro customHeader
-  !system "echo 'AI Text Scanner Installer Custom Header' > ${BUILD_RESOURCES_DIR}/customHeader"
+  ; 保留占位，避免使用 !system 或修改可执行头
 !macroend
 
-; 预初始化宏 - 在安装程序初始化前执行
+; 预初始化（不写注册表，仅保持默认行为）
 !macro preInit
-  ; 检查管理员权限
-  !system "echo 'Checking administrator privileges' > ${BUILD_RESOURCES_DIR}/preInit"
-  
-  ; 设置安装目录权限
-  SetRegView 64
-  WriteRegExpandStr HKLM "${INSTALL_REGISTRY_KEY}" InstallLocation "$PROGRAMFILES64\AI Text Scanner"
-  WriteRegExpandStr HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation "$PROGRAMFILES64\AI Text Scanner"
-  SetRegView 32
-  WriteRegExpandStr HKLM "${INSTALL_REGISTRY_KEY}" InstallLocation "$PROGRAMFILES\AI Text Scanner"
-  WriteRegExpandStr HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation "$PROGRAMFILES\AI Text Scanner"
+  ; 保持空实现，避免在初始化阶段写入注册表导致权限/架构冲突
 !macroend
 
-; 自定义初始化宏
+; 初始化阶段（仅保留占位）
 !macro customInit
-  !system "echo 'Custom initialization for AI Text Scanner' > ${BUILD_RESOURCES_DIR}/customInit"
-  
-  ; ===== 安装模式检测 =====
-  ; 此宏仅在安装过程中执行，不会在卸载过程中执行
-  ; 检查是否已经安装了其他版本，如果已安装则静默覆盖安装
-  ; 不再询问用户是否先卸载，直接进行覆盖安装以保留用户配置
-  ReadRegStr $R0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTALL_APP_KEY}" "DisplayName"
-  StrCmp $R0 "" +2
-    ; 检测到已安装版本，静默继续安装（覆盖安装）
-    ; 这样可以保留用户配置和数据，避免用户误触
+  ; 如需覆盖安装策略，请在此处添加逻辑；当前保持默认
 !macroend
 
-; 自定义安装宏
+; 安装阶段（不重复创建快捷方式/文件关联，交由 electron-builder）
 !macro customInstall
-  !system "echo 'Custom installation steps for AI Text Scanner' > ${BUILD_RESOURCES_DIR}/customInstall"
-  
-  ; 创建开始菜单快捷方式
-  CreateDirectory "$SMPROGRAMS\AI Text Scanner"
-  CreateShortCut "$SMPROGRAMS\AI Text Scanner\AI Text Scanner.lnk" "$INSTDIR\AI Text Scanner.exe"
-  CreateShortCut "$SMPROGRAMS\AI Text Scanner\卸载 AI Text Scanner.lnk" "$INSTDIR\Uninstall AI Text Scanner.exe"
-  
-  ; 创建桌面快捷方式
-  CreateShortCut "$DESKTOP\AI Text Scanner.lnk" "$INSTDIR\AI Text Scanner.exe"
-  
-  ; 注册文件关联
-  WriteRegStr HKCR ".png" "" "AITextScanner.Image"
-  WriteRegStr HKCR ".jpg" "" "AITextScanner.Image"
-  WriteRegStr HKCR ".jpeg" "" "AITextScanner.Image"
-  WriteRegStr HKCR ".gif" "" "AITextScanner.Image"
-  WriteRegStr HKCR ".bmp" "" "AITextScanner.Image"
-  WriteRegStr HKCR "AITextScanner.Image" "" "AI Text Scanner Image"
-  WriteRegStr HKCR "AITextScanner.Image\shell\open\command" "" '"$INSTDIR\AI Text Scanner.exe" "%1"'
-  
-  ; 添加到系统PATH（可选）
-  ; Push "$INSTDIR"
-  ; Call AddToPath
+  ; 无额外动作
 !macroend
 
-; 自定义安装模式宏
+; 安装模式（不强制机器级安装，遵循 electron-builder 配置）
 !macro customInstallMode
-  ; 强制为所有用户安装
-  ; set $isForceMachineInstall to enforce machine installation
-  ; set $isForceCurrentInstall to enforce current user installation
-  StrCmp $R0 "Admin" 0 +2
-    StrCpy $isForceMachineInstall "1"
+  ; 无额外动作
 !macroend
 
-; 自定义欢迎页面
-!macro customWelcomePage
-  !define MUI_WELCOMEPAGE_TITLE "欢迎使用 AI Text Scanner 安装向导"
-  !define MUI_WELCOMEPAGE_TEXT "这将在您的计算机上安装 AI Text Scanner。$\r$\n$\r$\nAI Text Scanner 是一款强大的 AI 文本识别和翻译工具，支持多种语言的 OCR 识别和智能翻译功能。$\r$\n$\r$\n建议您在开始安装前关闭所有其他应用程序。"
-  !insertMacro MUI_PAGE_WELCOME
-!macroend
-
-; 自定义卸载欢迎页面  
-!macro customUnWelcomePage
-  !define MUI_WELCOMEPAGE_TITLE "AI Text Scanner 卸载向导"
-  !define MUI_WELCOMEPAGE_TEXT "这将从您的计算机中卸载 AI Text Scanner。$\r$\n$\r$\n在开始卸载前，请确保 AI Text Scanner 已完全关闭。$\r$\n$\r$\n点击下一步继续。"
-  !insertmacro MUI_UNPAGE_WELCOME
-!macroend
-
-; 自定义卸载宏
+; 卸载阶段（不额外删除用户数据，交由默认卸载器处理）
 !macro customUnInstall
-  ; ===== 卸载模式检测 =====
-  ; 此宏仅在卸载过程中执行，不会在安装过程中执行
-  ; 删除开始菜单快捷方式
-  Delete "$SMPROGRAMS\AI Text Scanner\AI Text Scanner.lnk"
-  Delete "$SMPROGRAMS\AI Text Scanner\卸载 AI Text Scanner.lnk" 
-  RMDir "$SMPROGRAMS\AI Text Scanner"
-  
-  ; 删除桌面快捷方式
-  Delete "$DESKTOP\AI Text Scanner.lnk"
-  
-  ; 删除文件关联（保持原逻辑）
-  DeleteRegKey HKCR ".png\AITextScanner.Image"
-  DeleteRegKey HKCR ".jpg\AITextScanner.Image" 
-  DeleteRegKey HKCR ".jpeg\AITextScanner.Image"
-  DeleteRegKey HKCR ".gif\AITextScanner.Image"
-  DeleteRegKey HKCR ".bmp\AITextScanner.Image"
-  DeleteRegKey HKCR "AITextScanner.Image"
-  
-  ; 清理注册表
-  DeleteRegKey HKLM "Software\AI Text Scanner"
-  DeleteRegKey HKCU "Software\AI Text Scanner"
-  
-  ; 删除用户数据（可选，询问用户）
-  ; 只有在用户明确选择$"是$"时才删除用户配置和数据
-  MessageBox MB_YESNO|MB_ICONQUESTION "是否删除用户配置和数据？$\r$\n$\r$\n选择$\"是$\"将删除所有用户设置、缓存和配置文件。$\r$\n$\r$\n选择$\"否$\"将保留用户数据，但应用程序将被卸载。" IDYES delete_user_data IDNO skip_delete_user_data
-  delete_user_data:
-    ; 安全删除常见用户数据目录
-    RMDir /r "$LOCALAPPDATA\AI Text Scanner"
-    RMDir /r "$APPDATA\AI Text Scanner"
-    Goto end_user_data_prompt
-  skip_delete_user_data:
-    ; 用户选择保留数据，跳过删除步骤
-  end_user_data_prompt:
+  ; 无额外动作
 !macroend
 
-; 检查是否需要重启
+; 重启检查（明确不需要重启）
 !macro customCheckReboot
-  ; 通常 Electron 应用不需要重启
   SetRebootFlag false
 !macroend
 

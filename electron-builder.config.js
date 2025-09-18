@@ -94,7 +94,7 @@ const config = {
     uninstallerIcon: "main/static/icons8-camera-256.ico",
     license: "LICENSE",
     language: "2052", // 简体中文
-    include: "build/installer.nsh", // 可选的自定义NSIS脚本
+    include: "build/installer.nsh", // 重新启用：已将脚本精简为安全钩子
     differentialPackage: true, // 启用差分更新包
     packElevateHelper: false, // 不打包权限提升助手以减小体积
   },
