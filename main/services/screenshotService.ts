@@ -7,34 +7,25 @@ const logger = createModuleLogger('ScreenshotService');
 export class ScreenshotService {
   /**
    * 动态计算缩略图尺寸
-   * 基于主屏幕分辨率，保持宽高比，并限制最大尺寸
+   * 使用实际屏幕分辨率，考虑设备像素比以支持高DPI屏幕
    */
   private static calculateThumbnailSize(): { width: number; height: number } {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width: screenWidth, height: screenHeight } = primaryDisplay.size;
+    const scaleFactor = primaryDisplay.scaleFactor; // 获取设备像素比
     
-    // 设置最大缩略图尺寸（避免过大影响性能）
-    const maxWidth = 1920;
-    const maxHeight = 1080;
-    
-    // 计算缩放比例，保持宽高比
-    const scaleX = maxWidth / screenWidth;
-    const scaleY = maxHeight / screenHeight;
-    const scale = Math.min(scaleX, scaleY, 1); // 不超过1，避免放大
-    
+    // 使用实际物理像素分辨率（逻辑分辨率 × 缩放因子）
+    // 这样可以在高DPI屏幕（如Retina）上获得清晰的截图
     const thumbnailSize = {
-      width: Math.round(screenWidth * scale),
-      height: Math.round(screenHeight * scale)
+      width: Math.round(screenWidth * scaleFactor),
+      height: Math.round(screenHeight * scaleFactor)
     };
     
-    // 开发环境下的调试日志
-    // if (process.env.NODE_ENV === 'development') {
-    //   logger.debug("屏幕信息", {
-    //     screenResolution: `${screenWidth}x${screenHeight}`,
-    //     thumbnailSize: `${thumbnailSize.width}x${thumbnailSize.height}`,
-    //     scale: scale.toFixed(3)
-    //   });
-    // }
+    logger.debug("屏幕信息", {
+      logicalResolution: `${screenWidth}x${screenHeight}`,
+      scaleFactor: scaleFactor,
+      physicalResolution: `${thumbnailSize.width}x${thumbnailSize.height}`
+    });
     
     return thumbnailSize;
   }

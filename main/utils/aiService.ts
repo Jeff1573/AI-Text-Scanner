@@ -125,9 +125,31 @@ abstract class BaseAIService implements IAiService {
       };
     } catch (error) {
       logger.error("Image analysis failed", { error });
+      
+      // 检测常见的图片识别不支持错误
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      let friendlyError = errorMessage;
+      
+      if (errorMessage.includes("Invalid API parameter") || 
+          errorMessage.includes("not support") ||
+          errorMessage.includes("vision") ||
+          errorMessage.includes("image")) {
+        friendlyError = `当前模型或 API 提供商不支持图片识别功能。
+
+建议方案：
+1. 使用支持视觉的模型：
+   • OpenAI: gpt-4o, gpt-4-turbo, gpt-4-vision-preview
+   • Anthropic: claude-3-5-sonnet, claude-3-opus, claude-3-sonnet
+   • Google: gemini-1.5-pro, gemini-1.5-flash
+
+2. 检查 API 提供商是否完整支持图片输入
+
+原始错误: ${errorMessage}`;
+      }
+      
       return {
         content: "",
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: friendlyError,
       };
     }
   }

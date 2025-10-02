@@ -124,6 +124,9 @@
   box-shadow: none; /* 移除阴影 */
   user-select: none;
   pointer-events: none;
+  /* 优化图像渲染，保持清晰度 */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 /* 选择框样式 */

@@ -50,8 +50,18 @@ const CaptureScreen = () => {
         // 使用直接的方式绘制到Canvas上
         const canvas = canvasRef.current;
         if (canvas) {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
+          // 获取设备像素比，适配高DPI屏幕（如Retina）
+          const dpr = window.devicePixelRatio || 1;
+          const displayWidth = window.innerWidth;
+          const displayHeight = window.innerHeight;
+          
+          // 设置canvas实际像素尺寸（考虑设备像素比）
+          canvas.width = displayWidth * dpr;
+          canvas.height = displayHeight * dpr;
+          
+          // 设置canvas显示尺寸
+          canvas.style.width = `${displayWidth}px`;
+          canvas.style.height = `${displayHeight}px`;
           
           // 创建一个新的Image对象来保存原始图像数据
           const originalImg = new Image();
@@ -67,6 +77,7 @@ const CaptureScreen = () => {
           // 设置图像加载成功处理
           originalImg.onload = () => {
             console.log('原始图像加载完成', originalImg.width, originalImg.height);
+            console.log('Canvas分辨率:', canvas.width, canvas.height, 'DPR:', dpr);
             
             // 保存原始图像引用
             originalImageRef.current = originalImg;
@@ -74,12 +85,15 @@ const CaptureScreen = () => {
             // 直接在这里绘制初始Canvas
             const ctx = canvas.getContext('2d');
             if (ctx) {
-              // 清除画布
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              // 缩放canvas上下文以匹配设备像素比
+              ctx.scale(dpr, dpr);
               
-              // 绘制图像
-              ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height);
-              console.log('Canvas已初始化', canvas.width, canvas.height);
+              // 清除画布
+              ctx.clearRect(0, 0, displayWidth, displayHeight);
+              
+              // 绘制图像（使用显示尺寸，而非实际像素尺寸）
+              ctx.drawImage(originalImg, 0, 0, displayWidth, displayHeight);
+              console.log('Canvas已初始化，显示尺寸:', displayWidth, displayHeight);
               
               // 添加调试信息，在画布上显示文本确认图像已加载
               ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
@@ -115,12 +129,20 @@ const CaptureScreen = () => {
       if (isImageLoaded && originalImageRef.current) {
         const canvas = canvasRef.current;
         if (canvas) {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
+          const dpr = window.devicePixelRatio || 1;
+          const displayWidth = window.innerWidth;
+          const displayHeight = window.innerHeight;
+          
+          canvas.width = displayWidth * dpr;
+          canvas.height = displayHeight * dpr;
+          canvas.style.width = `${displayWidth}px`;
+          canvas.style.height = `${displayHeight}px`;
+          
           const ctx = canvas.getContext('2d');
           if (ctx) {
-            ctx.drawImage(originalImageRef.current, 0, 0, canvas.width, canvas.height);
-            console.log('Canvas已重新调整大小', canvas.width, canvas.height);
+            ctx.scale(dpr, dpr);
+            ctx.drawImage(originalImageRef.current, 0, 0, displayWidth, displayHeight);
+            console.log('Canvas已重新调整大小，显示尺寸:', displayWidth, displayHeight);
           }
         }
       }
@@ -149,9 +171,17 @@ const CaptureScreen = () => {
     if (canvas && originalImageRef.current) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        // 先清除画布并重新绘制背景图
+        const dpr = window.devicePixelRatio || 1;
+        const displayWidth = window.innerWidth;
+        const displayHeight = window.innerHeight;
+        
+        // 重置变换并清除画布
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(originalImageRef.current, 0, 0, canvas.width, canvas.height);
+        
+        // 重新应用缩放并绘制背景图
+        ctx.scale(dpr, dpr);
+        ctx.drawImage(originalImageRef.current, 0, 0, displayWidth, displayHeight);
         
         // 绘制一个小点表示开始位置
         ctx.fillStyle = '#1890ff';
@@ -197,9 +227,19 @@ const CaptureScreen = () => {
     if (!ctx) return;
 
     try {
-      // 清除画布并重新绘制背景图
+      const dpr = window.devicePixelRatio || 1;
+      const displayWidth = window.innerWidth;
+      const displayHeight = window.innerHeight;
+      
+      // 重置变换并清除画布
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(originalImageRef.current, 0, 0, canvas.width, canvas.height);
+      
+      // 重新应用缩放
+      ctx.scale(dpr, dpr);
+      
+      // 重新绘制背景图（使用显示尺寸）
+      ctx.drawImage(originalImageRef.current, 0, 0, displayWidth, displayHeight);
       
       // 计算选择区域
       const x = Math.min(startPoint.x, currentEndPoint.x);
@@ -208,13 +248,6 @@ const CaptureScreen = () => {
       const height = Math.abs(currentEndPoint.y - startPoint.y);
       
       console.log('绘制选择区域:', x, y, width, height);
-      
-      // 绘制半透明遮罩
-      // ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-      // ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // 清除选择区域的遮罩
-      ctx.clearRect(x, y, width, height);
       
       // 绘制选择区域的边框
       ctx.strokeStyle = '#1890ff';

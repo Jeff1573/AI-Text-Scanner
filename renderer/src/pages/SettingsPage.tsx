@@ -252,14 +252,27 @@ export const SettingsPage = () => {
             label="模型选择"
             validateStatus={errors.model ? "error" : ""}
             help={errors.model}
+            extra={
+              <div style={{ fontSize: 12, color: "#666", marginTop: 6 }}>
+                💡 图片识别需要支持视觉的模型：
+                <br />
+                • OpenAI: gpt-4o, gpt-4-turbo, gpt-4-vision ✅
+                <br />
+                • Anthropic: claude-3-5-sonnet, claude-3-opus ✅
+                <br />
+                • Google: gemini-1.5-pro, gemini-1.5-flash ✅
+                <br />
+                ⚠️ gpt-3.5 系列不支持图片识别
+              </div>
+            }
           >
             <Select
               value={formData.model}
               onChange={(value) => handleInputChange("model", value)}
               size="large"
             >
-              <Select.Option value="gpt-4o">GPT-4o</Select.Option>
-              <Select.Option value="gpt-4o-mini">GPT-4o Mini</Select.Option>
+              <Select.Option value="gpt-4o">GPT-4o (支持图片) ✅</Select.Option>
+              <Select.Option value="gpt-4o-mini">GPT-4o Mini (支持图片) ✅</Select.Option>
               <Select.Option value="custom">自定义模型</Select.Option>
             </Select>
           </Form.Item>
@@ -268,13 +281,18 @@ export const SettingsPage = () => {
               label="自定义模型名称"
               validateStatus={errors.customModel ? "error" : ""}
               help={errors.customModel}
+              extra={
+                <div style={{ fontSize: 12, color: "#ff9800", marginTop: 6 }}>
+                  ⚠️ 请确保模型支持视觉功能（图片识别），否则截图功能将无法使用
+                </div>
+              }
             >
               <Input
                 value={formData.customModel}
                 onChange={(e) =>
                   handleInputChange("customModel", e.target.value)
                 }
-                placeholder="请输入模型名称，如 gpt-3.5-turbo"
+                placeholder="请输入支持视觉的模型，如 gpt-4o, claude-3-5-sonnet"
                 size="large"
               />
             </Form.Item>

@@ -15,6 +15,9 @@
   left: 0;
   width: 100%;
   height: 100%;
+  /* 优化Canvas渲染，保持清晰度 */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 .capture-info {
