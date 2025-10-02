@@ -179,21 +179,23 @@ class OpenAIService extends BaseAIService {
     this.config = config;
 
     const officialBaseUrl = "https://api.openai.com";
-    const useCompatible =
-      config.apiUrl && !config.apiUrl.startsWith(officialBaseUrl);
+    const isOfficialOpenAI =
+      config.apiUrl && config.apiUrl.startsWith(officialBaseUrl);
 
-    if (useCompatible) {
-      logger.info("Using OpenAI compatible provider");
-      this.provider = createOpenAICompatible({
-        name: "openai-compatible",
-        baseURL: config.apiUrl,
-        apiKey: config.apiKey,
-      });
-    } else {
+    if (isOfficialOpenAI) {
+      // 使用官方 OpenAI SDK（会自动添加 /v1）
       logger.info("Using official OpenAI provider");
       this.provider = createOpenAI({
         apiKey: config.apiKey,
         baseURL: config.apiUrl,
+      });
+    } else {
+      // 使用 OpenAI 兼容模式（不会自动添加 /v1，完全使用用户提供的 URL）
+      logger.info("Using OpenAI compatible provider", { baseURL: config.apiUrl });
+      this.provider = createOpenAICompatible({
+        name: "openai-compatible",
+        baseURL: config.apiUrl,
+        apiKey: config.apiKey,
       });
     }
 

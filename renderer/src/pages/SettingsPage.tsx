@@ -211,16 +211,22 @@ export const SettingsPage = () => {
             extra={
               <div style={{ fontSize: 12, color: "#999", marginTop: 6 }}>
                 {(() => {
-                  const b = (
-                    (formData.apiUrl || "").trim() || "https://api.openai.com"
-                  ).replace(/\/+$/, "");
-                  const suffix = /\/v1$/i.test(b)
-                    ? "/chat/completions"
-                    : "/v1/chat/completions";
-                  return `${b}${suffix}`;
+                  const url = (formData.apiUrl || "").trim() || "https://api.openai.com/v1";
+                  const baseUrl = url.replace(/\/+$/, ""); // 移除末尾的斜杠
+                  const isOfficialOpenAI = baseUrl.startsWith("https://api.openai.com");
+                  
+                  // 官方 OpenAI API 会自动添加 /v1（如果没有）
+                  if (isOfficialOpenAI) {
+                    const hasV1 = /\/v1$/i.test(baseUrl);
+                    const finalUrl = hasV1 ? baseUrl : `${baseUrl}/v1`;
+                    return `${finalUrl}/chat/completions`;
+                  }
+                  
+                  // 自定义 API 不自动添加 /v1，直接使用用户输入的地址
+                  return `${baseUrl}/chat/completions`;
                 })()}
                 <span style={{ marginLeft: 8, color: "#bbb" }}>
-                  (其中 v1 可选，可省略)
+                  (最终请求地址)
                 </span>
               </div>
             }
