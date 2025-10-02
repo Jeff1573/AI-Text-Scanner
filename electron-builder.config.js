@@ -121,7 +121,7 @@ const config = {
 
   // DMG 配置
   dmg: {
-    background: "build/dmg-background.png",
+    // background: "build/dmg-background.png", // 暂时移除背景图片配置
     iconSize: 100,
     contents: [
       {

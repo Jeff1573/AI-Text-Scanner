@@ -79,9 +79,9 @@ app.on("ready", () => {
     trayManager.createTray();
     logger.info("系统托盘创建完成");
 
-    // 预热截图窗口
-    windowManager.ensureScreenshotWindow();
-    logger.info("截图窗口预热完成");
+    // 移除预热截图窗口逻辑，防止窗口意外显示
+    // windowManager.ensureScreenshotWindow();
+    // logger.info("截图窗口预热完成");
 
     // 注册全局快捷键
     hotkeyManager.applyHotkeysFromConfig();

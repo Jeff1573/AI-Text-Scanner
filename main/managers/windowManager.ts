@@ -62,6 +62,7 @@ export class WindowManager {
   private resultWindow: BrowserWindow | null = null;
   private htmlViewerWindow: BrowserWindow | null = null;
   private _trayAvailabilityChecked = false;
+  private _screenshotReadyListenerRegistered = false;
 
   getMainWindow(): BrowserWindow | null {
     return this.mainWindow;
@@ -261,14 +262,18 @@ export class WindowManager {
     //   }
     // );
 
-    ipcMain.on("screenshot-image-ready", () => {
-      if (this.screenshotWindow && !this.screenshotWindow.isDestroyed()) {
-        if (!this.screenshotWindow.isVisible()) {
-          this.screenshotWindow.show();
-          this.screenshotWindow.focus();
+    // 只注册一次 screenshot-image-ready 监听器
+    if (!this._screenshotReadyListenerRegistered) {
+      ipcMain.on("screenshot-image-ready", () => {
+        if (this.screenshotWindow && !this.screenshotWindow.isDestroyed()) {
+          if (!this.screenshotWindow.isVisible()) {
+            this.screenshotWindow.show();
+            this.screenshotWindow.focus();
+          }
         }
-      }
-    });
+      });
+      this._screenshotReadyListenerRegistered = true;
+    }
 
     this.screenshotWindow.webContents.on(
       "did-fail-load",
