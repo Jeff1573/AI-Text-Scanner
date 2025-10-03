@@ -18,6 +18,9 @@
     "setup:builder": "node scripts/setup-electron-builder.js",
     "analyze:size": "node scripts/analyze-size.js",
     "optimize": "node scripts/optimize.js",
+    "icons:a": "node scripts/generate-icons.js a",
+    "icons:b": "node scripts/generate-icons.js b",
+    "icons:c": "node scripts/generate-icons.js c",
     "debug:paths": "node scripts/debug-paths.js",
     "test:update": "node scripts/test-update.js",
     "dist": "npm run build && electron-builder",
@@ -51,6 +54,8 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.34.4",
     "terser": "^5.43.1",
     "typescript": "~4.5.4",
     "vite": "^5.4.19"

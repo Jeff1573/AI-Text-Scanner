@@ -1,0 +1,34 @@
+<!--
+  文件：app-icon-b.svg
+  概念B：取景框角标 + 文本行（极简）
+-->
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5B7CFF"/>
+      <stop offset="100%" stop-color="#6E5AEF"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="url(#bg2)"/>
+
+  <!-- 取景框角标 -->
+  <g stroke="#EAF2FF" stroke-width="24" stroke-linecap="round" opacity="0.9">
+    <path d="M300 360 v-80 a40 40 0 0 1 40 -40 h80"/>
+    <path d="M724 360 v-80 a40 40 0 0 0 -40 -40 h-80"/>
+    <path d="M300 664 v80 a40 40 0 0 0 40 40 h80"/>
+    <path d="M724 664 v80 a40 40 0 0 1 -40 40 h-80"/>
+  </g>
+
+  <!-- 文本行 -->
+  <g transform="translate(256, 472)">
+    <rect x="0" y="0" width="512" height="24" rx="12" fill="#FFFFFF" opacity="0.9"/>
+    <rect x="0" y="44" width="420" height="22" rx="11" fill="#FFFFFF" opacity="0.7"/>
+    <rect x="0" y="86" width="300" height="22" rx="11" fill="#FFFFFF" opacity="0.55"/>
+  </g>
+
+  <!-- 扫描提示点 -->
+  <circle cx="768" cy="512" r="10" fill="#2EE6A6"/>
+</svg>
+
+

@@ -1,0 +1,49 @@
+<!--
+  文件：app-icon-a.svg
+  概念A：镜头 + 文本行 + 扫描线（默认蓝紫渐变）
+  说明：1024x1024 画板，适合导出为 1024 PNG 作为各平台图标基准。
+-->
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景：macOS 风格圆角超椭圆底板 -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6A5AE0"/>
+      <stop offset="100%" stop-color="#3A7BFA"/>
+    </linearGradient>
+    <radialGradient id="lensGlow" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#8BD3FF" stop-opacity="0.35"/>
+      <stop offset="60%" stop-color="#5B9EFF" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#2B4BAA" stop-opacity="0.05"/>
+    </radialGradient>
+    <linearGradient id="scan" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2EE6A6" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#2EE6A6" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#2EE6A6" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="url(#bg)"/>
+
+  <!-- 镜头外环 -->
+  <circle cx="512" cy="512" r="220" fill="url(#lensGlow)"/>
+  <circle cx="512" cy="512" r="190" fill="#0B1020" fill-opacity="0.55"/>
+  <circle cx="512" cy="512" r="160" fill="#0E1326"/>
+  <!-- 镜头高光与内圈 -->
+  <circle cx="512" cy="512" r="160" stroke="#7CC6FF" stroke-opacity="0.35" stroke-width="6" fill="none"/>
+  <circle cx="458" cy="468" r="24" fill="#9EE7FF" fill-opacity="0.9"/>
+
+  <!-- 扫描线 -->
+  <rect x="300" y="500" width="424" height="16" rx="8" fill="url(#scan)"/>
+
+  <!-- 文本行（抽象化） -->
+  <g transform="translate(250, 680)">
+    <rect x="0" y="0" width="520" height="22" rx="11" fill="#E6F2FF" fill-opacity="0.7"/>
+    <rect x="0" y="44" width="420" height="20" rx="10" fill="#E6F2FF" fill-opacity="0.55"/>
+    <rect x="0" y="86" width="280" height="20" rx="10" fill="#E6F2FF" fill-opacity="0.4"/>
+  </g>
+
+  <!-- 轻微顶端高光 -->
+  <rect x="120" y="120" width="784" height="140" rx="70" fill="#FFFFFF" opacity="0.06"/>
+</svg>
+
+

@@ -62,7 +62,8 @@ const config = {
   asar: true,
 
   // 通用图标配置 (electron-builder会自动根据平台选择正确的扩展名)
-  icon: "main/static/icons8-camera-256",
+  // 生成的图标将输出到 build/icons 下；若存在则优先使用新图标
+  icon: "build/icons/app-icon",
 
   // 注意: electronFuses 在 electron-builder 24.13.3 中不支持
   // 可以考虑升级到更新版本或使用 afterPack 钩子手动配置
@@ -75,7 +76,7 @@ const config = {
         arch: ["x64"], // 只构建 x64，减少一半大小
       },
     ],
-    icon: "main/static/icons8-camera-256.ico",
+    icon: "build/icons/app-icon.ico",
     publisherName: "AI Text Scanner",
     verifyUpdateCodeSignature: false,
     // 强制使用统一的文件名格式（使用短横线替代空格）
@@ -103,15 +104,11 @@ const config = {
   mac: {
     target: [
       {
-        target: "zip",
-        arch: ["x64", "arm64"],
-      },
-      {
         target: "dmg",
         arch: ["x64", "arm64"],
       },
     ],
-    icon: "main/static/icons8-camera-256.icns",
+    icon: "build/icons/app-icon.icns",
     category: "public.app-category.productivity",
     hardenedRuntime: true,
     gatekeeperAssess: false,
@@ -158,7 +155,7 @@ const config = {
         arch: ["x64"],
       },
     ],
-    icon: "main/static/icons8-camera-256.png",
+    icon: "build/icons/icon_512.png",
     category: "Office",
     desktop: {
       Name: "AI Text Scanner",

@@ -1,0 +1,40 @@
+<!--
+  文件：app-icon-c.svg
+  概念C：镜头 + 星芒（AI 灵感） + 少量文本线
+-->
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3F7DF7"/>
+      <stop offset="100%" stop-color="#7A56E3"/>
+    </linearGradient>
+    <radialGradient id="glow3" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#8BD3FF" stop-opacity="0.35"/>
+      <stop offset="70%" stop-color="#5B9EFF" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#2B4BAA" stop-opacity="0.05"/>
+    </radialGradient>
+  </defs>
+
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="url(#bg3)"/>
+
+  <!-- 镜头主体 -->
+  <circle cx="512" cy="470" r="176" fill="url(#glow3)"/>
+  <circle cx="512" cy="470" r="148" fill="#10192B"/>
+  <circle cx="512" cy="470" r="148" stroke="#86C7FF" stroke-opacity="0.35" stroke-width="6" fill="none"/>
+
+  <!-- 星芒（AI 灵感） -->
+  <g fill="#FFFFFF" opacity="0.9" transform="translate(512,470)">
+    <path d="M0 -46 L8 -8 L46 0 L8 8 L0 46 L-8 8 L-46 0 L-8 -8 Z"/>
+  </g>
+
+  <!-- 文本线 -->
+  <g transform="translate(262, 690)">
+    <rect x="0" y="0" width="500" height="22" rx="11" fill="#EAF2FF" opacity="0.85"/>
+    <rect x="0" y="42" width="360" height="20" rx="10" fill="#EAF2FF" opacity="0.65"/>
+  </g>
+
+  <!-- 顶部柔光 -->
+  <rect x="120" y="120" width="784" height="130" rx="65" fill="#FFFFFF" opacity="0.06"/>
+</svg>
+
+

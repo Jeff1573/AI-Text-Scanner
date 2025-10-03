@@ -1,5 +1,6 @@
-import { app, BrowserWindow } from "electron";
+import { app, nativeImage } from "electron";
 import started from "electron-squirrel-startup";
+import path from "node:path";
 import { WindowManager } from "./managers/windowManager";
 import { ConfigManager } from "./managers/configManager";
 import { HotkeyManager } from "./managers/hotkeyManager";
@@ -7,6 +8,7 @@ import { TrayManager } from "./managers/trayManager";
 import { UpdateManager } from "./managers/updateManager";
 import { IPCHandlers } from "./managers/ipcHandlers";
 import { createModuleLogger } from "./utils/logger";
+import { getDockIconPath } from "./utils/iconUtils";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -23,6 +25,38 @@ let ipcHandlers: IPCHandlers;
 
 // 创建主进程日志器
 const logger = createModuleLogger("Main");
+
+// macOS 提前设置应用名，避免 Dock 显示 Electron（在 ready 之前调用更稳妥）
+if (process.platform === "darwin") {
+  try { app.setName("AI Text Scanner"); } catch (e) { /* ignore */ }
+}
+
+/**
+ * 在 macOS 上设置 Dock 图标与应用名。
+ * 在开发模式下可能需要多次调用以确保生效。
+ */
+function setMacDockIconIfPossible(): void {
+  if (process.platform !== "darwin") return;
+  try {
+    try { app.setName("AI Text Scanner"); } catch (e) { /* ignore */ }
+    const candidates: string[] = [];
+    const dockPath = getDockIconPath();
+    if (dockPath) candidates.push(dockPath);
+    const pngFallback = path.join(process.cwd(), "build/icons/icon_512.png");
+    if (!candidates.includes(pngFallback)) candidates.push(pngFallback);
+
+    for (const p of candidates) {
+      const img = nativeImage.createFromPath(p);
+      if (!img.isEmpty()) {
+        app.dock.setIcon(img);
+        logger.info("已设置 Dock 图标", { path: p });
+        break;
+      }
+    }
+  } catch (e) {
+    logger.warn("设置 Dock 图标失败", { error: (e as Error).message });
+  }
+}
 
 // 单实例锁，防止重复启动
 const gotTheLock = app.requestSingleInstanceLock();
@@ -71,6 +105,14 @@ app.on("ready", () => {
     initializeManagers();
     logger.info("管理器初始化完成");
 
+    // 设置 macOS 应用名与 Dock 图标（开发/生产均尝试设置）
+    setMacDockIconIfPossible();
+    if (!app.isPackaged && process.platform === "darwin") {
+      // 开发模式下追加重试，规避偶发不刷新
+      setTimeout(() => setMacDockIconIfPossible(), 1000);
+      setTimeout(() => setMacDockIconIfPossible(), 3000);
+    }
+
     // 创建主窗口
     windowManager.createMainWindow();
     logger.info("主窗口创建完成");
@@ -98,8 +140,8 @@ app.on("ready", () => {
     logger.info("应用初始化完成");
   } catch (error) {
     logger.error("应用初始化失败", {
-      error: error.message,
-      stack: error.stack,
+      error: (error as Error).message,
+      stack: (error as Error).stack,
     });
     // 即使初始化失败，也不要退出应用，而是尝试基本功能
     try {
@@ -109,8 +151,8 @@ app.on("ready", () => {
       windowManager.createMainWindow();
     } catch (fallbackError) {
       logger.error("备用初始化也失败", {
-        error: fallbackError.message,
-        stack: fallbackError.stack,
+        error: (fallbackError as Error).message,
+        stack: (fallbackError as Error).stack,
       });
     }
   }
@@ -144,9 +186,16 @@ app.on("activate", () => {
       windowManager.createMainWindow();
     } catch (createError) {
       logger.error("激活时创建主窗口失败", {
-        error: createError.message,
-        stack: createError.stack,
+        error: (createError as Error).message,
+        stack: (createError as Error).stack,
       });
     }
   }
+  // 再次尝试设置 Dock 图标，防止开发模式下未生效
+  setMacDockIconIfPossible();
+});
+
+// 窗口创建时再设一次，进一步提高开发模式下生效概率
+app.on("browser-window-created", () => {
+  setMacDockIconIfPossible();
 });
