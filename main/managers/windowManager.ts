@@ -207,6 +207,12 @@ export class WindowManager {
         logger.info("页面加载完成");
       });
 
+      // 添加窗口关闭事件监听器
+      this.mainWindow.on("closed", () => {
+        logger.debug("主窗口已关闭");
+        this.mainWindow = null;
+      });
+
       logger.info("主窗口创建完成");
       return this.mainWindow;
     } catch (error) {
@@ -310,6 +316,20 @@ export class WindowManager {
 
     this.screenshotWindow.on("closed", () => {
       this.screenshotWindow = null;
+      
+      // 如果主窗口存在但被隐藏，并且没有其他窗口打开，重新显示主窗口
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        // 检查是否有其他窗口打开
+        const hasOtherWindows = 
+          (this.resultWindow && !this.resultWindow.isDestroyed()) ||
+          (this.htmlViewerWindow && !this.htmlViewerWindow.isDestroyed());
+        
+        if (!this.mainWindow.isVisible() && !hasOtherWindows) {
+          logger.debug("截图窗口关闭且无其他窗口，重新显示主窗口");
+          this.mainWindow.show();
+          this.mainWindow.focus();
+        }
+      }
     });
 
     return this.screenshotWindow;
@@ -401,6 +421,15 @@ export class WindowManager {
     this.resultWindow.on("closed", () => {
       logger.debug("结果窗口已关闭");
       this.resultWindow = null;
+      
+      // 如果主窗口存在但被隐藏，重新显示它
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        if (!this.mainWindow.isVisible()) {
+          logger.debug("结果窗口关闭后，重新显示主窗口");
+          this.mainWindow.show();
+          this.mainWindow.focus();
+        }
+      }
     });
   }
 
@@ -485,6 +514,15 @@ export class WindowManager {
     this.htmlViewerWindow.on("closed", () => {
       logger.debug("HTML查看器窗口已关闭");
       this.htmlViewerWindow = null;
+      
+      // 如果主窗口存在但被隐藏，重新显示它
+      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+        if (!this.mainWindow.isVisible()) {
+          // logger.debug("HTML查看器窗口关闭后，重新显示主窗口");
+          // this.mainWindow.show();
+          // this.mainWindow.focus();
+        }
+      }
     });
 
     // 开发者工具快捷键和ESC关闭窗口
@@ -510,13 +548,30 @@ export class WindowManager {
   }
 
   showMainWindow(): void {
+    // 检查主窗口是否存在且未被销毁
     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-      if (this.mainWindow.isVisible()) {
-        this.mainWindow.focus();
-      } else {
+      logger.debug("主窗口存在，准备显示", {
+        isVisible: this.mainWindow.isVisible(),
+        isMinimized: this.mainWindow.isMinimized()
+      });
+      
+      // 如果窗口最小化，先恢复
+      if (this.mainWindow.isMinimized()) {
+        this.mainWindow.restore();
+      }
+      
+      // 显示并聚焦窗口
+      if (!this.mainWindow.isVisible()) {
         this.mainWindow.show();
       }
+      this.mainWindow.focus();
     } else {
+      logger.debug("主窗口不存在或已销毁，创建新窗口", {
+        mainWindowExists: !!this.mainWindow,
+        isDestroyed: this.mainWindow ? this.mainWindow.isDestroyed() : "N/A"
+      });
+      // 清空引用（防止持有已销毁窗口的引用）
+      this.mainWindow = null;
       this.createMainWindow();
     }
   }
@@ -606,6 +661,17 @@ export class WindowManager {
       const win = BrowserWindow.fromWebContents(event.sender);
       if (win && !win.isDestroyed()) {
         win.close();
+      }
+    });
+
+    ipcMain.handle("window-hide", (event) => {
+      const win = BrowserWindow.fromWebContents(event.sender);
+      if (win && !win.isDestroyed()) {
+        logger.debug("隐藏窗口", { 
+          isVisible: win.isVisible(),
+          title: win.getTitle() 
+        });
+        win.hide();
       }
     });
 
