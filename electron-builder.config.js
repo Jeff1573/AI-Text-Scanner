@@ -76,7 +76,7 @@ const config = {
         arch: ["x64"], // 只构建 x64，减少一半大小
       },
     ],
-    icon: "build/icons/app-icon.ico",
+    icon: "main/static/icons8-camera-256.ico",
     publisherName: "AI Text Scanner",
     verifyUpdateCodeSignature: false,
     // 强制使用统一的文件名格式（使用短横线替代空格）
