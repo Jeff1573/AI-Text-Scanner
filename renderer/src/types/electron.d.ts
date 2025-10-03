@@ -106,6 +106,7 @@ export interface ElectronAPI {
   windowMinimize: () => Promise<void>;
   windowMaximize: () => Promise<void>;
   windowClose: () => Promise<void>;
+  getPlatform: () => Promise<string>;
   openResultWindow: (resultContent: string) => Promise<{ success: boolean; error?: string }>;
   onResultData: (callback: (data: string) => void) => void;
   removeResultDataListener: () => void;

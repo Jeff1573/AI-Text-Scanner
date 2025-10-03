@@ -114,6 +114,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   windowMinimize: () => ipcRenderer.invoke("window-minimize"),
   windowMaximize: () => ipcRenderer.invoke("window-maximize"),
   windowClose: () => ipcRenderer.invoke("window-close"),
+  
+  // 获取平台信息
+  getPlatform: () => ipcRenderer.invoke("get-platform"),
 
   // 新增：打开结果窗口
   openResultWindow: (resultContent: string) =>

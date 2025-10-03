@@ -87,11 +87,14 @@ export class WindowManager {
       const iconPath = getAppIconPath();
       logger.debug("图标路径", { iconPath });
 
-      this.mainWindow = new BrowserWindow({
+      // 根据平台设置不同的窗口配置
+      const isMac = process.platform === "darwin";
+      const windowConfig: Electron.BrowserWindowConstructorOptions = {
         width: 1100,
         height: 720,
+        show: true, // 主窗口启动时显示
+        center: true, // 居中显示
         frame: false,
-        titleBarStyle: "hidden",
         autoHideMenuBar: true,
         webPreferences: {
           preload: getPreloadPath(),
@@ -99,7 +102,18 @@ export class WindowManager {
           contextIsolation: true,
         },
         icon: getAppIconPath(),
-      });
+      };
+
+      // macOS 特定配置：保留原生红绿灯按钮
+      if (isMac) {
+        windowConfig.titleBarStyle = "hiddenInset";
+        windowConfig.trafficLightPosition = { x: 12, y: 12 };
+      } else {
+        // Windows/Linux：完全隐藏标题栏
+        windowConfig.titleBarStyle = "hidden";
+      }
+
+      this.mainWindow = new BrowserWindow(windowConfig);
 
       logger.info("主窗口创建成功", {
         preloadPath: getPreloadPath(),
@@ -212,7 +226,9 @@ export class WindowManager {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
 
-    this.screenshotWindow = new BrowserWindow({
+    // 截图窗口配置（全屏，无需标题栏）
+    const isMac = process.platform === "darwin";
+    const screenshotConfig: Electron.BrowserWindowConstructorOptions = {
       width,
       height,
       x: 0,
@@ -230,7 +246,17 @@ export class WindowManager {
         contextIsolation: true,
         backgroundThrottling: false,
       },
-    });
+    };
+
+    // macOS 全屏窗口配置
+    if (isMac) {
+      screenshotConfig.titleBarStyle = "hidden";
+      screenshotConfig.transparent = false;
+    } else {
+      screenshotConfig.titleBarStyle = "hidden";
+    }
+
+    this.screenshotWindow = new BrowserWindow(screenshotConfig);
 
     if (isDevelopment) {
       const url = `${VITE_DEV_SERVER_URL}#/screenshot`;
@@ -314,9 +340,14 @@ export class WindowManager {
       this.resultWindow.destroy();
     }
 
-    this.resultWindow = new BrowserWindow({
+    // 根据平台设置窗口配置
+    const isMac = process.platform === "darwin";
+    const windowConfig: Electron.BrowserWindowConstructorOptions = {
       width: 980,
       height: 640,
+      show: false, // 防止窗口在准备好之前显示
+      center: true, // 居中显示
+      resizable: true, // 允许调整大小
       alwaysOnTop: true,
       autoHideMenuBar: true,
       icon: getAppIconPath(),
@@ -326,8 +357,16 @@ export class WindowManager {
         contextIsolation: true,
       },
       frame: false,
-      titleBarStyle: "hidden",
-    });
+    };
+
+    if (isMac) {
+      windowConfig.titleBarStyle = "hiddenInset";
+      windowConfig.trafficLightPosition = { x: 12, y: 12 };
+    } else {
+      windowConfig.titleBarStyle = "hidden";
+    }
+
+    this.resultWindow = new BrowserWindow(windowConfig);
 
     if (isDevelopment) {
       this.resultWindow.loadURL(`${VITE_DEV_SERVER_URL}#/result`);
@@ -348,7 +387,9 @@ export class WindowManager {
     this.resultWindow.on("ready-to-show", () => {
       logger.info("结果窗口加载完成");
 
-      if (this.resultWindow) {
+      if (this.resultWindow && !this.resultWindow.isDestroyed()) {
+        this.resultWindow.show(); // 显示窗口
+        this.resultWindow.focus(); // 聚焦窗口
         const dataToSend =
           typeof resultContent === "string"
             ? JSON.stringify({ original: resultContent })
@@ -372,9 +413,14 @@ export class WindowManager {
       this.htmlViewerWindow.destroy();
     }
 
-    this.htmlViewerWindow = new BrowserWindow({
+    // 根据平台设置窗口配置
+    const isMac = process.platform === "darwin";
+    const windowConfig: Electron.BrowserWindowConstructorOptions = {
       width: 820,
       height: 500,
+      show: false, // 防止窗口在准备好之前显示
+      center: true, // 居中显示
+      resizable: true, // 允许调整大小
       alwaysOnTop: true,
       autoHideMenuBar: true,
       icon: getAppIconPath(),
@@ -384,8 +430,16 @@ export class WindowManager {
         contextIsolation: true,
       },
       frame: false,
-      titleBarStyle: "hidden",
-    });
+    };
+
+    if (isMac) {
+      windowConfig.titleBarStyle = "hiddenInset";
+      windowConfig.trafficLightPosition = { x: 12, y: 12 };
+    } else {
+      windowConfig.titleBarStyle = "hidden";
+    }
+
+    this.htmlViewerWindow = new BrowserWindow(windowConfig);
 
     // 加载HTML内容
     // 加载页面
@@ -553,6 +607,10 @@ export class WindowManager {
       if (win && !win.isDestroyed()) {
         win.close();
       }
+    });
+
+    ipcMain.handle("get-platform", () => {
+      return process.platform;
     });
 
     ipcMain.handle("hide-to-tray", (event) => {

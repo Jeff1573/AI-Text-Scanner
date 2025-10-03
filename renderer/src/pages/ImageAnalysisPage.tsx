@@ -282,10 +282,10 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
     <Flex
       gap={10}
       vertical
-      style={{ height: "100vh", padding: 10, paddingTop: 60, overflow: "hidden" }}
+      style={{ height: "100vh", padding: 10, paddingTop: 50, overflow: "hidden" }}
     >
       <TitleBar />
-      <Row gutter={16} style={{ flex: 1, minHeight: 0, maxHeight: "calc(100vh - 60px)" }}>
+      <Row gutter={16} style={{ flex: 1, minHeight: 0, maxHeight: "calc(100vh - 50px)" }}>
         <Col span={12} style={{ display: "flex", flexDirection: "column", minHeight: 0, maxHeight: "100%" }}>
           <Card
             title="选中区域图片"
