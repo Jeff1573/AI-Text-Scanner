@@ -421,15 +421,7 @@ export class WindowManager {
     this.resultWindow.on("closed", () => {
       logger.debug("结果窗口已关闭");
       this.resultWindow = null;
-      
-      // 如果主窗口存在但被隐藏，重新显示它
-      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-        if (!this.mainWindow.isVisible()) {
-          logger.debug("结果窗口关闭后，重新显示主窗口");
-          this.mainWindow.show();
-          this.mainWindow.focus();
-        }
-      }
+      // 不再自动显示主窗口，改为由用户通过 Dock 或托盘手动唤起
     });
   }
 

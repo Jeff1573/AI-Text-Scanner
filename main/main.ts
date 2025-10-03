@@ -133,9 +133,20 @@ app.on("will-quit", () => {
 });
 
 app.on("activate", () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    windowManager.createMainWindow();
+  // macOS: 点击 Dock 图标时，显示已存在的主窗口；若不存在则创建
+  try {
+    windowManager.showMainWindow();
+  } catch (_err) {
+    try {
+      if (!windowManager) {
+        windowManager = new WindowManager();
+      }
+      windowManager.createMainWindow();
+    } catch (createError) {
+      logger.error("激活时创建主窗口失败", {
+        error: createError.message,
+        stack: createError.stack,
+      });
+    }
   }
 });
