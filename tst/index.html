@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>员工表彰墙贴 - 塔斯汀风格（A4）</title>
+  <!--
+  使用方法：
+  1) 直接在浏览器打开本文件即可预览；Ctrl/Cmd+P 即可以 A4 纸张打印/导出 PDF。
+  2) 修改下方“数据区”的姓名、部门、月份、公司名，以及三位月度之星的头像（建议正方形）。
+  3) 如果不需要照片，将 .star .avatar 整块删除即可，布局会自动适配。
+  -->
+  <style>
+    :root {
+      /* 塔斯汀风：明快番茄红 + 奶油白 + 芥末黄 */
+      --red-900: #b71c1c;
+      --red-700: #e53935;
+      --red-500: #f44336;
+      --cream:   #fff8e1;
+      --mustard: #ffd54f;
+      --brown:   #6d4c41;
+      --ink:     #222;
+      --shadow:  rgba(0,0,0,.15);
+    }
+
+    /* 屏幕预览时给出 A4 可视画布；打印时用 @page 控制 */
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(1200px 800px at 100% 0%, rgba(255,255,255,.08), transparent 60%),
+        radial-gradient(900px 700px at 0% 100%, rgba(255,255,255,.06), transparent 60%),
+        var(--red-700);
+      font-family: "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .poster {
+      width: 794px;   /* A4 @ 96dpi ≈ 794×1123 */
+      height: 1123px;
+      background:
+        linear-gradient(180deg, var(--red-500), var(--red-700) 60%, var(--red-900)),
+        var(--red-700);
+      border-radius: 18px;
+      box-shadow: 0 14px 40px var(--shadow);
+      position: relative;
+      overflow: hidden;
+      color: #fff;
+    }
+
+    /* 装饰：丝带与小星星 */
+    .poster::before,
+    .poster::after {
+      content: "";
+      position: absolute;
+      inset: -40px -40px auto auto;
+      width: 400px; height: 200px;
+      background: radial-gradient(220px 120px at 100% 0%, rgba(255,213,79,.35), transparent 70%);
+      transform: rotate(-12deg);
+      pointer-events: none;
+    }
+    .poster::after {
+      inset: auto auto -60px -60px;
+      transform: rotate(8deg);
+    }
+
+    .header {
+      text-align: center;
+      padding: 26px 32px 12px;
+    }
+    .title {
+      font-size: 44px;
+      line-height: 1.1;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: var(--cream);
+      text-shadow: 0 3px 0 rgba(0,0,0,.08);
+    }
+    .subtitle {
+      margin-top: 8px;
+      font-size: 16px;
+      color: #ffe9a6;
+      letter-spacing: .2em;
+    }
+
+    .badge-star {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      background: linear-gradient(180deg, #ffe38a, var(--mustard));
+      color: #7a4a00;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      box-shadow: 0 3px 0 rgba(0,0,0,.15);
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr; /* 左主右次 */
+      gap: 18px;
+      padding: 12px 22px 18px;
+    }
+
+    .panel {
+      background: rgba(255,255,255,.08);
+      border: 1.5px solid rgba(255,255,255,.18);
+      border-radius: 16px;
+      padding: 16px;
+      backdrop-filter: blur(1px);
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 22px;
+      color: var(--mustard);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* 月度之星 */
+    .stars { display: grid; gap: 12px; }
+    .star {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 12px;
+      align-items: center;
+      background: rgba(255,255,255,.12);
+      border: 1px dashed rgba(255,255,255,.26);
+      border-radius: 14px;
+      padding: 10px;
+      position: relative;
+    }
+    .star::after{ /* 贴纸效果 */
+      content: "🍔";
+      position: absolute; right: 10px; top: -12px;
+      font-size: 22px;
+      transform: rotate(12deg);
+      filter: drop-shadow(0 2px 0 rgba(0,0,0,.2));
+    }
+    .avatar {
+      width: 92px; height: 92px; border-radius: 50%;
+      background: #fff center/cover no-repeat;
+      border: 3px solid var(--mustard);
+      box-shadow: 0 3px 0 rgba(0,0,0,.2);
+    }
+    .star .info .name {
+      font-size: 20px; font-weight: 900; color: #fff;
+    }
+    .star .info .dept { color: #ffe9a6; font-weight: 600; margin-top: 2px; }
+    .star .info .quote { color: #fff; opacity:.95; margin-top: 6px; font-size: 14px; }
+
+    /* 参评员工（15名） */
+    .list-wrap { display: grid; gap: 10px; }
+    .tip { color: #ffe9a6; font-size: 13px; }
+    .chips {
+      display: grid;
+      grid-template-columns: 1fr 1fr; /* 两列 */
+      gap: 10px;
+    }
+    .chip {
+      background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.06));
+      border: 1px solid rgba(255,255,255,.28);
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-weight: 800;
+      text-align: center;
+      position: relative;
+    }
+    .chip::before{ /* 小星星点缀 */
+      content: "⭐";
+      position: absolute; left: 8px; top: -8px; font-size: 14px;
+      transform: rotate(-12deg);
+    }
+
+    /* 页脚 */
+    .footer {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      padding: 10px 20px 18px;
+      display: flex; justify-content: space-between; align-items: center;
+      color: #ffefc2;
+      font-weight: 700;
+    }
+    .footer .stamp{
+      background: rgba(0,0,0,.16);
+      padding: 6px 10px; border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.25);
+    }
+
+    /* 打印适配 */
+    @page { size: A4 portrait; margin: 10mm; }
+    @media print {
+      body { background: none; padding: 0; }
+      .poster {
+        width: auto; height: auto; box-shadow: none; border-radius: 0;
+      }
+      .chip::before, .star::after { filter: none; }
+    }
+
+    /* 窄屏（手机）预览友好 */
+    @media (max-width: 860px){ .poster{ width: 94vw; height: auto; }
+      .content{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="poster" role="document" aria-label="员工表彰墙贴">
+    <!-- 顶部标题 -->
+    <header class="header">
+      <div class="badge-star" aria-hidden>⭐ 本月荣耀时刻</div>
+      <h1 class="title">本月最闪亮的小伙伴 ✨</h1>
+      <p class="subtitle">做更好的自己 · 赢最棒的奖 · Keep it crunchy!</p>
+    </header>
+
+    <!-- 内容区：左主右次 -->
+    <section class="content">
+      <!-- 月度之星（左） -->
+      <section class="panel">
+        <h2>🍔 月度之星</h2>
+        <div class="stars">
+          <!-- Star 1 -->
+          <article class="star">
+            <div class="avatar" style="background-image:url('https://picsum.photos/seed/a/300');" aria-label="张伟头像"></div>
+            <div class="info">
+              <div class="name">张伟 <span class="dept">｜市场部</span></div>
+              <div class="quote">冲冲冲！销量王 · 用热爱点燃每一单</div>
+            </div>
+          </article>
+          <!-- Star 2 -->
+          <article class="star">
+            <div class="avatar" style="background-image:url('https://picsum.photos/seed/b/300');" aria-label="李娜头像"></div>
+            <div class="info">
+              <div class="name">李娜 <span class="dept">｜技术部</span></div>
+              <div class="quote">Bug克星小达人 · 代码也能很可口</div>
+            </div>
+          </article>
+          <!-- Star 3 -->
+          <article class="star">
+            <div class="avatar" style="background-image:url('https://picsum.photos/seed/c/300');" aria-label="王强头像"></div>
+            <div class="info">
+              <div class="name">王强 <span class="dept">｜客服部</span></div>
+              <div class="quote">贴心笑脸暖心人 · 服务总能多一点</div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 参评员工（右） -->
+      <aside class="panel">
+        <h2>👏 参与评选的小伙伴</h2>
+        <div class="list-wrap">
+          <div class="tip">人气TOP你 pick 了吗？</div>
+          <div class="chips" aria-label="参评员工名单">
+            <!-- 15名；按需替换姓名 -->
+            <div class="chip">陈晨</div>
+            <div class="chip">刘洋</div>
+            <div class="chip">高俊</div>
+            <div class="chip">黄梅</div>
+            <div class="chip">赵婷</div>
+            <div class="chip">孙浩</div>
+            <div class="chip">周丽</div>
+            <div class="chip">郭凯</div>
+            <div class="chip">韩磊</div>
+            <div class="chip">马超</div>
+            <div class="chip">唐颖</div>
+            <div class="chip">蔡杰</div>
+            <div class="chip">郑晨</div>
+            <div class="chip">姜嘉</div>
+            <div class="chip">林雪</div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+      <div>Niceto 人力资源部 · 2025年9月</div>
+      <div class="stamp">🍟 表彰 · 开心加倍</div>
+    </footer>
+  </main>
+</body>
+</html>
