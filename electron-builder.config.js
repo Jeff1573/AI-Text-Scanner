@@ -105,7 +105,7 @@ const config = {
     target: [
       {
         target: "dmg",
-        arch: ["x64", "arm64"],
+        arch: ["arm64"], // 仅构建 arm64，减少构建时间与产物大小
       },
     ],
     icon: "build/icons/app-icon.icns",

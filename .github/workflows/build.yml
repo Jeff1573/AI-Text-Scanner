@@ -33,10 +33,14 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [windows-latest, macos-latest]
         include:
           - os: windows-latest
             platform: win
+            package_cmd: npm run package:win
+          - os: macos-latest
+            platform: mac
+            package_cmd: npm run package:mac
 
     runs-on: ${{ matrix.os }}
     
@@ -59,12 +63,12 @@ jobs:
       # 构建应用包 (在推送标签、主分支或手动触发时)
       - name: Package application
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-        run: npm run package:win
+        run: ${{ matrix.package_cmd }}
         env:
           # GitHub Token for publishing
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # # 禁用代码签名 (CI环境)
-          # CSC_IDENTITY_AUTO_DISCOVERY: false
+          # 禁用代码签名 (CI环境)
+          CSC_IDENTITY_AUTO_DISCOVERY: false
           # # Windows代码签名 (如果有的话)
           # WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           # WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
@@ -168,6 +172,12 @@ jobs:
           name: app-win
           path: artifacts/windows/
 
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: app-mac
+          path: artifacts/macos/
+
       - name: Debug information
         run: |
           echo "Debug Information:"
@@ -180,12 +190,17 @@ jobs:
           cat release_notes.md
           echo "\nArtifacts Directory Structure:"
           ls -la artifacts/ || echo "No artifacts directory"
-          find artifacts/ -type f -name "*.exe" | head -10
-          find artifacts/ -type f -name "*.blockmap" | head -10
-          find artifacts/ -type f -name "*.yml" | head -10
+          echo "\nWindows artifacts:"
+          find artifacts/windows/ -type f -name "*.exe" | head -10
+          find artifacts/windows/ -type f -name "*.blockmap" | head -10
+          find artifacts/windows/ -type f -name "*.yml" | head -10
           echo "\nSpecific exe files found:"
-          find artifacts/ -name "*Setup*.exe" || echo "No Setup exe files found"
-          find artifacts/ -name "*.exe" | grep -v "win-unpacked" || echo "No exe files (excluding unpacked)"
+          find artifacts/windows/ -name "*Setup*.exe" || echo "No Setup exe files found"
+          find artifacts/windows/ -name "*.exe" | grep -v "win-unpacked" || echo "No exe files (excluding unpacked)"
+          echo "\nmacOS artifacts:"
+          find artifacts/macos/ -type f -name "*.dmg" | head -10
+          find artifacts/macos/ -type f -name "*.blockmap" | head -10
+          find artifacts/macos/ -type f -name "*.yml" | head -10
 
       - name: Create Release with changelog
         uses: softprops/action-gh-release@v2
@@ -197,6 +212,10 @@ jobs:
             artifacts/windows/*.blockmap
             artifacts/windows/latest.yml
             artifacts/windows/builder-debug.yml
+            artifacts/macos/*.dmg
+            artifacts/macos/*.blockmap
+            artifacts/macos/latest-mac.yml
+            artifacts/macos/builder-debug.yml
           body_path: release_notes.md
           draft: false
           prerelease: false
