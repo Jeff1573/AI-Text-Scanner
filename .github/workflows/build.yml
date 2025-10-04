@@ -212,6 +212,7 @@ jobs:
             artifacts/windows/*.blockmap
             artifacts/windows/latest.yml
             artifacts/macos/*.dmg
+            artifacts/macos/*.zip
             artifacts/macos/*.blockmap
             artifacts/macos/latest-mac.yml
           body_path: release_notes.md

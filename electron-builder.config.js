@@ -107,6 +107,11 @@ const config = {
         target: "dmg",
         arch: ["arm64"], // 仅构建 arm64，减少构建时间与产物大小
       },
+      {
+        // 为自动更新提供 zip 包（electron-updater on mac 需要 zip）
+        target: "zip",
+        arch: ["arm64"],
+      },
     ],
     icon: "build/icons/app-icon.icns",
     category: "public.app-category.productivity",
@@ -114,6 +119,8 @@ const config = {
     gatekeeperAssess: false,
     entitlements: "build/entitlements.mac.plist",
     entitlementsInherit: "build/entitlements.mac.plist",
+    // 统一 Mac 产物文件名，避免空格被替换为点导致 latest-mac.yml 与资源不一致
+    artifactName: "AI-Text-Scanner-${version}-${arch}.${ext}",
   },
 
   // DMG 配置
