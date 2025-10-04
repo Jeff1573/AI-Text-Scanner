@@ -211,11 +211,9 @@ jobs:
             artifacts/windows/*Setup*.exe
             artifacts/windows/*.blockmap
             artifacts/windows/latest.yml
-            artifacts/windows/builder-debug.yml
             artifacts/macos/*.dmg
             artifacts/macos/*.blockmap
             artifacts/macos/latest-mac.yml
-            artifacts/macos/builder-debug.yml
           body_path: release_notes.md
           draft: false
           prerelease: false
