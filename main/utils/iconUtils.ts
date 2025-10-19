@@ -85,8 +85,8 @@ export function getTrayIconPath(): string {
     // 系统会自动缩放到托盘尺寸，大尺寸缩小比小尺寸放大更清晰
     candidates.push(
       // path.join(cwd, "build/icons/icon_16.png"),
+      // path.join(cwd, "build/icons/app-icon-b.svg"),
       path.join(cwd, "build/icons/icon_24.png"),
-      // path.join(cwd, "build/icons/icon_32.png"),
     );
   } else if (platform === "win32") {
     // Windows 托盘图标
