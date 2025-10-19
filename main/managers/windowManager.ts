@@ -10,6 +10,7 @@ import path from "node:path";
 import fs from "node:fs";
 import type { ScreenSource } from "../types";
 import { ScreenshotService } from "../services/screenshotService";
+import { NativeScreenshotService } from "../services/nativeScreenshotService";
 import { createModuleLogger } from "../utils/logger";
 import { getAppIconPath } from "../utils/iconUtils";
 
@@ -585,6 +586,63 @@ export class WindowManager {
       }
     });
 
+    // 原生交互式截图（新方案）
+    ipcMain.handle("capture-screen-native", async () => {
+      try {
+        logger.info("启动原生截图模式");
+        
+        // 检查是否支持原生截图
+        const isAvailable = await NativeScreenshotService.isAvailable();
+        if (!isAvailable) {
+          return {
+            success: false,
+            error: "系统不支持原生截图功能",
+            errorCode: "NOT_SUPPORTED",
+          };
+        }
+
+        // 使用原生截图工具（会弹出系统截图界面）
+        const filepath = await NativeScreenshotService.captureInteractive();
+        
+        // 读取截图并转换为 data URL
+        const dataURL = await NativeScreenshotService.readScreenshotAsDataURL(filepath);
+        
+        // 清理临时文件
+        NativeScreenshotService.cleanupScreenshot(filepath);
+
+        logger.info("原生截图完成，创建 ScreenshotViewer 窗口");
+
+        // 创建截图数据对象（符合 ScreenSource 接口）
+        const screenshotData: ScreenSource = {
+          id: `native-screenshot-${Date.now()}`,
+          name: "Native Screenshot",
+          thumbnail: dataURL,
+        };
+
+        // 创建 ScreenshotViewer 窗口并传递截图数据
+        this.createScreenshotWindow(screenshotData);
+
+        return {
+          success: true,
+          // 不返回 imageData，因为我们直接打开了 ScreenshotViewer
+        };
+      } catch (error) {
+        const err = error as Error;
+        logger.error("原生截图失败", { 
+          error: err.message,
+        });
+
+        return {
+          success: false,
+          error: err.message.includes("取消") 
+            ? "已取消截图" 
+            : `截图失败: ${err.message}`,
+          errorCode: err.message.includes("取消") ? "USER_CANCELLED" : "SCREENSHOT_FAILED",
+        };
+      }
+    });
+
+    // 原有的截图方法（使用 desktopCapturer）
     ipcMain.handle("capture-screen", async () => {
       try {
         await this.hideAllWindows();
@@ -604,6 +662,10 @@ export class WindowManager {
         if (this.mainWindow && !this.mainWindow.isDestroyed()) {
           this.mainWindow.show();
         }
+
+        logger.error("截图失败", { 
+          error: error instanceof Error ? error.message : "未知错误"
+        });
 
         return {
           success: false,

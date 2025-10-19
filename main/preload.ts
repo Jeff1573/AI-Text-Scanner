@@ -47,9 +47,13 @@ interface TranslateRequest {
 
 // 暴露安全的API给渲染进程
 contextBridge.exposeInMainWorld("electronAPI", {
-  // 获取屏幕截图
+  // 获取屏幕截图（使用 Electron desktopCapturer）
   captureScreen: (options: Record<string, unknown> = {}) =>
     ipcRenderer.invoke("capture-screen", options),
+
+  // 原生截图（使用 macOS screencapture 命令）
+  captureScreenNative: () =>
+    ipcRenderer.invoke("capture-screen-native"),
 
   // 创建截图展示窗口
   createScreenshotWindow: (screenshotData: {

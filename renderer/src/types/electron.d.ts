@@ -74,6 +74,11 @@ export interface ElectronAPI {
     }>;
     error?: string;
   }>;
+  captureScreenNative: () => Promise<{
+    success: boolean;
+    error?: string;
+    errorCode?: string;
+  }>;
   createScreenshotWindow: (screenshotData: ScreenSource) => Promise<{
     success: boolean;
     error?: string;

@@ -16,12 +16,14 @@ export const HomePage = () => {
     clearSelectedImage,
   } = useMainAppState();
 
-  const { handleCaptureScreen } = useMainAppLogic();
+  const { handleCaptureScreenNative } = useMainAppLogic();
 
   useMainAppEffects(setSelectedImage, setSelectedImageInfo);
 
   const onCapture = () => {
-    handleCaptureScreen(setIsCapturing);
+    // 使用原生截图（更可靠的方案）
+    // 截图完成后会自动打开 ScreenshotViewer 窗口，用户在那里选择区域和操作
+    handleCaptureScreenNative(setIsCapturing);
   };
 
   return (

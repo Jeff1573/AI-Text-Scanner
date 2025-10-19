@@ -33,35 +33,49 @@ export class ScreenshotService {
   static async captureScreen(): Promise<ScreenSource> {
     const thumbnailSize = this.calculateThumbnailSize();
     
-    const sources = await desktopCapturer.getSources({
-      types: ["screen"],
-      thumbnailSize,
-    });
+    try {
+      const sources = await desktopCapturer.getSources({
+        types: ["screen", "window"],
+        thumbnailSize,
+      });
 
-    if (sources.length === 0) {
-      throw new Error("没有找到可用的屏幕");
+      if (sources.length === 0) {
+        throw new Error("没有找到可用的屏幕");
+      }
+
+      logger.info("截图成功");
+      
+      return {
+        id: sources[0].id,
+        name: sources[0].name,
+        thumbnail: sources[0].thumbnail.toDataURL(),
+      };
+    } catch (error) {
+      logger.error("截图失败", { error });
+      throw error;
     }
-
-    return {
-      id: sources[0].id,
-      name: sources[0].name,
-      thumbnail: sources[0].thumbnail.toDataURL(),
-    };
   }
 
   static async captureAllScreens(): Promise<ScreenSource[]> {
     const thumbnailSize = this.calculateThumbnailSize();
     
-    const sources = await desktopCapturer.getSources({
-      types: ["screen"],
-      thumbnailSize,
-    });
+    try {
+      const sources = await desktopCapturer.getSources({
+        types: ["screen"],
+        thumbnailSize,
+      });
 
-    return sources.map((source) => ({
-      id: source.id,
-      name: source.name,
-      thumbnail: source.thumbnail.toDataURL(),
-    }));
+      logger.info("截取所有屏幕成功", { count: sources.length });
+
+      return sources.map((source) => ({
+        id: source.id,
+        name: source.name,
+        thumbnail: source.thumbnail.toDataURL(),
+      }));
+    } catch (error) {
+      logger.error("截取所有屏幕失败", { error });
+      throw error;
+    }
   }
 
   /**
