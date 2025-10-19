@@ -5,6 +5,7 @@ import { SettingsPage } from "../pages/SettingsPage";
 import { ScreenshotViewer } from "../components";
 import { ResultPage } from "../pages/ResultPage";
 import { ImageAnalysisPage } from "../pages/ImageAnalysisPage";
+import { ScreenshotPreviewPage } from "../pages/ScreenshotPreviewPage";
 
 export const router = createHashRouter([
   {
@@ -24,6 +25,10 @@ export const router = createHashRouter([
   {
     path: "screenshot",
     element: <ScreenshotViewer />,
+  },
+  {
+    path: "screenshot-preview",
+    element: <ScreenshotPreviewPage />,
   },
   {
     path: "result",

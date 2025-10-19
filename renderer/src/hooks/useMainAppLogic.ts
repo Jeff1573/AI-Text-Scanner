@@ -10,7 +10,7 @@ export const useMainAppLogic = () => {
    * 使用原生系统截图（推荐方案）
    * 
    * 使用 macOS 系统的 screencapture 工具，权限更简单，更可靠。
-   * 截图完成后，会自动打开 ScreenshotViewer 窗口供用户选择区域。
+   * 用户在系统界面选择区域后，会弹出预览窗口显示截图和操作工具栏。
    * 
    * @param {Function} setIsCapturing - 设置截图状态的函数
    */
@@ -23,8 +23,8 @@ export const useMainAppLogic = () => {
       const result = await window.electronAPI.captureScreenNative();
 
       if (result.success) {
-        console.log("原生截图成功，ScreenshotViewer 窗口已打开");
-        // 截图窗口会自动打开，用户可以在那里选择区域
+        console.log("原生截图成功，预览窗口已打开");
+        // 预览窗口会自动打开
       } else if (result.errorCode === "USER_CANCELLED") {
         // 用户取消截图，不显示错误
         console.log("用户取消截图");

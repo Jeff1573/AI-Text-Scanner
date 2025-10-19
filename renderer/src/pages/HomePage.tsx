@@ -22,7 +22,7 @@ export const HomePage = () => {
 
   const onCapture = () => {
     // 使用原生截图（更可靠的方案）
-    // 截图完成后会自动打开 ScreenshotViewer 窗口，用户在那里选择区域和操作
+    // 用户在系统界面选择区域后，会弹出预览窗口
     handleCaptureScreenNative(setIsCapturing);
   };
 

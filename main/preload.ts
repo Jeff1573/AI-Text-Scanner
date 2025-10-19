@@ -86,6 +86,27 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.removeAllListeners("screenshot-data");
   },
 
+  // 监听截图预览数据
+  onScreenshotPreviewData: (callback: (data: string) => void) => {
+    logger.debug("注册截图预览数据监听器");
+    ipcRenderer.on("screenshot-preview-data", (event, data) => {
+      try {
+        callback(data);
+      } catch (error) {
+        logger.error("回调函数执行失败", { error });
+      }
+    });
+  },
+
+  // 移除截图预览数据监听器
+  removeScreenshotPreviewDataListener: () => {
+    ipcRenderer.removeAllListeners("screenshot-preview-data");
+  },
+
+  // 打开主窗口并导航到指定路由
+  openMainWindowWithRoute: (route: string) =>
+    ipcRenderer.invoke("open-main-window-with-route", route),
+
   // 保存配置
   saveConfig: (config: SettingsConfig) =>
     ipcRenderer.invoke("save-config", config),

@@ -60,6 +60,7 @@ function getPreloadPath(): string {
 export class WindowManager {
   private mainWindow: BrowserWindow | null = null;
   private screenshotWindow: BrowserWindow | null = null;
+  private screenshotPreviewWindow: BrowserWindow | null = null;
   private resultWindow: BrowserWindow | null = null;
   private htmlViewerWindow: BrowserWindow | null = null;
   private _trayAvailabilityChecked = false;
@@ -71,6 +72,10 @@ export class WindowManager {
 
   getScreenshotWindow(): BrowserWindow | null {
     return this.screenshotWindow;
+  }
+
+  getScreenshotPreviewWindow(): BrowserWindow | null {
+    return this.screenshotPreviewWindow;
   }
 
   getResultWindow(): BrowserWindow | null {
@@ -426,6 +431,79 @@ export class WindowManager {
     });
   }
 
+  /**
+   * 创建截图预览窗口
+   * 
+   * 用于显示原生截图的结果，并提供操作工具栏
+   */
+  createScreenshotPreviewWindow(imageData: string): void {
+    // 如果已存在预览窗口，先关闭
+    if (this.screenshotPreviewWindow) {
+      this.screenshotPreviewWindow.close();
+      this.screenshotPreviewWindow.destroy();
+    }
+
+    const isMac = process.platform === "darwin";
+    const windowConfig: Electron.BrowserWindowConstructorOptions = {
+      width: 900,
+      height: 700,
+      show: false,
+      center: true,
+      resizable: true,
+      alwaysOnTop: true,
+      autoHideMenuBar: true,
+      icon: getAppIconPath(),
+      webPreferences: {
+        preload: getPreloadPath(),
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+      frame: false,
+    };
+
+    if (isMac) {
+      windowConfig.titleBarStyle = "hiddenInset";
+      windowConfig.trafficLightPosition = { x: 12, y: 12 };
+    } else {
+      windowConfig.titleBarStyle = "hidden";
+    }
+
+    this.screenshotPreviewWindow = new BrowserWindow(windowConfig);
+
+    if (isDevelopment) {
+      this.screenshotPreviewWindow.loadURL(`${VITE_DEV_SERVER_URL}#/screenshot-preview`);
+    } else {
+      const htmlPath = path.join(__dirname, `../renderer/index.html`);
+      if (fs.existsSync(htmlPath)) {
+        this.screenshotPreviewWindow.loadFile(htmlPath, {
+          hash: "/screenshot-preview",
+        });
+      } else {
+        const altHtmlPath = path.join(process.resourcesPath, "app/.vite/renderer/index.html");
+        this.screenshotPreviewWindow.loadFile(altHtmlPath, {
+          hash: "/screenshot-preview",
+        });
+      }
+    }
+
+    this.screenshotPreviewWindow.on("ready-to-show", () => {
+      logger.info("截图预览窗口加载完成");
+
+      if (this.screenshotPreviewWindow && !this.screenshotPreviewWindow.isDestroyed()) {
+        this.screenshotPreviewWindow.show();
+        this.screenshotPreviewWindow.focus();
+        
+        // 发送截图数据到渲染进程
+        this.screenshotPreviewWindow.webContents.send("screenshot-preview-data", imageData);
+      }
+    });
+
+    this.screenshotPreviewWindow.on("closed", () => {
+      logger.debug("截图预览窗口已关闭");
+      this.screenshotPreviewWindow = null;
+    });
+  }
+
   createHtmlViewerWindow(htmlContent: string, title = "AI 分析结果"): void {
     // 记录标题信息
     logger.debug("创建HTML查看器窗口", { title });
@@ -586,7 +664,36 @@ export class WindowManager {
       }
     });
 
-    // 原生交互式截图（新方案）
+    // 打开主窗口并导航到指定路由
+    ipcMain.handle("open-main-window-with-route", async (_event, route: string) => {
+      try {
+        logger.debug("打开主窗口并导航", { route });
+        
+        if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+          this.createMainWindow();
+        }
+        
+        if (this.mainWindow) {
+          this.mainWindow.show();
+          this.mainWindow.focus();
+          
+          // 发送导航事件到渲染进程
+          this.mainWindow.webContents.send("navigate-to", route);
+        }
+        
+        return { success: true };
+      } catch (error) {
+        logger.error("打开主窗口失败", {
+          error: error instanceof Error ? error.message : "未知错误",
+        });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误",
+        };
+      }
+    });
+
+    // 原生交互式截图
     ipcMain.handle("capture-screen-native", async () => {
       try {
         logger.info("启动原生截图模式");
@@ -601,7 +708,7 @@ export class WindowManager {
           };
         }
 
-        // 使用原生截图工具（会弹出系统截图界面）
+        // 使用原生截图工具（会弹出系统截图界面，用户选择区域）
         const filepath = await NativeScreenshotService.captureInteractive();
         
         // 读取截图并转换为 data URL
@@ -610,21 +717,13 @@ export class WindowManager {
         // 清理临时文件
         NativeScreenshotService.cleanupScreenshot(filepath);
 
-        logger.info("原生截图完成，创建 ScreenshotViewer 窗口");
+        logger.info("原生截图完成，打开预览窗口");
 
-        // 创建截图数据对象（符合 ScreenSource 接口）
-        const screenshotData: ScreenSource = {
-          id: `native-screenshot-${Date.now()}`,
-          name: "Native Screenshot",
-          thumbnail: dataURL,
-        };
-
-        // 创建 ScreenshotViewer 窗口并传递截图数据
-        this.createScreenshotWindow(screenshotData);
+        // 创建预览窗口显示截图
+        this.createScreenshotPreviewWindow(dataURL);
 
         return {
           success: true,
-          // 不返回 imageData，因为我们直接打开了 ScreenshotViewer
         };
       } catch (error) {
         const err = error as Error;
