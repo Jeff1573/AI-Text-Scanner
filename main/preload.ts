@@ -107,6 +107,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
   openMainWindowWithRoute: (route: string) =>
     ipcRenderer.invoke("open-main-window-with-route", route),
 
+  // 监听导航事件
+  onNavigateTo: (callback: (event: any, route: string) => void) => {
+    logger.debug("注册导航监听器");
+    ipcRenderer.on("navigate-to", callback);
+  },
+
+  // 移除导航监听器
+  removeNavigateToListener: () => {
+    ipcRenderer.removeAllListeners("navigate-to");
+  },
+
   // 保存配置
   saveConfig: (config: SettingsConfig) =>
     ipcRenderer.invoke("save-config", config),

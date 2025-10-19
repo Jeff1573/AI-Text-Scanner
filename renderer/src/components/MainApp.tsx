@@ -36,16 +36,31 @@ export const MainApp = () => {
       window.location.hash = '#/settings';
     };
 
+    // 监听导航事件（从其他窗口触发）
+    const handleNavigateTo = (_event: unknown, route: string) => {
+      console.log("收到导航请求:", route);
+      window.location.hash = `#${route}`;
+    };
+
     // 注册事件监听器
     window.electronAPI.onOpenResultPage(handleOpenResultPage);
     window.electronAPI.onOpenScreenshotViewer(handleOpenScreenshotViewer);
     window.electronAPI.onOpenSettingsPage(handleOpenSettingsPage);
+    
+    // 监听导航事件
+    if (window.electronAPI.onNavigateTo) {
+      window.electronAPI.onNavigateTo(handleNavigateTo);
+    }
 
     // 清理函数
     return () => {
       window.electronAPI.removeOpenResultPageListener();
       window.electronAPI.removeOpenScreenshotViewerListener();
       window.electronAPI.removeOpenSettingsPageListener();
+      
+      if (window.electronAPI.removeNavigateToListener) {
+        window.electronAPI.removeNavigateToListener();
+      }
     };
   }, []);
 

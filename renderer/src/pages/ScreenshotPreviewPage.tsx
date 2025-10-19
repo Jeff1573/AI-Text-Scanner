@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import "../assets/styles/screenshot-preview.css";
 
 /**
@@ -8,7 +7,6 @@ import "../assets/styles/screenshot-preview.css";
  * 在独立窗口中显示原生截图结果，并提供操作工具栏
  */
 export const ScreenshotPreviewPage = () => {
-  const navigate = useNavigate();
   const [imageData, setImageData] = useState<string>("");
   const [copySuccess, setCopySuccess] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
@@ -89,17 +87,24 @@ export const ScreenshotPreviewPage = () => {
       });
 
       if (result.content) {
-        console.log("图片分析成功");
+        console.log("图片分析成功，内容长度:", result.content.length);
         
         // 将分析结果存储到 localStorage
         localStorage.setItem("latestAnalysisResult", result.content);
         localStorage.setItem("latestAnalysisTimestamp", Date.now().toString());
         
-        // 关闭预览窗口
-        window.close();
+        console.log("已保存到 localStorage:", {
+          contentLength: result.content.length,
+          timestamp: Date.now()
+        });
         
-        // 打开主窗口并导航到分析页面
+        // 先打开主窗口并导航到分析页面
         await window.electronAPI.openMainWindowWithRoute("/image-analysis");
+        
+        // 稍作延迟后关闭预览窗口，确保主窗口已经打开并读取了数据
+        setTimeout(() => {
+          window.close();
+        }, 500);
       } else {
         console.error("图片分析失败:", result.error);
         alert(`分析失败: ${result.error || "未知错误"}`);

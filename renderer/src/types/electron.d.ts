@@ -88,6 +88,8 @@ export interface ElectronAPI {
   onScreenshotPreviewData: (callback: (data: string) => void) => void;
   removeScreenshotPreviewDataListener: () => void;
   openMainWindowWithRoute: (route: string) => Promise<{ success: boolean; error?: string }>;
+  onNavigateTo: (callback: (event: unknown, route: string) => void) => void;
+  removeNavigateToListener: () => void;
   saveConfig: (config: { provider: string; apiUrl: string; apiKey: string; model: string; customModel: string; sourceLang: string; targetLang: string; resultHotkey: string; screenshotHotkey: string }) => Promise<{
     success: boolean;
     error?: string;

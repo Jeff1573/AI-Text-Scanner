@@ -3,6 +3,7 @@ import type { WindowManager } from "./windowManager";
 import type { ConfigManager } from "./configManager";
 import type { HotkeyConfig, HotkeyStatus } from "../types";
 import { ScreenshotService } from "../services/screenshotService";
+import { NativeScreenshotService } from "../services/nativeScreenshotService";
 import { createModuleLogger } from "../utils/logger";
 
 const logger = createModuleLogger('HotkeyManager');
@@ -36,14 +37,35 @@ export class HotkeyManager {
     });
 
     const ret2 = globalShortcut.register(screenshotHotkey, async () => {
-      logger.info("全局快捷键被触发，准备启动截图功能");
+      logger.info("全局快捷键被触发，准备启动截图功能", { 
+        platform: process.platform 
+      });
 
       try {
         await this.windowManager.hideAllWindows();
-        const screenshotData = await ScreenshotService.captureScreen();
-        this.windowManager.createScreenshotWindow(screenshotData);
+        
+        if (process.platform === 'darwin') {
+          // macOS: 使用原生截图
+          logger.info("使用 macOS 原生截图");
+          const filepath = await NativeScreenshotService.captureInteractive();
+          const dataURL = await NativeScreenshotService.readScreenshotAsDataURL(filepath);
+          NativeScreenshotService.cleanupScreenshot(filepath);
+          
+          // 创建预览窗口
+          this.windowManager.createScreenshotPreviewWindow(dataURL);
+        } else {
+          // Windows/Linux: 使用 Electron desktopCapturer
+          logger.info("使用 Electron desktopCapturer 截图");
+          const screenshotData = await ScreenshotService.captureScreen();
+          this.windowManager.createScreenshotWindow(screenshotData);
+        }
       } catch (error) {
-        logger.error("截图过程中发生错误", { error });
+        const err = error as Error;
+        if (err.message.includes("取消")) {
+          logger.info("用户取消了截图");
+        } else {
+          logger.error("截图过程中发生错误", { error: err.message });
+        }
         this.windowManager.showMainWindow();
       }
     });

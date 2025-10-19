@@ -248,30 +248,51 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
       }
     }
 
-    // 从主进程获取图片分析数据
-    const fetchAnalysisData = async () => {
+    // 优先从 localStorage 获取分析结果（从预览窗口导航过来的情况）
+    const latestAnalysisResult = localStorage.getItem("latestAnalysisResult");
+    const latestAnalysisTimestamp = localStorage.getItem("latestAnalysisTimestamp");
+    
+    if (latestAnalysisResult && latestAnalysisTimestamp) {
+      console.log("从 localStorage 加载分析结果");
       try {
-        setLoading(true);
-        window.electronAPI.onImageAnalysisResult((data) => {
-          if (data) {
-            const cleanText = removeMarkdownFormat(data) || "";
-            setAnalysisText(cleanText);
-            // 如果当前在翻译tab，清空翻译文本，触发重新翻译
-            if (tabActive === "translate") {
-              setTranslateText("");
-            }
-          }
-        });
+        const cleanText = removeMarkdownFormat(latestAnalysisResult) || "";
+        setAnalysisText(cleanText);
+        setLoading(false);
+        
+        // 清除已使用的分析结果，避免重复使用
+        localStorage.removeItem("latestAnalysisResult");
+        localStorage.removeItem("latestAnalysisTimestamp");
       } catch (error) {
-        console.error("获取图片分析数据失败:", error);
-      } finally {
+        console.error("解析分析结果失败:", error);
         setLoading(false);
       }
-    };
+    } else {
+      // 如果 localStorage 中没有分析结果，则监听从主进程发送的结果（其他场景）
+      const fetchAnalysisData = async () => {
+        try {
+          setLoading(true);
+          window.electronAPI.onImageAnalysisResult((data) => {
+            if (data) {
+              const cleanText = removeMarkdownFormat(data) || "";
+              setAnalysisText(cleanText);
+              // 如果当前在翻译tab，清空翻译文本，触发重新翻译
+              if (tabActive === "translate") {
+                setTranslateText("");
+              }
+            }
+          });
+        } catch (error) {
+          console.error("获取图片分析数据失败:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchAnalysisData();
+    }
 
     // 加载配置
     loadConfig(setSourceLang, setTargetLang);
-    fetchAnalysisData();
   }, [loadConfig, tabActive]);
 
   const handleSwitchLanguagesWrapper = () => {
