@@ -300,15 +300,12 @@ export class WindowManager {
     //   }
     // );
 
-    // 只注册一次 screenshot-image-ready 监听器
+    // 移除旧的延迟显示逻辑，现在窗口会立即显示
+    // 保留监听器以兼容旧代码
     if (!this._screenshotReadyListenerRegistered) {
       ipcMain.on("screenshot-image-ready", () => {
-        if (this.screenshotWindow && !this.screenshotWindow.isDestroyed()) {
-          if (!this.screenshotWindow.isVisible()) {
-            this.screenshotWindow.show();
-            this.screenshotWindow.focus();
-          }
-        }
+        // 这个事件现在不再需要，窗口已经提前显示了
+        logger.debug("收到 screenshot-image-ready 事件（已废弃，窗口已提前显示）");
       });
       this._screenshotReadyListenerRegistered = true;
     }
@@ -347,16 +344,27 @@ export class WindowManager {
     }
     const win = this.ensureScreenshotWindow();
 
-    const sendOnly = () => {
+    const sendDataAndShow = () => {
       if (!win.isDestroyed()) {
+        logger.info("发送截图数据并立即显示窗口", {
+          dataSize: screenshotData.thumbnail.length
+        });
+        
+        // 先显示窗口（会显示加载状态）
+        if (!win.isVisible()) {
+          win.show();
+          win.focus();
+        }
+        
+        // 再发送数据
         win.webContents.send("screenshot-data", screenshotData);
       }
     };
 
     if (win.webContents.isLoading()) {
-      win.webContents.once("did-finish-load", sendOnly);
+      win.webContents.once("did-finish-load", sendDataAndShow);
     } else {
-      sendOnly();
+      sendDataAndShow();
     }
   }
 

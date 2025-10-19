@@ -6,28 +6,43 @@ const logger = createModuleLogger('ScreenshotService');
 
 export class ScreenshotService {
   /**
-   * 动态计算缩略图尺寸
-   * 使用实际屏幕分辨率，考虑设备像素比以支持高DPI屏幕
+   * 动态计算缩略图尺寸（优化版）
+   * 
+   * 平衡清晰度和性能：
+   * - 使用逻辑分辨率（不乘以 scaleFactor）
+   * - 对于超高分辨率屏幕，限制最大尺寸
+   * - 这样可以避免巨大的图片导致性能问题
    */
   private static calculateThumbnailSize(): { width: number; height: number } {
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width: screenWidth, height: screenHeight } = primaryDisplay.size;
-    const scaleFactor = primaryDisplay.scaleFactor; // 获取设备像素比
+    const scaleFactor = primaryDisplay.scaleFactor;
     
-    // 使用实际物理像素分辨率（逻辑分辨率 × 缩放因子）
-    // 这样可以在高DPI屏幕（如Retina）上获得清晰的截图
-    const thumbnailSize = {
-      width: Math.round(screenWidth * scaleFactor),
-      height: Math.round(screenHeight * scaleFactor)
-    };
+    // 使用逻辑分辨率，不乘以 scaleFactor
+    // 这样 1920x1080 的屏幕就是 1920x1080，而不是更大的物理分辨率
+    let width = screenWidth;
+    let height = screenHeight;
     
-    logger.debug("屏幕信息", {
+    // 对于超大屏幕（如 4K），限制最大尺寸以提升性能
+    const MAX_DIMENSION = 2560; // 最大边长
+    if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+      const scale = MAX_DIMENSION / Math.max(width, height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+      logger.info("屏幕尺寸过大，缩小截图尺寸", {
+        original: `${screenWidth}x${screenHeight}`,
+        scaled: `${width}x${height}`
+      });
+    }
+    
+    logger.debug("屏幕信息（优化后）", {
       logicalResolution: `${screenWidth}x${screenHeight}`,
       scaleFactor: scaleFactor,
-      physicalResolution: `${thumbnailSize.width}x${thumbnailSize.height}`
+      thumbnailSize: `${width}x${height}`,
+      estimatedSizeMB: ((width * height * 4) / 1024 / 1024).toFixed(2)
     });
     
-    return thumbnailSize;
+    return { width, height };
   }
 
   static async captureScreen(): Promise<ScreenSource> {
