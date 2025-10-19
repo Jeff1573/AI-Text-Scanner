@@ -67,3 +67,52 @@ export function getDockIconPath(): string {
   }
   return "";
 }
+
+/**
+ * 获取系统托盘图标路径。
+ * macOS 托盘使用小尺寸图标（推荐 32x32 以支持 Retina），由系统自动缩放。
+ * Windows/Linux 可以使用较大尺寸的图标。
+ * @returns 托盘图标的绝对路径
+ */
+export function getTrayIconPath(): string {
+  const cwd = process.cwd();
+  const platform = process.platform;
+
+  const candidates: string[] = [];
+
+  if (platform === "darwin") {
+    // macOS 托盘使用较大尺寸图标（64px 或 128px）以保持清晰度
+    // 系统会自动缩放到托盘尺寸，大尺寸缩小比小尺寸放大更清晰
+    candidates.push(
+      // path.join(cwd, "build/icons/icon_16.png"),
+      path.join(cwd, "build/icons/icon_24.png"),
+      // path.join(cwd, "build/icons/icon_32.png"),
+    );
+  } else if (platform === "win32") {
+    // Windows 托盘图标
+    candidates.push(
+      path.join(cwd, "build/icons/app-icon.ico"),
+      path.join(__dirname, "./static/icons8-camera-256.ico"),
+    );
+  } else {
+    // Linux 托盘图标
+    candidates.push(
+      path.join(cwd, "build/icons/icon_128.png"),
+      path.join(cwd, "build/icons/icon_64.png"),
+    );
+  }
+
+  // 通用回退选项
+  candidates.push(
+    path.join(cwd, "build/icons/app-icon.icns"),
+    path.join(cwd, "build/icons/icon_512.png"),
+    path.join(__dirname, "./static/icons8-camera-256.ico"),
+  );
+
+  for (const p of candidates) {
+    if (fileExists(p)) return p;
+  }
+
+  // 最后的回退
+  return path.join(cwd, "build/icons/icon_128.png");
+}

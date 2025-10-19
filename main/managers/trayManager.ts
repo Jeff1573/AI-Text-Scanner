@@ -1,11 +1,10 @@
 import { Tray, Menu, nativeImage, clipboard, app } from "electron";
-import path from "node:path";
 import type { WindowManager } from "./windowManager";
 import type { ConfigManager } from "./configManager";
 import type { HotkeyConfig } from "../types";
 import { ScreenshotService } from "../services/screenshotService";
 import { createModuleLogger } from "../utils/logger";
-import { getAppIconPath } from "../utils/iconUtils";
+import { getTrayIconPath } from "../utils/iconUtils";
 
 const logger = createModuleLogger('TrayManager');
 
@@ -25,12 +24,21 @@ export class TrayManager {
       screenshotHotkey: cfg.screenshotHotkey || "CommandOrControl+Shift+S",
     };
 
-    const iconPath = getAppIconPath();
+    const iconPath = getTrayIconPath();
 
     logger.debug("托盘图标路径", { __dirname, iconPath });
-    const icon = nativeImage.createFromPath(getAppIconPath());
+    const icon = nativeImage.createFromPath(iconPath);
+
+    // macOS 上不使用 Template Image 以保持彩色图标
+    // 使用足够大的原始图标（64px 或 128px），让系统自动缩放
+    // 这样可以避免手动 resize 导致的模糊问题
+    if (process.platform === "darwin" && !icon.isEmpty()) {
+      // 不设置 templateImage，保持彩色
+      // 系统会自动将图标缩放到合适的托盘尺寸（16x16@1x 或 32x32@2x）
+    }
 
     this.tray = new Tray(icon);
+
     this.tray.setToolTip("AI Text Scanner - AI文字识别工具");
 
     this.updateTrayMenu(hotkeys);
