@@ -191,8 +191,6 @@ app/node_modules/
 app/bower_components/
 
 # Development tools
-.augment/
-.cursor/
 .claude/
 docs/
 .qoder/
