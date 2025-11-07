@@ -58,6 +58,11 @@ const config = {
       to: "static",
       filter: ["**/*"],
     },
+    {
+      from: "build/icons",
+      to: "build/icons",
+      filter: ["**/*"],
+    },
   ],
   asar: true,
 
@@ -79,6 +84,9 @@ const config = {
     icon: "main/static/icons8-camera-256.ico",
     publisherName: "AI Text Scanner",
     verifyUpdateCodeSignature: false,
+    // 禁用代码签名（开发环境）
+    sign: null,
+    signingHashAlgorithms: null, // 完全禁用签名
     // 强制使用统一的文件名格式（使用短横线替代空格）
     artifactName: "${name}-Setup-${version}.${ext}",
   },

@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
+import { app } from "electron";
 
 /**
  * 判断路径是否存在
@@ -13,6 +14,21 @@ function fileExists(p: string): boolean {
 }
 
 /**
+ * 获取资源基础路径
+ * 开发环境：项目根目录
+ * 生产环境：process.resourcesPath
+ */
+function getResourceBasePath(): string {
+  if (app.isPackaged) {
+    // 生产环境：使用 resourcesPath
+    return process.resourcesPath;
+  } else {
+    // 开发环境：使用项目根目录
+    return process.cwd();
+  }
+}
+
+/**
  * 获取跨平台的主窗口图标路径（BrowserWindow.icon）。
  * - Windows: .ico
  * - macOS: .icns（若无则使用 512 PNG）
@@ -20,20 +36,25 @@ function fileExists(p: string): boolean {
  * @returns 图标文件的绝对路径（若找不到则返回旧的 ico 路径以保持兼容）
  */
 export function getAppIconPath(): string {
-  const cwd = process.cwd();
+  const basePath = getResourceBasePath();
   const fromBuild = {
     darwin: [
-      path.join(cwd, "build/icons/app-icon.icns"),
-      path.join(cwd, "build/icons/icon_512.png"),
+      path.join(basePath, "build/icons/app-icon.icns"),
+      path.join(basePath, "build/icons/icon_512.png"),
     ],
-    win32: [path.join(cwd, "build/icons/app-icon.ico")],
-    linux: [path.join(cwd, "build/icons/icon_512.png")],
+    win32: [path.join(basePath, "build/icons/app-icon.ico")],
+    linux: [path.join(basePath, "build/icons/icon_512.png")],
   } as const;
 
+  // 生产环境下，静态资源在 resources/static 目录
+  const staticBasePath = app.isPackaged
+    ? path.join(process.resourcesPath, "static")
+    : path.join(__dirname, "./static");
+
   const fromStatic = [
-    path.join(__dirname, "./static/icons8-camera-256.icns"),
-    path.join(__dirname, "./static/icons8-camera-256.png"),
-    path.join(__dirname, "./static/icons8-camera-256.ico"),
+    path.join(staticBasePath, "icons8-camera-256.icns"),
+    path.join(staticBasePath, "icons8-camera-256.png"),
+    path.join(staticBasePath, "icons8-camera-256.ico"),
   ];
 
   const platform = process.platform as "darwin" | "win32" | "linux" | string;
@@ -47,7 +68,7 @@ export function getAppIconPath(): string {
     if (fileExists(p)) return p;
   }
   // 回退：旧文件（尽量不报错）
-  return path.join(__dirname, "./static/icons8-camera-256.ico");
+  return path.join(staticBasePath, "icons8-camera-256.ico");
 }
 
 /**
@@ -55,12 +76,18 @@ export function getAppIconPath(): string {
  * 优先使用生成的 .icns，其次使用 512 PNG；若都不存在返回空字符串。
  */
 export function getDockIconPath(): string {
-  const cwd = process.cwd();
+  const basePath = getResourceBasePath();
+
+  // 生产环境下，静态资源在 resources/static 目录
+  const staticBasePath = app.isPackaged
+    ? path.join(process.resourcesPath, "static")
+    : path.join(__dirname, "./static");
+
   const candidates = [
-    path.join(cwd, "build/icons/app-icon.icns"),
-    path.join(cwd, "build/icons/icon_512.png"),
-    path.join(__dirname, "./static/icons8-camera-256.icns"),
-    path.join(__dirname, "./static/icons8-camera-256.png"),
+    path.join(basePath, "build/icons/app-icon.icns"),
+    path.join(basePath, "build/icons/icon_512.png"),
+    path.join(staticBasePath, "icons8-camera-256.icns"),
+    path.join(staticBasePath, "icons8-camera-256.png"),
   ];
   for (const p of candidates) {
     if (fileExists(p)) return p;
@@ -75,8 +102,13 @@ export function getDockIconPath(): string {
  * @returns 托盘图标的绝对路径
  */
 export function getTrayIconPath(): string {
-  const cwd = process.cwd();
+  const basePath = getResourceBasePath();
   const platform = process.platform;
+
+  // 生产环境下，静态资源在 resources/static 目录
+  const staticBasePath = app.isPackaged
+    ? path.join(process.resourcesPath, "static")
+    : path.join(__dirname, "./static");
 
   const candidates: string[] = [];
 
@@ -84,29 +116,29 @@ export function getTrayIconPath(): string {
     // macOS 托盘使用较大尺寸图标（64px 或 128px）以保持清晰度
     // 系统会自动缩放到托盘尺寸，大尺寸缩小比小尺寸放大更清晰
     candidates.push(
-      // path.join(cwd, "build/icons/icon_16.png"),
-      // path.join(cwd, "build/icons/app-icon-b.svg"),
-      path.join(cwd, "build/icons/icon_24.png"),
+      // path.join(basePath, "build/icons/icon_16.png"),
+      // path.join(basePath, "build/icons/app-icon-b.svg"),
+      path.join(basePath, "build/icons/icon_24.png"),
     );
   } else if (platform === "win32") {
     // Windows 托盘图标
     candidates.push(
-      path.join(cwd, "build/icons/app-icon.ico"),
-      path.join(__dirname, "./static/icons8-camera-256.ico"),
+      path.join(basePath, "build/icons/app-icon.ico"),
+      path.join(staticBasePath, "icons8-camera-256.ico"),
     );
   } else {
     // Linux 托盘图标
     candidates.push(
-      path.join(cwd, "build/icons/icon_128.png"),
-      path.join(cwd, "build/icons/icon_64.png"),
+      path.join(basePath, "build/icons/icon_128.png"),
+      path.join(basePath, "build/icons/icon_64.png"),
     );
   }
 
   // 通用回退选项
   candidates.push(
-    path.join(cwd, "build/icons/app-icon.icns"),
-    path.join(cwd, "build/icons/icon_512.png"),
-    path.join(__dirname, "./static/icons8-camera-256.ico"),
+    path.join(basePath, "build/icons/app-icon.icns"),
+    path.join(basePath, "build/icons/icon_512.png"),
+    path.join(staticBasePath, "icons8-camera-256.ico"),
   );
 
   for (const p of candidates) {
@@ -114,5 +146,5 @@ export function getTrayIconPath(): string {
   }
 
   // 最后的回退
-  return path.join(cwd, "build/icons/icon_128.png");
+  return path.join(basePath, "build/icons/icon_128.png");
 }

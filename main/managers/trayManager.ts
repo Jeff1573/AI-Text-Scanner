@@ -26,8 +26,24 @@ export class TrayManager {
 
     const iconPath = getTrayIconPath();
 
-    logger.debug("托盘图标路径", { __dirname, iconPath });
+    logger.debug("托盘图标路径", {
+      __dirname,
+      iconPath,
+      isPackaged: app.isPackaged,
+      resourcesPath: process.resourcesPath,
+      cwd: process.cwd()
+    });
     const icon = nativeImage.createFromPath(iconPath);
+
+    // 检查图标是否成功加载
+    if (icon.isEmpty()) {
+      logger.error("托盘图标加载失败", { iconPath });
+    } else {
+      logger.info("托盘图标加载成功", {
+        iconPath,
+        size: icon.getSize()
+      });
+    }
 
     // macOS 上不使用 Template Image 以保持彩色图标
     // 使用足够大的原始图标（64px 或 128px），让系统自动缩放
