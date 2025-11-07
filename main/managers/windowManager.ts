@@ -65,6 +65,7 @@ export class WindowManager {
   private htmlViewerWindow: BrowserWindow | null = null;
   private _trayAvailabilityChecked = false;
   private _screenshotReadyListenerRegistered = false;
+  private _shouldShowMainWindowOnScreenshotClose = true; // 控制截图窗口关闭时是否显示主窗口
 
   getMainWindow(): BrowserWindow | null {
     return this.mainWindow;
@@ -318,10 +319,13 @@ export class WindowManager {
     );
 
     this.screenshotWindow.on("closed", () => {
+      const shouldShowMain = this._shouldShowMainWindowOnScreenshotClose;
       this.screenshotWindow = null;
+      // 重置标志为默认值
+      this._shouldShowMainWindowOnScreenshotClose = true;
       
-      // 如果主窗口存在但被隐藏，并且没有其他窗口打开，重新显示主窗口
-      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+      // 如果主窗口存在但被隐藏，并且没有其他窗口打开，且允许显示主窗口，则重新显示主窗口
+      if (this.mainWindow && !this.mainWindow.isDestroyed() && shouldShowMain) {
         // 检查是否有其他窗口打开
         const hasOtherWindows = 
           (this.resultWindow && !this.resultWindow.isDestroyed()) ||
@@ -821,6 +825,16 @@ export class WindowManager {
     ipcMain.handle("window-close", (event) => {
       const win = BrowserWindow.fromWebContents(event.sender);
       if (win && !win.isDestroyed()) {
+        win.close();
+      }
+    });
+
+    // 关闭截图窗口而不显示主窗口（用于复制操作后关闭）
+    ipcMain.handle("close-screenshot-window-without-showing-main", (event) => {
+      const win = BrowserWindow.fromWebContents(event.sender);
+      if (win && !win.isDestroyed() && win === this.screenshotWindow) {
+        // 设置标志，表示关闭时不要显示主窗口
+        this._shouldShowMainWindowOnScreenshotClose = false;
         win.close();
       }
     });

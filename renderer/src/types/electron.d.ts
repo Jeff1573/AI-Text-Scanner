@@ -117,6 +117,8 @@ export interface ElectronAPI {
   windowMaximize: () => Promise<void>;
   windowClose: () => Promise<void>;
   windowHide: () => Promise<void>;
+  // 关闭截图窗口而不显示主窗口（用于复制操作后关闭）
+  closeScreenshotWindowWithoutShowingMain: () => Promise<void>;
   getPlatform: () => Promise<string>;
   openResultWindow: (resultContent: string) => Promise<{ success: boolean; error?: string }>;
   onResultData: (callback: (data: string) => void) => void;

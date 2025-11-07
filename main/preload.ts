@@ -151,6 +151,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   windowMaximize: () => ipcRenderer.invoke("window-maximize"),
   windowClose: () => ipcRenderer.invoke("window-close"),
   windowHide: () => ipcRenderer.invoke("window-hide"),
+  // 关闭截图窗口而不显示主窗口（用于复制操作后关闭）
+  closeScreenshotWindowWithoutShowingMain: () => 
+    ipcRenderer.invoke("close-screenshot-window-without-showing-main"),
   
   // 获取平台信息
   getPlatform: () => ipcRenderer.invoke("get-platform"),

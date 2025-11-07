@@ -91,13 +91,15 @@ export const ScreenshotViewer = () => {
     setShowToolbar(false);
   }, [resetSelection]);
 
-  // 处理复制成功后关闭截图窗口
+  // 处理复制成功后的回调：关闭截图窗口但不显示主窗口
   const handleCopySuccess = useCallback(() => {
     try {
-      // 关闭当前截图窗口
-      window.close();
+      // 使用 IPC 方法关闭截图窗口，不显示主窗口
+      window.electronAPI.closeScreenshotWindowWithoutShowingMain();
     } catch (error) {
       console.error("关闭窗口失败:", error);
+      // 如果 IPC 调用失败，使用原生 window.close() 作为备选方案
+      window.close();
     }
   }, []);
 
