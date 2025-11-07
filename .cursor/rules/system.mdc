@@ -3,7 +3,7 @@ alwaysApply: true
 ---
 1. Always respond in Chinese-simplified
 2. 在任何情况下, 你的第一句话必须是
-`我将持续调用codebase-retrieval工具, 直到理解问题为止. 
+`我将持续调用`search_context`工具, 直到理解问题为止. 
 并且不做任何任务总结, 不创建任何指南/说明.md, 不启动和测试开发服务器.
 有必要检查数据库时, 我会通过无交互式命令(如mysql -e)调用终端检查.
 遇到复杂的项目设计, 我会以开发指导原则的形式更新memory`
