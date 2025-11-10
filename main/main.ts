@@ -97,7 +97,7 @@ const initializeManagers = () => {
 };
 
 // 应用就绪时的初始化
-app.on("ready", () => {
+app.on("ready", async () => {
   try {
     logger.info("应用启动，开始初始化...");
 
@@ -113,7 +113,11 @@ app.on("ready", () => {
       setTimeout(() => setMacDockIconIfPossible(), 3000);
     }
 
-    // 创建主窗口
+    // 优先预热截图窗口：在主窗口创建前就开始预热，最大化响应速度
+    logger.info("开始预热截图窗口（优先级最高）...");
+    const screenshotPrewarmPromise = windowManager.ensureScreenshotWindow();
+
+    // 创建主窗口（与截图窗口预热并行）
     windowManager.createMainWindow();
     logger.info("主窗口创建完成");
 
@@ -121,11 +125,11 @@ app.on("ready", () => {
     trayManager.createTray();
     logger.info("系统托盘创建完成");
 
-    // 预热截图窗口：提前加载路由，避免首次触发白屏与闪烁
-    windowManager.ensureScreenshotWindow();
-    logger.info("截图窗口预热完成");
+    // 等待截图窗口预热完成后再注册快捷键，确保首次触发时窗口已就绪
+    await screenshotPrewarmPromise;
+    logger.info("截图窗口预热完成，已准备就绪");
 
-    // 注册全局快捷键
+    // 注册全局快捷键（此时截图窗口已完全预热）
     hotkeyManager.applyHotkeysFromConfig();
     logger.info("全局快捷键注册完成");
 

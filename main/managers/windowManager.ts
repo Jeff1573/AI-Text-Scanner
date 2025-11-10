@@ -66,6 +66,7 @@ export class WindowManager {
   private _trayAvailabilityChecked = false;
   private _screenshotReadyListenerRegistered = false;
   private _shouldShowMainWindowOnScreenshotClose = true; // 控制截图窗口关闭时是否显示主窗口
+  private _screenshotWindowReady = false; // 标记截图窗口是否已完成预热
 
   getMainWindow(): BrowserWindow | null {
     return this.mainWindow;
@@ -256,11 +257,17 @@ export class WindowManager {
     }
   }
 
-  ensureScreenshotWindow(): BrowserWindow {
+  /**
+   * 确保截图窗口存在并已预热
+   * 返回 Promise，在窗口完全加载后 resolve
+   */
+  async ensureScreenshotWindow(): Promise<BrowserWindow> {
     if (this.screenshotWindow && !this.screenshotWindow.isDestroyed()) {
+      logger.debug("截图窗口已存在，直接复用");
       return this.screenshotWindow;
     }
 
+    logger.info("开始创建并预热截图窗口...");
     const primaryDisplay = screen.getPrimaryDisplay();
     const { x, y, width, height } = primaryDisplay.bounds; // 覆盖整个物理屏幕，避免 workArea 带来的缝隙
 
@@ -301,9 +308,17 @@ export class WindowManager {
 
     this.screenshotWindow = new BrowserWindow(screenshotConfig);
 
+    // 等待页面加载完成
+    const loadPromise = new Promise<void>((resolve) => {
+      this.screenshotWindow!.webContents.once("did-finish-load", () => {
+        logger.info("截图窗口页面加载完成");
+        this._screenshotWindowReady = true;
+        resolve();
+      });
+    });
+
     if (isDevelopment) {
       const url = `${VITE_DEV_SERVER_URL}#/screenshot`;
-      // this.screenshotWindow.webContents.openDevTools()
       logger.debug("预热加载URL", { url });
       this.screenshotWindow.loadURL(url);
     } else {
@@ -320,17 +335,6 @@ export class WindowManager {
       }
     }
 
-    // // 开发者工具快捷键
-    // this.screenshotWindow.webContents.on(
-    //   "before-input-event",
-    //   (event, input) => {
-    //     if (input.key === "F12") {
-    //       event.preventDefault();
-    //       this.screenshotWindow?.webContents.openDevTools();
-    //     }
-    //   }
-    // );
-
     // 移除旧的延迟显示逻辑，现在窗口会立即显示
     // 保留监听器以兼容旧代码
     if (!this._screenshotReadyListenerRegistered) {
@@ -344,39 +348,60 @@ export class WindowManager {
     this.screenshotWindow.webContents.on(
       "did-fail-load",
       (_event, errorCode, errorDescription) => {
-        logger.error("窗口加载失败", { errorCode, errorDescription });
+        logger.error("截图窗口加载失败", { errorCode, errorDescription });
       }
     );
 
-    this.screenshotWindow.on("closed", () => {
-      const shouldShowMain = this._shouldShowMainWindowOnScreenshotClose;
-      this.screenshotWindow = null;
-      // 重置标志为默认值
-      this._shouldShowMainWindowOnScreenshotClose = true;
-      
-      // 如果主窗口存在但被隐藏，并且没有其他窗口打开，且允许显示主窗口，则重新显示主窗口
-      if (this.mainWindow && !this.mainWindow.isDestroyed() && shouldShowMain) {
-        // 检查是否有其他窗口打开
-        const hasOtherWindows = 
-          (this.resultWindow && !this.resultWindow.isDestroyed()) ||
-          (this.htmlViewerWindow && !this.htmlViewerWindow.isDestroyed());
-        
-        if (!this.mainWindow.isVisible() && !hasOtherWindows) {
-          logger.debug("截图窗口关闭且无其他窗口，重新显示主窗口");
-          this.mainWindow.show();
-          this.mainWindow.focus();
+    // 改为隐藏而不是销毁窗口，保持窗口常驻以提升响应速度
+    this.screenshotWindow.on("close", (event) => {
+      if (this.screenshotWindow && !this.screenshotWindow.isDestroyed()) {
+        event.preventDefault(); // 阻止窗口关闭
+        this.screenshotWindow.hide(); // 改为隐藏
+        logger.debug("截图窗口已隐藏（保持常驻）");
+
+        const shouldShowMain = this._shouldShowMainWindowOnScreenshotClose;
+        // 重置标志为默认值
+        this._shouldShowMainWindowOnScreenshotClose = true;
+
+        // 如果主窗口存在但被隐藏，并且没有其他窗口打开，且允许显示主窗口，则重新显示主窗口
+        if (this.mainWindow && !this.mainWindow.isDestroyed() && shouldShowMain) {
+          // 检查是否有其他窗口打开
+          const hasOtherWindows =
+            (this.resultWindow && !this.resultWindow.isDestroyed()) ||
+            (this.htmlViewerWindow && !this.htmlViewerWindow.isDestroyed());
+
+          if (!this.mainWindow.isVisible() && !hasOtherWindows) {
+            logger.debug("截图窗口关闭且无其他窗口，重新显示主窗口");
+            this.mainWindow.show();
+            this.mainWindow.focus();
+          }
         }
       }
     });
 
+    // 等待页面加载完成
+    await loadPromise;
+    logger.info("截图窗口预热完成，已准备就绪");
+
     return this.screenshotWindow;
   }
 
-  createScreenshotWindow(screenshotData: ScreenSource): void {
+  /**
+   * 检查截图窗口是否已预热完成
+   */
+  isScreenshotWindowReady(): boolean {
+    return this._screenshotWindowReady &&
+           this.screenshotWindow !== null &&
+           !this.screenshotWindow.isDestroyed();
+  }
+
+  async createScreenshotWindow(screenshotData: ScreenSource): Promise<void> {
     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
       this.mainWindow.hide();
     }
-    const win = this.ensureScreenshotWindow();
+
+    // 确保窗口已预热（如果已预热则立即返回）
+    const win = await this.ensureScreenshotWindow();
 
     // 在显示窗口前，等待渲染端图片 onLoad 完成后发回的通知，避免用户看到加载态及白屏
     let readyHandled = false;
@@ -404,13 +429,14 @@ export class WindowManager {
 
     const sendData = () => {
       if (!win.isDestroyed()) {
-        logger.info("发送截图数据（窗口保持隐藏，等待首帧就绪）", {
+        logger.info("发送截图数据到已预热的窗口", {
           dataSize: screenshotData.thumbnail.length,
         });
         win.webContents.send("screenshot-data", screenshotData);
       }
     };
 
+    // 由于窗口已预热，直接发送数据
     if (win.webContents.isLoading()) {
       win.webContents.once("did-finish-load", () => {
         sendData();
@@ -419,8 +445,8 @@ export class WindowManager {
       sendData();
     }
 
-    // 清理监听器：窗口关闭后
-    win.once("closed", () => {
+    // 清理监听器：窗口隐藏后
+    win.once("hide", () => {
       ipcMain.removeListener("screenshot-image-ready", readyHandler);
     });
   }
@@ -843,7 +869,7 @@ export class WindowManager {
       async (_event, screenshotData) => {
         try {
           // logger.debug("收到创建截图窗口请求", { screenshotData });
-          this.createScreenshotWindow(screenshotData);
+          await this.createScreenshotWindow(screenshotData);
           return { success: true };
         } catch (error) {
           logger.error("创建截图窗口失败", {

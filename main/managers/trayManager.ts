@@ -81,7 +81,7 @@ export class TrayManager {
           try {
             await this.windowManager.hideAllWindows();
             const screenshotData = await ScreenshotService.captureScreen();
-            this.windowManager.createScreenshotWindow(screenshotData);
+            await this.windowManager.createScreenshotWindow(screenshotData);
           } catch (error) {
             logger.error("截图过程中发生错误", { error });
             this.windowManager.showMainWindow();
