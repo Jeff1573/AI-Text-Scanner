@@ -29,7 +29,11 @@
     "dist:linux": "npm run build && electron-builder --linux",
     "release": "npm run package && npm run publish",
     "release:full": "node scripts/release.js",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "_buildMain": "vite build --config vite.main.config.ts",
+    "_buildPreload": "vite build --config vite.preload.config.ts",
+    "_viteDevServer": "vite --config vite.renderer.config.ts",
+    "_electronDev": "electron ."
   },
   "keywords": [],
   "author": {
