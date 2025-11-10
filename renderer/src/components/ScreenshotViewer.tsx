@@ -186,7 +186,13 @@ export const ScreenshotViewer = () => {
         if (showToolbar) {
           handleCancel();
         } else {
-          window.close();
+          try {
+            // 通过主进程标志控制：关闭截图窗口但不显示主窗口
+            window.electronAPI.closeScreenshotWindowWithoutShowingMain();
+          } catch (error) {
+            console.error("IPC 关闭截图窗口失败，使用回退方案:", error);
+            window.close();
+          }
         }
       }
     };

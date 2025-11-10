@@ -237,21 +237,26 @@ export class WindowManager {
     }
 
     const primaryDisplay = screen.getPrimaryDisplay();
-    const { width, height } = primaryDisplay.workAreaSize;
+    const { x, y, width, height } = primaryDisplay.bounds; // 覆盖整个物理屏幕，避免 workArea 带来的缝隙
 
     // 截图窗口配置（全屏，无需标题栏）
     const isMac = process.platform === "darwin";
     const screenshotConfig: Electron.BrowserWindowConstructorOptions = {
+      x,
+      y,
       width,
       height,
-      x: 0,
-      y: 0,
       show: false,
-      fullscreen: true,
       frame: false,
       alwaysOnTop: true,
       skipTaskbar: true,
       autoHideMenuBar: true,
+      backgroundColor: "#1a1a1a", // 避免白屏闪烁
+      paintWhenInitiallyHidden: true, // 隐藏时也先完成首帧绘制
+      resizable: false,
+      movable: false,
+      fullscreen: false, // 避免切入系统级全屏引起的闪屏
+      fullscreenable: false,
       icon: getAppIconPath(),
       webPreferences: {
         preload: getPreloadPath(),
@@ -348,28 +353,67 @@ export class WindowManager {
     }
     const win = this.ensureScreenshotWindow();
 
-    const sendDataAndShow = () => {
-      if (!win.isDestroyed()) {
-        logger.info("发送截图数据并立即显示窗口", {
-          dataSize: screenshotData.thumbnail.length
-        });
-        
-        // 先显示窗口（会显示加载状态）
+    // 在显示窗口前，等待渲染端图片 onLoad 完成后发回的通知，避免用户看到加载态及白屏
+    let readyHandled = false;
+    const readyHandler = (event: Electron.IpcMainEvent) => {
+      try {
+        if (readyHandled) return;
+        if (win.isDestroyed()) return;
+        // 仅响应来自当前截图窗口的就绪事件
+        if (event.sender.id !== win.webContents.id) return;
+        readyHandled = true;
+        ipcMain.removeListener("screenshot-image-ready", readyHandler);
         if (!win.isVisible()) {
           win.show();
           win.focus();
         }
-        
-        // 再发送数据
+      } catch (e) {
+        logger.warn("显示截图窗口时发生异常，回退直接显示", { error: e instanceof Error ? e.message : e });
+        if (!win.isDestroyed() && !win.isVisible()) {
+          win.show();
+          win.focus();
+        }
+      }
+    };
+    ipcMain.on("screenshot-image-ready", readyHandler);
+
+    // 超时兜底：若渲染端长时间未回调，避免一直隐藏导致体验卡顿
+    const readyTimeout = setTimeout(() => {
+      if (readyHandled) return;
+      if (win.isDestroyed()) return;
+      logger.warn("等待截图首帧超时，启用兜底显示");
+      try {
+        if (!win.isVisible()) {
+          win.show();
+          win.focus();
+        }
+      } finally {
+        ipcMain.removeListener("screenshot-image-ready", readyHandler);
+      }
+    }, 1200);
+
+    const sendData = () => {
+      if (!win.isDestroyed()) {
+        logger.info("发送截图数据（窗口保持隐藏，等待首帧就绪）", {
+          dataSize: screenshotData.thumbnail.length,
+        });
         win.webContents.send("screenshot-data", screenshotData);
       }
     };
 
     if (win.webContents.isLoading()) {
-      win.webContents.once("did-finish-load", sendDataAndShow);
+      win.webContents.once("did-finish-load", () => {
+        sendData();
+      });
     } else {
-      sendDataAndShow();
+      sendData();
     }
+
+    // 清理兜底定时器：窗口关闭或就绪后
+    win.once("closed", () => {
+      clearTimeout(readyTimeout);
+      ipcMain.removeListener("screenshot-image-ready", readyHandler);
+    });
   }
 
   createResultWindow(resultContent: string): void {
