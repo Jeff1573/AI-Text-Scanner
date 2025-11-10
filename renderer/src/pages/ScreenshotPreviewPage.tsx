@@ -70,6 +70,11 @@ export const ScreenshotPreviewPage = () => {
     setIsAnalyzing(true);
     try {
       console.log("开始分析图片...");
+      // 清理上一次识别结果，避免误读旧内容
+      try {
+        localStorage.removeItem("latestAnalysisResult");
+        localStorage.removeItem("latestAnalysisTimestamp");
+      } catch {}
       
       // 保存图片到 localStorage 供分析页面使用
       localStorage.setItem("selectedImageData", imageData);

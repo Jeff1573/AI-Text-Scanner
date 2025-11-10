@@ -6,6 +6,8 @@ export const useScreenshotViewerEffects = (
   setLoading: (loading: boolean) => void,
   setError: (error: string | null) => void,
   setShowSelector: (show: boolean) => void,
+  resetSelection: () => void,
+  setShowToolbar: (show: boolean) => void,
   loading: boolean
 ) => {
   useEffect(() => {
@@ -18,6 +20,8 @@ export const useScreenshotViewerEffects = (
       setScreenshotData(data);
       setLoading(false);
       setError(null);
+      resetSelection();
+      setShowToolbar(false);
       // 显示截图后立即显示选择器
       setShowSelector(true);
     };
@@ -28,6 +32,8 @@ export const useScreenshotViewerEffects = (
       setScreenshotData(event.detail);
       setLoading(false);
       setError(null);
+      resetSelection();
+      setShowToolbar(false);
       // 显示截图后立即显示选择器
       setShowSelector(true);
     };
@@ -56,5 +62,13 @@ export const useScreenshotViewerEffects = (
       window.removeEventListener('screenshot-data-received', handleCustomScreenshotData as EventListener);
       clearTimeout(timeout);
     };
-  }, [setScreenshotData, setLoading, setError, setShowSelector, loading]);
-}; 
+  }, [
+    setScreenshotData,
+    setLoading,
+    setError,
+    setShowSelector,
+    resetSelection,
+    setShowToolbar,
+    loading,
+  ]);
+};

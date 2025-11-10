@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Row, Col, Typography, Card, Image, Flex, Tabs, TabsProps, Button, message } from "antd";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Row, Col, Typography, Card, Image, Flex, Tabs, TabsProps, Button, message, Spin } from "antd";
 import { CopyOutlined, PictureOutlined } from "@ant-design/icons";
 import { TitleBar, LanguageSelector } from "../components";
 import { translate } from "../utils/translate";
@@ -83,6 +83,8 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
   const [tabActive, setTabActive] = useState<TabKeyType>("text");
   const [sourceLang, setSourceLang] = useState<string>("auto");
   const [targetLang, setTargetLang] = useState<string>("zh");
+  const hasInitializedRef = useRef(false);
+  const analysisRequestIdRef = useRef(0);
 
   // 复制文本到剪切板
   const handleCopyText = useCallback(async () => {
@@ -192,6 +194,45 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
     }
   }, []);
 
+  const performAnalysis = useCallback(async (imageData: string) => {
+    if (!imageData) return;
+    const requestId = ++analysisRequestIdRef.current;
+
+    setAnalysisText("");
+    setTranslateText("");
+    setLoading(true);
+
+    try {
+      const result = await window.electronAPI.analyzeImage({
+        imageData,
+        prompt: "请识别并提取图片中的所有文字内容，保持原有的格式和排版。",
+      });
+
+      if (analysisRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      if (result && result.content) {
+        const cleanText = removeMarkdownFormat(result.content) || "";
+        setAnalysisText(cleanText);
+        localStorage.setItem("latestAnalysisResult", result.content);
+        localStorage.setItem("latestAnalysisTimestamp", Date.now().toString());
+      } else if (result && result.error) {
+        console.error("图片分析失败:", result.error);
+        message.error(`分析失败: ${result.error || "未知错误"}`);
+      }
+    } catch (error) {
+      if (analysisRequestIdRef.current === requestId) {
+        console.error("分析图片失败:", error);
+        message.error(`分析失败: ${error}`);
+      }
+    } finally {
+      if (analysisRequestIdRef.current === requestId) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
   const tabShowContent = useMemo(() => {
     switch (tabActive) {
       case "text":
@@ -238,62 +279,47 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
   }, [analysisText, sourceLang, targetLang, tabActive, handleTranslate]);
 
   useEffect(() => {
-    // 从 LocalStorage 获取选中的图片数据
-    const selectedImageData = localStorage.getItem("selectedImageData");
-    if (selectedImageData) {
-      try {
+    if (hasInitializedRef.current) {
+      return;
+    }
+    hasInitializedRef.current = true;
+
+    const init = async () => {
+      const selectedImageData = localStorage.getItem("selectedImageData");
+      if (selectedImageData) {
         setImageUrl(selectedImageData);
-      } catch (error) {
-        console.error("解析图片数据失败:", error);
+        await performAnalysis(selectedImageData);
+        return;
       }
-    }
 
-    // 优先从 localStorage 获取分析结果（从预览窗口导航过来的情况）
-    const latestAnalysisResult = localStorage.getItem("latestAnalysisResult");
-    const latestAnalysisTimestamp = localStorage.getItem("latestAnalysisTimestamp");
-    
-    if (latestAnalysisResult && latestAnalysisTimestamp) {
-      console.log("从 localStorage 加载分析结果");
-      try {
-        const cleanText = removeMarkdownFormat(latestAnalysisResult) || "";
-        setAnalysisText(cleanText);
-        setLoading(false);
-        
-        // 清除已使用的分析结果，避免重复使用
-        localStorage.removeItem("latestAnalysisResult");
-        localStorage.removeItem("latestAnalysisTimestamp");
-      } catch (error) {
-        console.error("解析分析结果失败:", error);
-        setLoading(false);
-      }
-    } else {
-      // 如果 localStorage 中没有分析结果，则监听从主进程发送的结果（其他场景）
-      const fetchAnalysisData = async () => {
+      const latestAnalysisResult = localStorage.getItem("latestAnalysisResult");
+      const latestAnalysisTimestamp = localStorage.getItem("latestAnalysisTimestamp");
+      if (latestAnalysisResult && latestAnalysisTimestamp) {
         try {
-          setLoading(true);
-          window.electronAPI.onImageAnalysisResult((data) => {
-            if (data) {
-              const cleanText = removeMarkdownFormat(data) || "";
-              setAnalysisText(cleanText);
-              // 如果当前在翻译tab，清空翻译文本，触发重新翻译
-              if (tabActive === "translate") {
-                setTranslateText("");
-              }
-            }
-          });
+          const cleanText = removeMarkdownFormat(latestAnalysisResult) || "";
+          setAnalysisText(cleanText);
         } catch (error) {
-          console.error("获取图片分析数据失败:", error);
-        } finally {
-          setLoading(false);
+          console.error("解析分析结果失败:", error);
         }
-      };
+      }
+    };
 
-      fetchAnalysisData();
-    }
+    void init();
 
-    // 加载配置
     loadConfig(setSourceLang, setTargetLang);
-  }, [loadConfig, tabActive]);
+  }, [performAnalysis, loadConfig]);
+
+  useEffect(() => {
+    const onRefresh = () => {
+      const selectedImageData = localStorage.getItem("selectedImageData");
+      if (!selectedImageData) return;
+      setImageUrl(selectedImageData);
+      void performAnalysis(selectedImageData);
+    };
+
+    window.addEventListener("image-analysis-refresh", onRefresh);
+    return () => window.removeEventListener("image-analysis-refresh", onRefresh);
+  }, [performAnalysis]);
 
   const handleSwitchLanguagesWrapper = () => {
     handleSwitchLanguages(sourceLang, targetLang, setSourceLang, setTargetLang);
@@ -339,9 +365,7 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
               },
             }}
           >
-            {loading ? (
-              <div>加载中...</div>
-            ) : imageUrl ? (
+            {imageUrl ? (
               <div style={{ 
                 position: "absolute",
                 top: 0,
@@ -399,24 +423,32 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
               },
             }}
           >
-            {tabActive === "translate" && (
-              <div style={{ marginBottom: "16px" }}>
-                <LanguageSelector
-                  sourceLang={sourceLang}
-                  targetLang={targetLang}
-                  onSourceLangChange={setSourceLang}
-                  onTargetLangChange={setTargetLang}
-                  onSwitchLanguages={handleSwitchLanguagesWrapper}
-                  languageOptions={languageOptions}
-                />
-              </div>
-            )}
-            {tabActive === "translate" && isTranslating ? (
-              <div style={{ textAlign: "center", color: "#999" }}>
-                <div>翻译中...</div>
+            {loading ? (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+                <Spin tip="识别中..." size="large" />
               </div>
             ) : (
-              tabShowContent
+              <>
+                {tabActive === "translate" && (
+                  <div style={{ marginBottom: "16px" }}>
+                    <LanguageSelector
+                      sourceLang={sourceLang}
+                      targetLang={targetLang}
+                      onSourceLangChange={setSourceLang}
+                      onTargetLangChange={setTargetLang}
+                      onSwitchLanguages={handleSwitchLanguagesWrapper}
+                      languageOptions={languageOptions}
+                    />
+                  </div>
+                )}
+                {tabActive === "translate" && isTranslating ? (
+                  <div style={{ textAlign: "center", color: "#999" }}>
+                    <div>翻译中...</div>
+                  </div>
+                ) : (
+                  tabShowContent
+                )}
+              </>
             )}
           </Card>
         </Col>

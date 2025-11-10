@@ -54,6 +54,8 @@ export const ScreenshotViewer = () => {
     setLoading,
     setError,
     setShowSelector,
+    resetSelection,
+    setShowToolbar,
     loading
   );
 
@@ -262,7 +264,10 @@ export const ScreenshotViewer = () => {
   // 获取选中内容
   const handleGetSelectedContent = useCallback(async () => {
     if (!screenshotData) return;
+    const selectionSnapshot = { ...selection };
     setShowToolbar(false);
+    setShowSelector(false);
+    resetSelection();
     const imgElement = getImageElement();
     if (!imgElement) return;
     const displayRect = imgElement.getBoundingClientRect();
@@ -273,7 +278,7 @@ export const ScreenshotViewer = () => {
       const displayWidth = displayRect.width;
       const displayHeight = displayRect.height;
       const cropCoords = calculateCropCoordinates(
-        selection,
+        selectionSnapshot,
         originalWidth,
         originalHeight,
         displayWidth,
@@ -284,13 +289,22 @@ export const ScreenshotViewer = () => {
           screenshotData.thumbnail,
           cropCoords
         );
+        // 清理上次识别结果，避免新会话读取旧内容
+        try {
+          localStorage.removeItem("latestAnalysisResult");
+          localStorage.removeItem("latestAnalysisTimestamp");
+        } catch {}
         saveSelectedImage(
           selectedImageData,
           cropCoords.width,
           cropCoords.height
         );
-        // 进行图片分析
-        await analyzeImage(selectedImageData);
+        // 打开主窗口并导航到图片分析页面（左侧展示选中图片，右侧显示加载）
+        try {
+          await window.electronAPI.openMainWindowWithRoute("/image-analysis");
+        } catch (navErr) {
+          console.error("导航到分析页面失败:", navErr);
+        }
       } catch (error) {
         alert("裁剪图片失败，请重试");
         resetSelection();
@@ -299,14 +313,14 @@ export const ScreenshotViewer = () => {
     img.src = screenshotData.thumbnail;
     // 隐藏窗口
     try {
-      // 使用 windowClose 方法关闭当前截图窗口
-      await window.electronAPI.windowMinimize();
+      // 隐藏当前截图窗口（而非最小化/关闭）
+      await window.electronAPI.windowHide();
     } catch (error) {
       console.error("隐藏窗口失败:", error);
       // 如果IPC调用失败，使用原生window.close()作为备选方案
       window.close();
     }
-  }, [screenshotData, selection, analyzeImage, resetSelection]);
+  }, [screenshotData, selection, resetSelection, setShowSelector]);
 
   if (loading) {
     return <LoadingState />;

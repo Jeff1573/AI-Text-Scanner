@@ -39,7 +39,16 @@ export const MainApp = () => {
     // 监听导航事件（从其他窗口触发）
     const handleNavigateTo = (_event: unknown, route: string) => {
       console.log("收到导航请求:", route);
-      window.location.hash = `#${route}`;
+      const targetHash = `#${route}`;
+      const isSameRoute = window.location.hash === targetHash;
+      window.location.hash = targetHash;
+
+      if (route === "/image-analysis" && isSameRoute) {
+        setTimeout(() => {
+          const evt = new Event("image-analysis-refresh");
+          window.dispatchEvent(evt);
+        }, 0);
+      }
     };
 
     // 注册事件监听器
