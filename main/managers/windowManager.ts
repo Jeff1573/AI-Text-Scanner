@@ -99,10 +99,12 @@ export class WindowManager {
       const windowConfig: Electron.BrowserWindowConstructorOptions = {
         width: 1100,
         height: 720,
-        show: true, // 主窗口启动时显示
+        show: false, // 延迟显示，等待内容加载完成
         center: true, // 居中显示
         frame: false,
         autoHideMenuBar: true,
+        backgroundColor: "#242424", // 设置背景色，避免白屏闪烁（与应用主题一致）
+        paintWhenInitiallyHidden: true, // 隐藏时也先完成首帧绘制
         webPreferences: {
           preload: getPreloadPath(),
           nodeIntegration: false,
@@ -213,6 +215,29 @@ export class WindowManager {
       this.mainWindow.webContents.on("did-finish-load", () => {
         logger.info("页面加载完成");
       });
+
+      // 等待窗口准备好后再显示，避免白屏
+      let windowShown = false;
+      const showWindow = () => {
+        if (!windowShown && this.mainWindow && !this.mainWindow.isDestroyed()) {
+          windowShown = true;
+          logger.info("主窗口准备就绪，开始显示");
+          this.mainWindow.show();
+          this.mainWindow.focus();
+        }
+      };
+
+      // ready-to-show 事件会在页面准备好后触发（包括错误页面）
+      this.mainWindow.once("ready-to-show", showWindow);
+
+      // 设置超时保护：如果 10 秒后窗口还没显示，强制显示（防止永远不显示）
+      // 这可以处理某些边缘情况，比如页面加载非常慢或 ready-to-show 事件未触发
+      setTimeout(() => {
+        if (!windowShown) {
+          logger.warn("窗口准备超时，强制显示窗口");
+          showWindow();
+        }
+      }, 10000);
 
       // 添加窗口关闭事件监听器
       this.mainWindow.on("closed", () => {
