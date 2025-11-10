@@ -266,3 +266,9 @@
   animation: spin 1s linear infinite;
   margin: 0 auto 10px auto;
 }
+
+/* 截图路由挂载时，强制页面与根容器背景为黑，避免首帧白底 */
+body.screenshot-route,
+body.screenshot-route #root {
+  background: #000 !important;
+}

@@ -377,21 +377,6 @@ export class WindowManager {
     };
     ipcMain.on("screenshot-image-ready", readyHandler);
 
-    // 超时兜底：若渲染端长时间未回调，避免一直隐藏导致体验卡顿
-    const readyTimeout = setTimeout(() => {
-      if (readyHandled) return;
-      if (win.isDestroyed()) return;
-      logger.warn("等待截图首帧超时，启用兜底显示");
-      try {
-        if (!win.isVisible()) {
-          win.show();
-          win.focus();
-        }
-      } finally {
-        ipcMain.removeListener("screenshot-image-ready", readyHandler);
-      }
-    }, 1200);
-
     const sendData = () => {
       if (!win.isDestroyed()) {
         logger.info("发送截图数据（窗口保持隐藏，等待首帧就绪）", {
@@ -409,9 +394,8 @@ export class WindowManager {
       sendData();
     }
 
-    // 清理兜底定时器：窗口关闭或就绪后
+    // 清理监听器：窗口关闭后
     win.once("closed", () => {
-      clearTimeout(readyTimeout);
       ipcMain.removeListener("screenshot-image-ready", readyHandler);
     });
   }

@@ -16,7 +16,6 @@ import {
 import { ScreenshotContent } from "./ScreenshotContent";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
-import { NoDataState } from "./NoDataState";
 import { FloatingToolbar } from "./FloatingToolbar";
 import "../assets/styles/screenshot-viewer.css";
 
@@ -57,6 +56,14 @@ export const ScreenshotViewer = () => {
     setShowSelector,
     loading
   );
+
+  // 截图路由挂载时为 body 添加类，强制背景为黑，避免可见第一帧出现白底
+  useEffect(() => {
+    try {
+      document.body.classList.add("screenshot-route");
+      return () => document.body.classList.remove("screenshot-route");
+    } catch {}
+  }, []);
 
   // 监听识别结果，成功则打开新的HTML查看器窗口，失败则提示
   useEffect(() => {
@@ -307,8 +314,9 @@ export const ScreenshotViewer = () => {
   if (error) {
     return <ErrorState error={error} />;
   }
+  // 当未收到截图数据时不渲染任何内容；窗口将在图片就绪后才显示
   if (!screenshotData) {
-    return <NoDataState />;
+    return null;
   }
   return (
     <div className="screenshot-viewer">

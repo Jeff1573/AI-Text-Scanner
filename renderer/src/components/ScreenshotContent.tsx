@@ -39,9 +39,13 @@ export const ScreenshotContent = ({
           className="screenshot-image"
           onLoad={() => {
             console.log("图片加载成功");
-            // 通知主进程：首帧已渲染，可显示窗口
+            // 双 RAF 确保首帧已提交再通知主进程显示窗口，避免白闪一帧
             if (window.electronAPI?.notifyScreenshotReady) {
-              window.electronAPI.notifyScreenshotReady();
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  window.electronAPI.notifyScreenshotReady();
+                });
+              });
             }
           }}
           onError={(e) => console.error("图片加载失败:", e)}
