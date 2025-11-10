@@ -96,16 +96,50 @@ const initializeManagers = () => {
   });
 };
 
+// 全局变量：截图窗口预热 Promise 和初始化标志
+let screenshotPrewarmPromise: Promise<any> | null = null;
+let managersInitialized = false;
+
+// 提前预热：在 ready 事件之前就开始初始化和预热
+(async () => {
+  try {
+    // 等待应用准备就绪（但不等待 ready 事件触发）
+    await app.whenReady();
+
+    logger.info("应用已准备就绪，立即初始化管理器并预热截图窗口...");
+
+    // 初始化管理器（只初始化一次）
+    if (!managersInitialized) {
+      initializeManagers();
+      managersInitialized = true;
+      logger.info("管理器初始化完成");
+    }
+
+    // 立即开始预热截图窗口（最高优先级）
+    logger.info("立即开始预热截图窗口（最高优先级）...");
+    screenshotPrewarmPromise = windowManager.ensureScreenshotWindow();
+  } catch (error) {
+    logger.error("提前预热失败", {
+      error: (error as Error).message,
+      stack: (error as Error).stack,
+    });
+  }
+})();
+
 // 应用就绪时的初始化
 app.on("ready", async () => {
   try {
-    logger.info("应用启动，开始初始化...");
+    logger.info("ready 事件触发，继续初始化流程...");
 
-    // 初始化管理器
-    initializeManagers();
-    logger.info("管理器初始化完成");
+    // 如果管理器还未初始化（预热失败的情况），在这里初始化
+    if (!managersInitialized) {
+      logger.warn("管理器未初始化，在 ready 事件中初始化");
+      initializeManagers();
+      managersInitialized = true;
+      screenshotPrewarmPromise = windowManager.ensureScreenshotWindow();
+    }
 
-    // 设置 macOS 应用名与 Dock 图标（开发/生产均尝试设置）
+    // 设置 macOS 应用名与 Dock 图标（与预热并行）
     setMacDockIconIfPossible();
     if (!app.isPackaged && process.platform === "darwin") {
       // 开发模式下追加重试，规避偶发不刷新
@@ -113,15 +147,11 @@ app.on("ready", async () => {
       setTimeout(() => setMacDockIconIfPossible(), 3000);
     }
 
-    // 优先预热截图窗口：在主窗口创建前就开始预热，最大化响应速度
-    logger.info("开始预热截图窗口（优先级最高）...");
-    const screenshotPrewarmPromise = windowManager.ensureScreenshotWindow();
-
     // 创建主窗口（与截图窗口预热并行）
     windowManager.createMainWindow();
     logger.info("主窗口创建完成");
 
-    // 创建系统托盘
+    // 创建系统托盘（与预热并行）
     trayManager.createTray();
     logger.info("系统托盘创建完成");
 

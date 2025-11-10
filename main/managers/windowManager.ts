@@ -356,8 +356,11 @@ export class WindowManager {
     this.screenshotWindow.on("close", (event) => {
       if (this.screenshotWindow && !this.screenshotWindow.isDestroyed()) {
         event.preventDefault(); // 阻止窗口关闭
-        this.screenshotWindow.hide(); // 改为隐藏
-        logger.debug("截图窗口已隐藏（保持常驻）");
+
+        // 禁用动画效果：先设置不透明度为0，再隐藏窗口
+        this.screenshotWindow.setOpacity(0);
+        this.screenshotWindow.hide();
+        logger.debug("截图窗口已隐藏（保持常驻，无动画）");
 
         const shouldShowMain = this._shouldShowMainWindowOnScreenshotClose;
         // 重置标志为默认值
@@ -403,6 +406,12 @@ export class WindowManager {
     // 确保窗口已预热（如果已预热则立即返回）
     const win = await this.ensureScreenshotWindow();
 
+    // 重新设置窗口位置和尺寸，确保覆盖整个屏幕（支持多显示器和分辨率变化）
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { x, y, width, height } = primaryDisplay.bounds;
+    win.setBounds({ x, y, width, height });
+    logger.debug("更新截图窗口尺寸", { x, y, width, height });
+
     // 在显示窗口前，等待渲染端图片 onLoad 完成后发回的通知，避免用户看到加载态及白屏
     let readyHandled = false;
     const readyHandler = (event: Electron.IpcMainEvent) => {
@@ -414,12 +423,15 @@ export class WindowManager {
         readyHandled = true;
         ipcMain.removeListener("screenshot-image-ready", readyHandler);
         if (!win.isVisible()) {
+          // 恢复不透明度并显示窗口（无动画）
+          win.setOpacity(1);
           win.show();
           win.focus();
         }
       } catch (e) {
         logger.warn("显示截图窗口时发生异常，回退直接显示", { error: e instanceof Error ? e.message : e });
         if (!win.isDestroyed() && !win.isVisible()) {
+          win.setOpacity(1);
           win.show();
           win.focus();
         }
