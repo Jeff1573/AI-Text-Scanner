@@ -7,6 +7,25 @@ const fs = require('fs');
  * 构建脚本 - 协调Vite构建和electron-builder打包
  */
 
+// Windows系统需要特殊处理命令
+const isWindows = process.platform === "win32";
+
+// 设置Windows控制台编码为UTF-8，避免中文乱码
+if (isWindows) {
+  try {
+    // 设置控制台代码页为UTF-8 (65001)
+    execSync("chcp 65001 >nul", { shell: true, stdio: "ignore" });
+    // 启用虚拟终端处理以支持ANSI颜色码
+    process.env.FORCE_COLOR = "1";
+  } catch (err) {
+    // 如果设置失败，继续执行（可能在某些环境下不支持）
+    console.warn("无法设置控制台编码为UTF-8，可能会显示乱码");
+  }
+} else {
+  // 非Windows系统也启用颜色支持
+  process.env.FORCE_COLOR = "1";
+}
+
 const log = (message) => {
   console.log(`[BUILD] ${new Date().toLocaleTimeString()} - ${message}`);
 };
@@ -36,7 +55,9 @@ async function buildRenderer() {
   try {
     execSync('npx vite build --config vite.renderer.config.ts', { 
       stdio: 'inherit',
-      env: { ...process.env, NODE_ENV: 'production' }
+      env: { ...process.env, NODE_ENV: 'production' },
+      encoding: 'utf8',
+      shell: isWindows ? true : false,
     });
     log('渲染进程构建完成');
   } catch (err) {
@@ -52,7 +73,9 @@ async function buildMain() {
   try {
     execSync('npx vite build --config vite.main.config.ts', { 
       stdio: 'inherit',
-      env: { ...process.env, NODE_ENV: 'production' }
+      env: { ...process.env, NODE_ENV: 'production' },
+      encoding: 'utf8',
+      shell: isWindows ? true : false,
     });
     log('主进程构建完成');
   } catch (err) {
@@ -66,7 +89,9 @@ async function buildPreload() {
   try {
     execSync('npx vite build --config vite.preload.config.ts', { 
       stdio: 'inherit',
-      env: { ...process.env, NODE_ENV: 'production' }
+      env: { ...process.env, NODE_ENV: 'production' },
+      encoding: 'utf8',
+      shell: isWindows ? true : false,
     });
     log('预加载脚本构建完成');
   } catch (err) {
@@ -84,7 +109,9 @@ async function packageApp(platform = '') {
     const publishFlag = '--publish never';
     
     execSync(`npx electron-builder ${platformFlag} ${publishFlag} --config electron-builder.config.js`, { 
-      stdio: 'inherit' 
+      stdio: 'inherit',
+      encoding: 'utf8',
+      shell: isWindows ? true : false,
     });
     log('应用打包完成');
   } catch (err) {
@@ -97,7 +124,9 @@ async function publishApp() {
   log('发布应用...');
   try {
     execSync('npx electron-builder --publish always --config electron-builder.config.js', { 
-      stdio: 'inherit' 
+      stdio: 'inherit',
+      encoding: 'utf8',
+      shell: isWindows ? true : false,
     });
     log('应用发布完成');
   } catch (err) {

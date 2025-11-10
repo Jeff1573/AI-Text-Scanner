@@ -1,7 +1,15 @@
 import winston from 'winston';
 import path from 'path';
 import { app } from 'electron';
-import fs from 'fs';    
+import fs from 'fs';
+
+// 确保启用颜色支持（如果环境变量未设置，则强制启用）
+if (!process.env.FORCE_COLOR) {
+  // 开发环境下强制启用颜色
+  if (process.env.NODE_ENV === 'development' || !process.env.npm_config_production) {
+    process.env.FORCE_COLOR = '1';
+  }
+}
 
 // 定义日志级别
 const levels = {
@@ -58,6 +66,8 @@ const createTransports = () => {
 
   // 控制台输出（开发环境）
   if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
+    // 使用标准的 Console Transport，但应用颜色格式化
+    // 注意：由于我们已经在脚本中设置了 chcp 65001，Windows 控制台应该支持 UTF-8 和 ANSI 颜色码
     transports.push(
       new winston.transports.Console({
         level: 'debug',

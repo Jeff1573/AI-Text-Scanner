@@ -11,6 +11,22 @@ const fs = require("fs");
 // Windows系统需要特殊处理命令
 const isWindows = process.platform === "win32";
 
+// 设置Windows控制台编码为UTF-8，避免中文乱码
+if (isWindows) {
+  try {
+    // 设置控制台代码页为UTF-8 (65001)
+    execSync("chcp 65001 >nul", { shell: true, stdio: "ignore" });
+    // 启用虚拟终端处理以支持ANSI颜色码
+    process.env.FORCE_COLOR = "1";
+  } catch (err) {
+    // 如果设置失败，继续执行（可能在某些环境下不支持）
+    console.warn("无法设置控制台编码为UTF-8，可能会显示乱码");
+  }
+} else {
+  // 非Windows系统也启用颜色支持
+  process.env.FORCE_COLOR = "1";
+}
+
 // 定义日志函数
 const log = (message) => {
   console.log(`[DEV] ${new Date().toLocaleTimeString()} - ${message}`);
@@ -57,15 +73,17 @@ function buildMainAndPreload() {
       // 构建主进程
       execSync("npm run _buildMain", {
         stdio: "inherit",
-        env: { ...process.env, VITE_DEV_SERVER_URL: "http://localhost:5173" },
+        env: { ...process.env, VITE_DEV_SERVER_URL: "http://localhost:5173", FORCE_COLOR: "1" },
         shell: true,
+        encoding: "utf8",
       });
 
       // 构建预加载脚本
       execSync("npm run _buildPreload", {
         stdio: "inherit",
-        env: { ...process.env, VITE_DEV_SERVER_URL: "http://localhost:5173" },
+        env: { ...process.env, VITE_DEV_SERVER_URL: "http://localhost:5173", FORCE_COLOR: "1" },
         shell: true,
+        encoding: "utf8",
       });
     } else {
       // 在非Windows系统上直接使用npx
@@ -161,8 +179,9 @@ function startElectron() {
 
         electronProcess = spawn("npm", ["run", "_electronDev"], {
           stdio: "inherit",
-          env: { ...process.env, VITE_DEV_SERVER_URL: "http://localhost:5173" },
+          env: { ...process.env, VITE_DEV_SERVER_URL: "http://localhost:5173", FORCE_COLOR: "1" },
           shell: true,
+          encoding: "utf8",
         });
       } else {
         electronProcess = spawn("electron", ["."], {
