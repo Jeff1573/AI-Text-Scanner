@@ -1,7 +1,7 @@
 {
   "name": "ai-text-scanner",
   "productName": "AI Text Scanner",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "description": "AI-powered text scanner with OCR and translation capabilities",
   "main": ".vite/build/main.js",
   "homepage": "https://github.com/Jeff1573/AI-Text-Scanner",

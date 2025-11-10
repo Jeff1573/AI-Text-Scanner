@@ -18,6 +18,8 @@
   margin: 0;
   padding: 0;
   overflow: hidden;
+  /* 防止被上层窗口拖拽区域影响，确保可绘制选择框 */
+  -webkit-app-region: no-drag;
 }
 
 /* 确保截图查看器内的所有元素都不会受到外部样式影响 */
@@ -113,6 +115,10 @@
   position: relative;
   width: 100%;
   margin: 0;
+  /* 明确标注该区域不可拖拽窗口，避免误触发窗口拖动 */
+  -webkit-app-region: no-drag;
+  /* 避免文字被选中影响拖拽 */
+  user-select: none;
 }
 
 .screenshot-image {
@@ -219,6 +225,8 @@
   flex: 1; /* 确保占据父容器的全部空间 */
   display: flex;
   flex-direction: column;
+  /* 舞台层也需要禁用拖拽，覆盖标题栏 drag 影响 */
+  -webkit-app-region: no-drag;
 }
 
 /* 轻度变暗层，仅覆盖图片区域容器 */
@@ -279,6 +287,8 @@ body.screenshot-route {
   overflow: hidden !important;
   margin: 0 !important;
   padding: 0 !important;
+  /* 截图路由激活时，全局禁用窗口拖拽区域 */
+  -webkit-app-region: no-drag !important;
 }
 
 body.screenshot-route #root {
@@ -288,4 +298,5 @@ body.screenshot-route #root {
   overflow: hidden !important;
   margin: 0 !important;
   padding: 0 !important;
+  -webkit-app-region: no-drag !important;
 }

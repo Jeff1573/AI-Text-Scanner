@@ -413,6 +413,16 @@ export class WindowManager {
     logger.debug("更新截图窗口尺寸", { x, y, width, height });
 
     // 在显示窗口前，等待渲染端图片 onLoad 完成后发回的通知，避免用户看到加载态及白屏
+    // 兜底：先确保窗口可见，避免因 ready 事件竞态导致保持隐藏
+    try {
+      if (!win.isDestroyed()) {
+        win.setOpacity(1);
+        if (!win.isVisible()) {
+          win.show();
+        }
+        win.focus();
+      }
+    } catch {}
     let readyHandled = false;
     const readyHandler = (event: Electron.IpcMainEvent) => {
       try {
