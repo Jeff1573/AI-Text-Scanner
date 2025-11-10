@@ -6,42 +6,59 @@ const logger = createModuleLogger('ScreenshotService');
 
 export class ScreenshotService {
   /**
-   * 动态计算缩略图尺寸（优化版）
+   * 计算缩略图尺寸
    * 
-   * 平衡清晰度和性能：
-   * - 使用逻辑分辨率（不乘以 scaleFactor）
-   * - 对于超高分辨率屏幕，限制最大尺寸
-   * - 这样可以避免巨大的图片导致性能问题
+   * 默认：使用物理分辨率（size * scaleFactor）以保证高DPI清晰度。
+   * 可通过环境变量回退：
+   * - ELECTRON_SCREENSHOT_USE_PHYSICAL=false  使用逻辑分辨率（DIP）
+   * - ELECTRON_SCREENSHOT_MAX_DIMENSION=8192  限制最大边长，避免显存/内存压力
    */
   private static calculateThumbnailSize(): { width: number; height: number } {
     const primaryDisplay = screen.getPrimaryDisplay();
-    const { width: screenWidth, height: screenHeight } = primaryDisplay.size;
-    const scaleFactor = primaryDisplay.scaleFactor;
-    
-    // 使用逻辑分辨率，不乘以 scaleFactor
-    // 这样 1920x1080 的屏幕就是 1920x1080，而不是更大的物理分辨率
-    let width = screenWidth;
-    let height = screenHeight;
-    
-    // 对于超大屏幕（如 4K），限制最大尺寸以提升性能
-    const MAX_DIMENSION = 2560; // 最大边长
+    const { width: dipWidth, height: dipHeight } = primaryDisplay.size;
+    const scaleFactor = primaryDisplay.scaleFactor || 1;
+
+    const envUsePhysical = process.env.ELECTRON_SCREENSHOT_USE_PHYSICAL;
+    const usePhysical = envUsePhysical
+      ? ["1", "true", "yes"].includes(envUsePhysical.toLowerCase())
+      : true; // 默认启用物理分辨率
+
+    const envMax = process.env.ELECTRON_SCREENSHOT_MAX_DIMENSION;
+    const MAX_DIMENSION = (() => {
+      const n = envMax ? parseInt(envMax, 10) : 8192; // 提高默认上限以覆盖 4K/5K/8K
+      return Number.isFinite(n) && n > 0 ? n : 8192;
+    })();
+
+    // 基于开关决定初始尺寸
+    let width = usePhysical ? Math.round(dipWidth * scaleFactor) : dipWidth;
+    let height = usePhysical ? Math.round(dipHeight * scaleFactor) : dipHeight;
+
+    // 对超大尺寸做一次等比收缩，避免极端情况下产生超大位图
     if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
       const scale = MAX_DIMENSION / Math.max(width, height);
-      width = Math.round(width * scale);
-      height = Math.round(height * scale);
-      logger.info("屏幕尺寸过大，缩小截图尺寸", {
-        original: `${screenWidth}x${screenHeight}`,
-        scaled: `${width}x${height}`
+      const scaledW = Math.max(1, Math.round(width * scale));
+      const scaledH = Math.max(1, Math.round(height * scale));
+      logger.info("缩略图尺寸超过上限，按等比收缩", {
+        usePhysical,
+        logical: `${dipWidth}x${dipHeight}`,
+        scaleFactor,
+        original: `${width}x${height}`,
+        maxDimension: MAX_DIMENSION,
+        scaled: `${scaledW}x${scaledH}`,
       });
+      width = scaledW;
+      height = scaledH;
     }
-    
-    logger.debug("屏幕信息（优化后）", {
-      logicalResolution: `${screenWidth}x${screenHeight}`,
-      scaleFactor: scaleFactor,
+
+    logger.debug("缩略图尺寸计算完成", {
+      mode: usePhysical ? "physical" : "logical",
+      logicalResolution: `${dipWidth}x${dipHeight}`,
+      scaleFactor,
       thumbnailSize: `${width}x${height}`,
-      estimatedSizeMB: ((width * height * 4) / 1024 / 1024).toFixed(2)
+      estimatedSizeMB: ((width * height * 4) / 1024 / 1024).toFixed(2),
+      maxDimension: MAX_DIMENSION,
     });
-    
+
     return { width, height };
   }
 
