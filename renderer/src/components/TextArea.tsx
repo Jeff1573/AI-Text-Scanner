@@ -41,6 +41,7 @@ export const TextArea = ({
           placeholder={placeholder}
           allowClear
           autoSize={{ minRows: 3, maxRows: 10 }}
+          autoFocus
           style={{
             resize: 'none',
             fontFamily: 'inherit'

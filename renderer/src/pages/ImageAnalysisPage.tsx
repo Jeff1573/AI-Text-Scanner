@@ -3,6 +3,7 @@ import { Row, Col, Typography, Card, Image, Flex, Tabs, TabsProps, Button, messa
 import { CopyOutlined, PictureOutlined } from "@ant-design/icons";
 import { TitleBar, LanguageSelector } from "../components";
 import { translate } from "../utils/translate";
+import { detectLanguage, getSmartTargetLanguage } from "../utils/languageDetector";
 import "../assets/styles/language-selector.css";
 
 const { Paragraph } = Typography;
@@ -146,16 +147,42 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
     sourceLang: string,
     targetLang: string,
     setTranslatedText: (text: string) => void,
-    setIsTranslating: (loading: boolean) => void
+    setIsTranslating: (loading: boolean) => void,
+    userPreferredTargetLang?: string,
+    setTargetLangCallback?: (lang: string) => void
   ) => {
     if (!originalText) return;
 
     setIsTranslating(true);
     try {
+      // 智能语言检测和目标语言选择
+      let finalTargetLang = targetLang;
+
+      // 如果源语言是自动检测，则检测文本语言并智能选择目标语言
+      if (sourceLang === "auto") {
+        const detectedLang = detectLanguage(originalText);
+        console.log("检测到的语言:", detectedLang);
+
+        // 智能选择目标语言
+        const smartTargetLang = getSmartTargetLanguage(
+          detectedLang,
+          userPreferredTargetLang || targetLang
+        );
+        console.log("智能选择的目标语言:", smartTargetLang);
+
+        // 如果智能选择的目标语言与当前不同，并且提供了 setTargetLangCallback 函数，则更新
+        if (smartTargetLang !== targetLang && setTargetLangCallback) {
+          setTargetLangCallback(smartTargetLang);
+          finalTargetLang = smartTargetLang;
+        } else {
+          finalTargetLang = smartTargetLang;
+        }
+      }
+
       const result = await translate({
         text: originalText,
         sourceLang,
-        targetLang,
+        targetLang: finalTargetLang,
       });
       setTranslatedText(result);
     } catch (error) {
@@ -170,12 +197,27 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
     sourceLang: string,
     targetLang: string,
     setSourceLang: (lang: string) => void,
-    setTargetLang: (lang: string) => void
+    setTargetLang: (lang: string) => void,
+    originalText?: string
   ) => {
-    if (sourceLang === "auto") return;
-    const temp = sourceLang;
-    setSourceLang(targetLang);
-    setTargetLang(temp);
+    // 如果源语言是自动检测，先检测文本语言，然后进行切换
+    if (sourceLang === "auto" && originalText) {
+      const detectedLang = detectLanguage(originalText);
+      console.log("切换语言时检测到的语言:", detectedLang);
+
+      // 将检测到的语言设为源语言
+      setSourceLang(detectedLang);
+      // 将当前目标语言设为新的目标语言（实际上是原来的目标语言和检测语言互换）
+      setTargetLang(targetLang);
+      return;
+    }
+
+    // 如果源语言不是 auto，正常切换
+    if (sourceLang !== "auto") {
+      const temp = sourceLang;
+      setSourceLang(targetLang);
+      setTargetLang(temp);
+    }
   }, []);
 
   // 加载配置
@@ -263,7 +305,15 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
   // 当切换到翻译tab时，自动翻译文本
   useEffect(() => {
     if (tabActive === "translate" && analysisText && !translateText) {
-      handleTranslate(analysisText, sourceLang, targetLang, setTranslateText, setIsTranslating);
+      handleTranslate(
+        analysisText,
+        sourceLang,
+        targetLang,
+        setTranslateText,
+        setIsTranslating,
+        targetLang,
+        setTargetLang
+      );
     }
   }, [tabActive, analysisText, translateText, sourceLang, targetLang, handleTranslate]);
 
@@ -271,7 +321,15 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
   useEffect(() => {
     if (tabActive === "translate" && analysisText) {
       const timer = setTimeout(() => {
-        handleTranslate(analysisText, sourceLang, targetLang, setTranslateText, setIsTranslating);
+        handleTranslate(
+          analysisText,
+          sourceLang,
+          targetLang,
+          setTranslateText,
+          setIsTranslating,
+          targetLang,
+          setTargetLang
+        );
       }, 500); // Debounce translation trigger
 
       return () => clearTimeout(timer);
@@ -322,7 +380,7 @@ export const ImageAnalysisPage: React.FC<ImageAnalysisPageProps> = () => {
   }, [performAnalysis]);
 
   const handleSwitchLanguagesWrapper = () => {
-    handleSwitchLanguages(sourceLang, targetLang, setSourceLang, setTargetLang);
+    handleSwitchLanguages(sourceLang, targetLang, setSourceLang, setTargetLang, analysisText);
   };
 
   return (

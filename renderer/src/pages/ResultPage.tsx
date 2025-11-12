@@ -69,7 +69,15 @@ export const ResultPage = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (originalText) {
-        handleTranslate(originalText, sourceLang, targetLang, setTranslatedText, setIsTranslating);
+        handleTranslate(
+          originalText,
+          sourceLang,
+          targetLang,
+          setTranslatedText,
+          setIsTranslating,
+          targetLang,
+          setTargetLang
+        );
       } else {
         // 当输入框为空时，清空翻译结果
         setTranslatedText("");
@@ -77,7 +85,7 @@ export const ResultPage = () => {
     }, 500); // Debounce translation trigger
 
     return () => clearTimeout(timer);
-  }, [originalText, sourceLang, targetLang, handleTranslate, setTranslatedText, setIsTranslating]);
+  }, [originalText, sourceLang, targetLang, handleTranslate, setTranslatedText, setIsTranslating, setTargetLang]);
 
   // 支持按 ESC 键关闭窗口
   useEffect(() => {
@@ -108,7 +116,7 @@ export const ResultPage = () => {
   };
 
   const handleSwitchLanguagesWrapper = () => {
-    handleSwitchLanguages(sourceLang, targetLang, setSourceLang, setTargetLang);
+    handleSwitchLanguages(sourceLang, targetLang, setSourceLang, setTargetLang, originalText);
   };
 
   const handleCopyWrapper = () => {
