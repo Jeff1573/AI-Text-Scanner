@@ -85,6 +85,8 @@ export interface ElectronAPI {
   }>;
   onScreenshotData: (callback: (data: ScreenSource) => void) => void;
   removeScreenshotDataListener: () => void;
+  onScreenshotWindowHide: (callback: () => void) => void;
+  removeScreenshotWindowHideListener: () => void;
   onScreenshotPreviewData: (callback: (data: string) => void) => void;
   removeScreenshotPreviewDataListener: () => void;
   openMainWindowWithRoute: (route: string) => Promise<{ success: boolean; error?: string }>;

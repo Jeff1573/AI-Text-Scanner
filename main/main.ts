@@ -201,6 +201,12 @@ app.on("window-all-closed", () => {
   }
 });
 
+// 应用准备退出时设置退出标志
+app.on("before-quit", () => {
+  logger.info("应用准备退出，设置退出标志");
+  windowManager.setIsQuitting(true);
+});
+
 // 应用退出时注销全局快捷键
 app.on("will-quit", () => {
   // 清理后台轮询与全局快捷键

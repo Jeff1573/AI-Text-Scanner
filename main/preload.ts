@@ -86,6 +86,23 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.removeAllListeners("screenshot-data");
   },
 
+  // 监听截图窗口隐藏事件
+  onScreenshotWindowHide: (callback: () => void) => {
+    logger.debug("注册截图窗口隐藏监听器");
+    ipcRenderer.on("screenshot-window-hide", () => {
+      try {
+        callback();
+      } catch (error) {
+        logger.error("截图窗口隐藏回调函数执行失败", { error });
+      }
+    });
+  },
+
+  // 移除截图窗口隐藏监听器
+  removeScreenshotWindowHideListener: () => {
+    ipcRenderer.removeAllListeners("screenshot-window-hide");
+  },
+
   // 监听截图预览数据
   onScreenshotPreviewData: (callback: (data: string) => void) => {
     logger.debug("注册截图预览数据监听器");

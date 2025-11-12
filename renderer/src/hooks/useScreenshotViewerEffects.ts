@@ -46,6 +46,19 @@ export const useScreenshotViewerEffects = (
     console.log("注册自定义事件监听器");
     window.addEventListener('screenshot-data-received', handleCustomScreenshotData as EventListener);
 
+    // 监听窗口隐藏事件，清理状态避免残留
+    const handleWindowHide = () => {
+      console.log("收到窗口隐藏事件，清理渲染进程状态");
+      setScreenshotData(null);
+      setLoading(false);
+      setError(null);
+      resetSelection();
+      setShowToolbar(false);
+      setShowSelector(false);
+    };
+    console.log("注册截图窗口隐藏监听器");
+    window.electronAPI.onScreenshotWindowHide(handleWindowHide);
+
     // 设置超时，如果10秒内没有收到数据，显示错误
     const timeout = setTimeout(() => {
       if (loading) {
@@ -59,6 +72,7 @@ export const useScreenshotViewerEffects = (
     return () => {
       console.log("ScreenshotViewer 组件卸载");
       window.electronAPI.removeScreenshotDataListener();
+      window.electronAPI.removeScreenshotWindowHideListener();
       window.removeEventListener('screenshot-data-received', handleCustomScreenshotData as EventListener);
       clearTimeout(timeout);
     };

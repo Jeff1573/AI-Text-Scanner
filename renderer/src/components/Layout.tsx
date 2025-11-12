@@ -105,21 +105,13 @@ export const Layout = () => {
   };
 
   // 根据当前路径确定活动菜单项
-  const isHomeActive = location.pathname === "/";
-  const isSettingsActive = location.pathname === "/settings";
+  const isSettingsActive = location.pathname === "/" || location.pathname === "/settings";
 
   // 菜单项配置
   const menuItems = [
     {
-      id: "home",
-      path: "/",
-      icon: "🏠",
-      text: "首页",
-      isActive: isHomeActive,
-    },
-    {
       id: "settings",
-      path: "/settings",
+      path: "/",
       icon: "⚙️",
       text: "设置",
       isActive: isSettingsActive,

@@ -67,6 +67,7 @@ export class WindowManager {
   private _screenshotReadyListenerRegistered = false;
   private _shouldShowMainWindowOnScreenshotClose = true; // 控制截图窗口关闭时是否显示主窗口
   private _screenshotWindowReady = false; // 标记截图窗口是否已完成预热
+  private _isQuitting = false; // 标记应用是否正在退出
 
   getMainWindow(): BrowserWindow | null {
     return this.mainWindow;
@@ -82,6 +83,10 @@ export class WindowManager {
 
   getResultWindow(): BrowserWindow | null {
     return this.resultWindow;
+  }
+
+  setIsQuitting(isQuitting: boolean): void {
+    this._isQuitting = isQuitting;
   }
 
   getHtmlViewerWindow(): BrowserWindow | null {
@@ -355,6 +360,12 @@ export class WindowManager {
     // 改为隐藏而不是销毁窗口，保持窗口常驻以提升响应速度
     this.screenshotWindow.on("close", (event) => {
       if (this.screenshotWindow && !this.screenshotWindow.isDestroyed()) {
+        // 如果应用正在退出，允许窗口真正关闭
+        if (this._isQuitting) {
+          logger.debug("应用正在退出，允许截图窗口真正关闭");
+          return;
+        }
+
         event.preventDefault(); // 阻止窗口关闭
 
         // 禁用动画效果：先设置不透明度为0，再隐藏窗口
@@ -379,6 +390,14 @@ export class WindowManager {
             this.mainWindow.focus();
           }
         }
+      }
+    });
+
+    // 监听窗口隐藏事件，通知渲染进程清理状态
+    this.screenshotWindow.on("hide", () => {
+      if (this.screenshotWindow && !this.screenshotWindow.isDestroyed()) {
+        logger.debug("截图窗口隐藏，发送清理状态事件到渲染进程");
+        this.screenshotWindow.webContents.send("screenshot-window-hide");
       }
     });
 
