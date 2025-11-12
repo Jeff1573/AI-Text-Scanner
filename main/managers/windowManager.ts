@@ -757,17 +757,20 @@ export class WindowManager {
         isVisible: this.mainWindow.isVisible(),
         isMinimized: this.mainWindow.isMinimized()
       });
-      
+
       // 如果窗口最小化，先恢复
       if (this.mainWindow.isMinimized()) {
         this.mainWindow.restore();
       }
-      
+
       // 显示并聚焦窗口
       if (!this.mainWindow.isVisible()) {
         this.mainWindow.show();
       }
       this.mainWindow.focus();
+
+      // 导航到主界面（首页）
+      this.mainWindow.webContents.send("navigate-to", "/");
     } else {
       logger.debug("主窗口不存在或已销毁，创建新窗口", {
         mainWindowExists: !!this.mainWindow,
