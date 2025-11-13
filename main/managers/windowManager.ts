@@ -1066,6 +1066,26 @@ export class WindowManager {
       }
     });
 
+    // 调整贴图窗口大小
+    ipcMain.handle("resize-sticker-window", (event, width: number, height: number) => {
+      try {
+        const win = BrowserWindow.fromWebContents(event.sender);
+        if (win && !win.isDestroyed()) {
+          win.setSize(width, height, true); // true 表示动画过渡
+          logger.debug("调整贴图窗口大小", { width, height, windowId: win.id });
+        }
+        return { success: true };
+      } catch (error) {
+        logger.error("调整贴图窗口大小失败", {
+          error: error instanceof Error ? error.message : "未知错误",
+        });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误",
+        };
+      }
+    });
+
     ipcMain.handle("window-minimize", (event) => {
       const win = BrowserWindow.fromWebContents(event.sender);
       if (win && !win.isDestroyed()) {

@@ -376,4 +376,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.removeAllListeners("sticker-data");
   },
 
+  // 调整贴图窗口大小
+  resizeStickerWindow: (width: number, height: number) =>
+    ipcRenderer.invoke("resize-sticker-window", width, height),
+
 });

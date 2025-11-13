@@ -18,18 +18,18 @@
   font-size: 14px;
 }
 
-/* 拖动区域 - 覆盖整个窗口 */
+/* 拖动区域 - 覆盖整个窗口，但不阻止事件 */
 .sticker-drag-area {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  -webkit-app-region: drag;
+  pointer-events: none;
   z-index: 1;
 }
 
-/* 图片容器 */
+/* 图片容器 - 可拖动 */
 .sticker-image-container {
   position: relative;
   width: 100%;
@@ -38,7 +38,8 @@
   align-items: center;
   justify-content: center;
   z-index: 2;
-  pointer-events: none;
+  -webkit-app-region: drag;
+  cursor: move;
 }
 
 .sticker-image {
@@ -58,10 +59,10 @@
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 8px;
+  gap: 12px;
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(10px);
-  padding: 8px 12px;
+  padding: 10px 16px;
   border-radius: 24px;
   z-index: 10;
   -webkit-app-region: no-drag;

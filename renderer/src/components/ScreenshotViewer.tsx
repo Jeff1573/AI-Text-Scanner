@@ -304,8 +304,14 @@ export const ScreenshotViewer = () => {
             cropCoords.height
           );
 
-          // 贴图后不关闭截图窗口，允许继续截图贴图
-          // 但需要重置选区
+          // 贴图后隐藏截图窗口
+          try {
+            await window.electronAPI.windowHide();
+          } catch (hideError) {
+            console.error("隐藏截图窗口失败:", hideError);
+          }
+
+          // 重置选区
           resetSelection();
           setShowToolbar(false);
 
