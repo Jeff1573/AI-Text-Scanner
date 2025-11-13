@@ -12,6 +12,39 @@ const StickerWindow: React.FC = () => {
   const [stickerData, setStickerData] = useState<StickerData | null>(null);
 
   useEffect(() => {
+    // 贴图窗口挂载时，禁止页面滚动并移除最小尺寸限制，避免出现滚动条
+    const html = document.documentElement;
+    const body = document.body;
+    const prev = {
+      htmlOverflow: html.style.overflow,
+      bodyOverflow: body.style.overflow,
+      minWidth: body.style.minWidth,
+      minHeight: body.style.minHeight,
+      display: body.style.display,
+      background: body.style.background,
+    };
+
+    body.classList.add("sticker-window-mode");
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.minWidth = "0";
+    body.style.minHeight = "0";
+    body.style.display = "block";
+    body.style.background = "transparent";
+
+    return () => {
+      // 恢复原样式，避免影响其它路由
+      body.classList.remove("sticker-window-mode");
+      html.style.overflow = prev.htmlOverflow;
+      body.style.overflow = prev.bodyOverflow;
+      body.style.minWidth = prev.minWidth;
+      body.style.minHeight = prev.minHeight;
+      body.style.display = prev.display;
+      body.style.background = prev.background;
+    };
+  }, []);
+
+  useEffect(() => {
     // 监听贴图数据
     window.electronAPI.onStickerData((data: StickerData) => {
       console.log("收到贴图数据", data);
@@ -95,4 +128,3 @@ const StickerWindow: React.FC = () => {
 };
 
 export default StickerWindow;
-

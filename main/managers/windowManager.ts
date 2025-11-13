@@ -1093,7 +1093,7 @@ export class WindowManager {
 
             // 调整窗口大小
             win.setSize(newWidth, newHeight, true);
-            logger.debug("缩放贴图窗口", { windowId: win.id, newScale, newWidth, newHeight });
+            // logger.debug("缩放贴图窗口", { windowId: win.id, newScale, newWidth, newHeight });
           }
         }
         return { success: true };

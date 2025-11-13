@@ -1,7 +1,8 @@
 .sticker-window {
-  width: 100vw;
-  height: 100vh;
-  position: relative;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   background: transparent;
   display: flex;
@@ -27,7 +28,9 @@
   height: 28px;
   /* 仅顶部为拖拽区域，避免拦截滚轮事件 */
   -webkit-app-region: drag;
-  z-index: 5;
+  z-index: 999;
+  /* 保持完全透明且不占空间视觉效果 */
+  background: rgba(0, 0, 0, 0.03);
 }
 
 /* 图片容器 - 可拖动 */
@@ -39,8 +42,8 @@
   align-items: center;
   justify-content: center;
   z-index: 2;
-  /* 允许滚轮等交互事件到达内容区域 */
-  -webkit-app-region: no-drag;
+  overflow: hidden; /* 防止滚动条 */
+  /* 不设置 no-drag，避免与顶部 drag 区域冲突 */
   cursor: default;
 }
 
@@ -48,10 +51,21 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+  display: block; /* 去除 baseline 空隙 */
   user-select: none;
   -webkit-user-drag: none;
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
 }
+
+/* 仅在贴图窗口下，彻底关闭页面滚动与最小尺寸限制 */
+body.sticker-window-mode {
+  overflow: hidden !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  display: block !important;
+  background: transparent !important;
+}
+
 
 /* 控制栏 */
 .sticker-controls {
