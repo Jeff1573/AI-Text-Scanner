@@ -74,7 +74,9 @@ export const ScreenshotPreviewPage = () => {
       try {
         localStorage.removeItem("latestAnalysisResult");
         localStorage.removeItem("latestAnalysisTimestamp");
-      } catch {}
+      } catch (storageError) {
+        console.warn("清理localStorage失败", storageError);
+      }
       
       // 保存图片到 localStorage 供分析页面使用
       localStorage.setItem("selectedImageData", imageData);

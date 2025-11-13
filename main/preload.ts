@@ -353,4 +353,27 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.removeAllListeners("prepare-download-update");
   },
 
+  // 贴图窗口相关 API
+  createStickerWindow: (imageData: string, width: number, height: number) =>
+    ipcRenderer.invoke("create-sticker-window", imageData, width, height),
+
+  closeStickerWindow: () => ipcRenderer.invoke("close-sticker-window"),
+
+  // 监听贴图数据
+  onStickerData: (callback: (data: { imageData: string; width: number; height: number }) => void) => {
+    logger.debug("注册贴图数据监听器");
+    ipcRenderer.on("sticker-data", (event, data) => {
+      try {
+        callback(data);
+      } catch (error) {
+        logger.error("贴图数据回调函数执行失败", { error });
+      }
+    });
+  },
+
+  // 移除贴图数据监听器
+  removeStickerDataListener: () => {
+    ipcRenderer.removeAllListeners("sticker-data");
+  },
+
 });

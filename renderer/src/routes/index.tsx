@@ -5,6 +5,7 @@ import { ScreenshotViewer } from "../components";
 import { ResultPage } from "../pages/ResultPage";
 import { ImageAnalysisPage } from "../pages/ImageAnalysisPage";
 import { ScreenshotPreviewPage } from "../pages/ScreenshotPreviewPage";
+import StickerWindow from "../components/StickerWindow";
 
 export const router = createHashRouter([
   {
@@ -32,5 +33,9 @@ export const router = createHashRouter([
   {
     path: "image-analysis",
     element: <ImageAnalysisPage />,
+  },
+  {
+    path: "sticker",
+    element: <StickerWindow />,
   },
 ]);

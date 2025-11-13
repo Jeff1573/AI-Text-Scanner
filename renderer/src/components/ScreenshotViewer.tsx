@@ -64,7 +64,9 @@ export const ScreenshotViewer = () => {
     try {
       document.body.classList.add("screenshot-route");
       return () => document.body.classList.remove("screenshot-route");
-    } catch {}
+    } catch (error) {
+      console.error("设置截图路由样式失败", error);
+    }
   }, []);
 
   // 监听识别结果，成功则打开新的HTML查看器窗口，失败则提示
@@ -261,6 +263,70 @@ export const ScreenshotViewer = () => {
     }
   }, [isSelecting, showSelector, selection, setIsSelecting, resetSelection]);
 
+  // 处理贴图功能
+  const handleSticker = useCallback(async () => {
+    if (!screenshotData) return;
+
+    try {
+      const imgElement = getImageElement();
+      if (!imgElement) {
+        alert("找不到图片元素");
+        return;
+      }
+
+      const displayRect = imgElement.getBoundingClientRect();
+      const img = new Image();
+
+      img.onload = async () => {
+        try {
+          const originalWidth = img.naturalWidth;
+          const originalHeight = img.naturalHeight;
+          const displayWidth = displayRect.width;
+          const displayHeight = displayRect.height;
+
+          const cropCoords = calculateCropCoordinates(
+            selection,
+            originalWidth,
+            originalHeight,
+            displayWidth,
+            displayHeight
+          );
+
+          const selectedImageData = await cropImage(
+            screenshotData.thumbnail,
+            cropCoords
+          );
+
+          // 创建贴图窗口
+          await window.electronAPI.createStickerWindow(
+            selectedImageData,
+            cropCoords.width,
+            cropCoords.height
+          );
+
+          // 贴图后不关闭截图窗口，允许继续截图贴图
+          // 但需要重置选区
+          resetSelection();
+          setShowToolbar(false);
+
+        } catch (error) {
+          console.error("创建贴图失败:", error);
+          alert("创建贴图失败，请重试");
+        }
+      };
+
+      img.onerror = () => {
+        alert("图片加载失败");
+      };
+
+      img.src = screenshotData.thumbnail;
+
+    } catch (error) {
+      console.error("贴图功能失败:", error);
+      alert("贴图功能失败，请重试");
+    }
+  }, [screenshotData, selection, resetSelection]);
+
   // 获取选中内容
   const handleGetSelectedContent = useCallback(async () => {
     if (!screenshotData) return;
@@ -315,8 +381,8 @@ export const ScreenshotViewer = () => {
     try {
       // 隐藏当前截图窗口（而非最小化/关闭）
       await window.electronAPI.windowHide();
-    } catch (error) {
-      console.error("隐藏窗口失败:", error);
+    } catch (hideError) {
+      console.error("隐藏窗口失败:", hideError);
       // 如果IPC调用失败，使用原生window.close()作为备选方案
       window.close();
     }
@@ -350,6 +416,7 @@ export const ScreenshotViewer = () => {
             onCancel={handleCancel}
             onCopy={handleCopySelectedImage}
             onCopySuccess={handleCopySuccess}
+            onSticker={handleSticker}
             selection={selection}
           />
         )}

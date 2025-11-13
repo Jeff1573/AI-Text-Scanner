@@ -86,7 +86,7 @@ export const detectLanguage = (text: string): string => {
  */
 export const getSmartTargetLanguage = (
   detectedLang: string,
-  userPreferredTargetLang: string = "zh"
+  userPreferredTargetLang = "zh"
 ): string => {
   // 如果检测到的是中文，目标语言应该是英文
   if (detectedLang === "zh") {

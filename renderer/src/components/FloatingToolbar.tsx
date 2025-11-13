@@ -8,6 +8,8 @@ interface FloatingToolbarProps {
   onCopy: () => Promise<void>;
   /** 复制成功后的回调函数，用于关闭截图窗口 */
   onCopySuccess?: () => void;
+  /** 贴图功能 */
+  onSticker?: () => void;
   selection: {
     x: number;
     y: number;
@@ -21,6 +23,7 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
   onCancel,
   onCopy,
   onCopySuccess,
+  onSticker,
   selection,
 }) => {
   const [copySuccess, setCopySuccess] = useState(false);
@@ -60,8 +63,8 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
           <span className="toolbar-icon">❌</span>
           {/* <span className="toolbar-text">取消</span> */}
         </button>
-        <button 
-          onClick={handleCopy} 
+        <button
+          onClick={handleCopy}
           className={`toolbar-button copy ${copySuccess ? 'success' : ''}`}
           disabled={isCopying}
         >
@@ -70,6 +73,12 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
           </span>
           {/* <span className="toolbar-text">复制</span> */}
         </button>
+        {onSticker && (
+          <button onClick={onSticker} className="toolbar-button sticker">
+            <span className="toolbar-icon">📌</span>
+            {/* <span className="toolbar-text">贴图</span> */}
+          </button>
+        )}
         <button onClick={onConfirm} className="toolbar-button confirm">
           <span className="toolbar-icon">✅</span>
           {/* <span className="toolbar-text">确认</span> */}

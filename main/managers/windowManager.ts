@@ -63,6 +63,7 @@ export class WindowManager {
   private screenshotPreviewWindow: BrowserWindow | null = null;
   private resultWindow: BrowserWindow | null = null;
   private htmlViewerWindow: BrowserWindow | null = null;
+  private stickerWindows: Map<number, BrowserWindow> = new Map(); // 存储多个贴图窗口
   private _trayAvailabilityChecked = false;
   private _screenshotReadyListenerRegistered = false;
   private _shouldShowMainWindowOnScreenshotClose = true; // 控制截图窗口关闭时是否显示主窗口
@@ -441,7 +442,10 @@ export class WindowManager {
         }
         win.focus();
       }
-    } catch {}
+    } catch (error) {
+      // 忽略错误，使用兜底方案
+      logger.warn("提前显示窗口失败", { error });
+    }
     let readyHandled = false;
     const readyHandler = (event: Electron.IpcMainEvent) => {
       try {
@@ -782,6 +786,116 @@ export class WindowManager {
     }
   }
 
+  /**
+   * 创建贴图窗口
+   * @param imageData 图片的 base64 数据
+   * @param width 图片宽度
+   * @param height 图片高度
+   */
+  createStickerWindow(imageData: string, width: number, height: number): BrowserWindow {
+    logger.info("创建贴图窗口", { width, height });
+
+    // 计算窗口初始尺寸（保持图片比例，设置合理的最大尺寸）
+    const maxWidth = 800;
+    const maxHeight = 600;
+    let windowWidth = width;
+    let windowHeight = height;
+
+    // 如果图片过大，按比例缩小
+    if (width > maxWidth || height > maxHeight) {
+      const ratio = Math.min(maxWidth / width, maxHeight / height);
+      windowWidth = Math.round(width * ratio);
+      windowHeight = Math.round(height * ratio);
+    }
+
+    // 贴图窗口配置
+    const stickerConfig: Electron.BrowserWindowConstructorOptions = {
+      width: windowWidth,
+      height: windowHeight,
+      show: false,
+      frame: false,
+      transparent: true,
+      alwaysOnTop: true,
+      skipTaskbar: true,
+      resizable: true,
+      autoHideMenuBar: true,
+      webPreferences: {
+        preload: getPreloadPath(),
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    };
+
+    const stickerWindow = new BrowserWindow(stickerConfig);
+
+    // 存储窗口实例
+    this.stickerWindows.set(stickerWindow.id, stickerWindow);
+
+    // 加载贴图页面
+    if (isDevelopment) {
+      stickerWindow.loadURL(`${VITE_DEV_SERVER_URL}#/sticker`);
+    } else {
+      const htmlPath = path.join(__dirname, `../renderer/index.html`);
+      if (fs.existsSync(htmlPath)) {
+        stickerWindow.loadFile(htmlPath, { hash: "/sticker" });
+      } else {
+        const altHtmlPath = path.join(process.resourcesPath, "app/.vite/renderer/index.html");
+        stickerWindow.loadFile(altHtmlPath, { hash: "/sticker" });
+      }
+    }
+
+    // 窗口准备就绪后发送图片数据
+    stickerWindow.once("ready-to-show", () => {
+      if (!stickerWindow.isDestroyed()) {
+        stickerWindow.show();
+        stickerWindow.webContents.send("sticker-data", {
+          imageData,
+          width,
+          height,
+        });
+      }
+    });
+
+    // 窗口关闭时从 Map 中移除
+    stickerWindow.on("closed", () => {
+      logger.debug("贴图窗口已关闭", { id: stickerWindow.id });
+      this.stickerWindows.delete(stickerWindow.id);
+    });
+
+    // 开发者工具快捷键
+    stickerWindow.webContents.on("before-input-event", (event, input) => {
+      if (input.key === "F12") {
+        event.preventDefault();
+        stickerWindow.webContents.openDevTools();
+      }
+    });
+
+    logger.info("贴图窗口创建成功", { id: stickerWindow.id });
+    return stickerWindow;
+  }
+
+  /**
+   * 关闭指定的贴图窗口
+   */
+  closeStickerWindow(windowId: number): void {
+    const window = this.stickerWindows.get(windowId);
+    if (window && !window.isDestroyed()) {
+      window.close();
+    }
+  }
+
+  /**
+   * 关闭所有贴图窗口
+   */
+  closeAllStickerWindows(): void {
+    this.stickerWindows.forEach((window) => {
+      if (!window.isDestroyed()) {
+        window.close();
+      }
+    });
+    this.stickerWindows.clear();
+  }
+
   registerIPCHandlers(): void {
     ipcMain.handle("open-result-window", async (_event, resultContent) => {
       try {
@@ -926,6 +1040,31 @@ export class WindowManager {
         }
       }
     );
+
+    // 创建贴图窗口
+    ipcMain.handle("create-sticker-window", async (_event, imageData: string, width: number, height: number) => {
+      try {
+        logger.debug("收到创建贴图窗口请求", { width, height });
+        this.createStickerWindow(imageData, width, height);
+        return { success: true };
+      } catch (error) {
+        logger.error("创建贴图窗口失败", {
+          error: error instanceof Error ? error.message : "未知错误",
+        });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误",
+        };
+      }
+    });
+
+    // 关闭贴图窗口
+    ipcMain.handle("close-sticker-window", (event) => {
+      const win = BrowserWindow.fromWebContents(event.sender);
+      if (win && !win.isDestroyed()) {
+        win.close();
+      }
+    });
 
     ipcMain.handle("window-minimize", (event) => {
       const win = BrowserWindow.fromWebContents(event.sender);
