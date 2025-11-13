@@ -65,6 +65,7 @@ export class WindowManager {
   private htmlViewerWindow: BrowserWindow | null = null;
   private stickerWindows: Map<number, BrowserWindow> = new Map(); // 存储多个贴图窗口
   private stickerWindowStates: Map<number, { originalWidth: number; originalHeight: number; scale: number }> = new Map(); // 存储贴图窗口状态
+  private stickerDragStates: Map<number, { startCursor: Electron.Point; startBounds: Electron.Rectangle }> = new Map(); // 存储贴图窗口拖拽状态
   private _trayAvailabilityChecked = false;
   private _screenshotReadyListenerRegistered = false;
   private _shouldShowMainWindowOnScreenshotClose = true; // 控制截图窗口关闭时是否显示主窗口
@@ -816,14 +817,17 @@ export class WindowManager {
       show: false,
       frame: false,
       transparent: true,
+      backgroundColor: "#00000000", // 完全透明背景，避免拖动时出现白色空隙
       alwaysOnTop: true,
       skipTaskbar: true,
       resizable: true,
       autoHideMenuBar: true,
+      hasShadow: false, // 禁用窗口阴影，提升拖动性能
       webPreferences: {
         preload: getPreloadPath(),
         nodeIntegration: false,
         contextIsolation: true,
+        offscreen: false, // 确保使用硬件加速
       },
     };
 
@@ -867,6 +871,7 @@ export class WindowManager {
       logger.debug("贴图窗口已关闭", { id: stickerWindow.id });
       this.stickerWindows.delete(stickerWindow.id);
       this.stickerWindowStates.delete(stickerWindow.id);
+      this.stickerDragStates.delete(stickerWindow.id);
     });
 
     // 开发者工具快捷键
@@ -1073,29 +1078,43 @@ export class WindowManager {
       }
     });
 
-    // 缩放贴图窗口
-    ipcMain.handle("scale-sticker-window", (event, deltaY: number) => {
+    // 缩放贴图窗口（支持鼠标锚点）
+    ipcMain.handle("scale-sticker-window", (event, deltaY: number, anchor?: { x: number; y: number; dpr?: number }) => {
       try {
         const win = BrowserWindow.fromWebContents(event.sender);
-        if (win && !win.isDestroyed()) {
-          const state = this.stickerWindowStates.get(win.id);
-          if (state) {
-            // 计算新的scale值
-            const delta = deltaY > 0 ? -0.1 : 0.1; // 向下滚缩小，向上滚放大
-            const newScale = Math.max(0.3, Math.min(3, state.scale + delta));
+        if (!win || win.isDestroyed()) return { success: false };
 
-            // 更新状态
-            state.scale = newScale;
+        const state = this.stickerWindowStates.get(win.id);
+        if (!state) return { success: false };
 
-            // 计算新的窗口大小
-            const newWidth = Math.round(state.originalWidth * newScale);
-            const newHeight = Math.round(state.originalHeight * newScale);
+        const oldBounds = win.getBounds();
 
-            // 调整窗口大小
-            win.setSize(newWidth, newHeight, true);
-            // logger.debug("缩放贴图窗口", { windowId: win.id, newScale, newWidth, newHeight });
-          }
-        }
+        // 连续缩放：按滚轮增量计算比例
+        const factor = Math.exp(-deltaY * 0.0015);
+        const minScale = 0.1;
+        const maxScale = 6;
+        const newScale = Math.min(maxScale, Math.max(minScale, state.scale * factor));
+        const newWidth = Math.max(1, Math.round(state.originalWidth * newScale));
+        const newHeight = Math.max(1, Math.round(state.originalHeight * newScale));
+
+        // 计算锚点位置（DIP坐标，clientX/clientY 本身就是 DIP，无需除以 dpr）
+        const axDip = anchor ? anchor.x : oldBounds.width / 2;
+        const ayDip = anchor ? anchor.y : oldBounds.height / 2;
+
+        // 计算缩放比例
+        const ratioW = newWidth / oldBounds.width;
+        const ratioH = newHeight / oldBounds.height;
+
+        // 计算新的窗口位置（围绕锚点缩放）
+        const newX = Math.round(oldBounds.x - axDip * (ratioW - 1));
+        const newY = Math.round(oldBounds.y - ayDip * (ratioH - 1));
+
+        // 原子更新窗口位置和大小
+        win.setBounds({ x: newX, y: newY, width: newWidth, height: newHeight });
+
+        // 更新状态
+        this.stickerWindowStates.set(win.id, { ...state, scale: newScale });
+
         return { success: true };
       } catch (error) {
         logger.error("缩放贴图窗口失败", {
@@ -1134,6 +1153,64 @@ export class WindowManager {
           success: false,
           error: error instanceof Error ? error.message : "未知错误",
         };
+      }
+    });
+
+    // 开始拖拽贴图窗口
+    ipcMain.handle("begin-sticker-drag", (event) => {
+      try {
+        const win = BrowserWindow.fromWebContents(event.sender);
+        if (!win || win.isDestroyed()) return;
+
+        const startCursor = screen.getCursorScreenPoint();
+        const startBounds = win.getBounds();
+        // logger.debug("开始拖拽", { startCursor, startBounds });
+        this.stickerDragStates.set(win.id, { startCursor, startBounds });
+      } catch (error) {
+        logger.error("开始拖拽贴图窗口失败", {
+          error: error instanceof Error ? error.message : "未知错误",
+        });
+      }
+    });
+
+    // 拖拽贴图窗口中（rAF 心跳）
+    ipcMain.handle("drag-sticker-window", (event) => {
+      try {
+        const win = BrowserWindow.fromWebContents(event.sender);
+        if (!win || win.isDestroyed()) return;
+
+        const dragState = this.stickerDragStates.get(win.id);
+        if (!dragState) return;
+
+        const currentCursor = screen.getCursorScreenPoint();
+        const dx = Math.round(currentCursor.x - dragState.startCursor.x);
+        const dy = Math.round(currentCursor.y - dragState.startCursor.y);
+
+        // 使用初始记录的宽高，只更新位置，避免窗口大小意外变化
+        win.setBounds({
+          x: dragState.startBounds.x + dx,
+          y: dragState.startBounds.y + dy,
+          width: dragState.startBounds.width,
+          height: dragState.startBounds.height,
+        }, false); // false = 禁用动画，立即更新
+      } catch (error) {
+        logger.error("拖拽贴图窗口失败", {
+          error: error instanceof Error ? error.message : "未知错误",
+        });
+      }
+    });
+
+    // 结束拖拽贴图窗口
+    ipcMain.handle("end-sticker-drag", (event) => {
+      try {
+        const win = BrowserWindow.fromWebContents(event.sender);
+        if (!win || win.isDestroyed()) return;
+
+        this.stickerDragStates.delete(win.id);
+      } catch (error) {
+        logger.error("结束拖拽贴图窗口失败", {
+          error: error instanceof Error ? error.message : "未知错误",
+        });
       }
     });
 

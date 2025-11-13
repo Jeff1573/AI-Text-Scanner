@@ -19,21 +19,7 @@
   font-size: 14px;
 }
 
-/* 拖动区域 - 覆盖整个窗口 */
-.sticker-drag-area {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 28px;
-  /* 仅顶部为拖拽区域，避免拦截滚轮事件 */
-  -webkit-app-region: drag;
-  z-index: 999;
-  /* 保持完全透明且不占空间视觉效果 */
-  background: rgba(0, 0, 0, 0.03);
-}
-
-/* 图片容器 - 可拖动 */
+/* 图片容器 - 自定义拖拽实现 */
 .sticker-image-container {
   position: relative;
   width: 100%;
@@ -43,8 +29,12 @@
   justify-content: center;
   z-index: 2;
   overflow: hidden; /* 防止滚动条 */
-  /* 不设置 no-drag，避免与顶部 drag 区域冲突 */
-  cursor: default;
+  cursor: grab;
+  touch-action: none; /* 防止触摸手势干扰 */
+}
+
+.sticker-window.dragging .sticker-image-container {
+  cursor: grabbing;
 }
 
 .sticker-image {
@@ -80,11 +70,11 @@ body.sticker-window-mode {
   padding: 10px 16px;
   border-radius: 24px;
   z-index: 10;
-  -webkit-app-region: no-drag;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   opacity: 0.3;
   transition: opacity 0.2s ease;
   pointer-events: auto; /* 确保可以接收点击事件 */
+  cursor: default; /* 控制条区域不显示拖拽光标 */
 }
 
 .sticker-window:hover .sticker-controls {

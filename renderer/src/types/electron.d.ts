@@ -171,6 +171,21 @@ export interface ElectronAPI {
   }) => void) => void;
   removePrepareDownloadUpdateListener: () => void;
 
+  // 贴图窗口相关API
+  createStickerWindow: (imageData: string, width: number, height: number) => Promise<{ success: boolean; error?: string }>;
+  closeStickerWindow: () => Promise<void>;
+  onStickerData: (callback: (data: { imageData: string; width: number; height: number }) => void) => void;
+  removeStickerDataListener: () => void;
+
+  // 贴图窗口缩放（带鼠标锚点）
+  scaleStickerWindow: (deltaY: number, anchor?: { x: number; y: number; dpr?: number }) => Promise<void>;
+  resetStickerWindow: () => Promise<{ success: boolean; error?: string }>;
+
+  // 贴图窗口自定义拖拽
+  beginStickerDrag: () => Promise<void>;
+  dragStickerWindow: () => Promise<void>;
+  endStickerDrag: () => Promise<void>;
+
 }
 
 declare global {

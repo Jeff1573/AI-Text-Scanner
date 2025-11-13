@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { CloseOutlined, UndoOutlined } from "@ant-design/icons";
 import "./StickerWindow.css";
 
@@ -10,6 +10,9 @@ interface StickerData {
 
 const StickerWindow: React.FC = () => {
   const [stickerData, setStickerData] = useState<StickerData | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rafPendingRef = useRef(false);
 
   useEffect(() => {
     // 贴图窗口挂载时，禁止页面滚动并移除最小尺寸限制，避免出现滚动条
@@ -68,10 +71,77 @@ const StickerWindow: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // 容器级滚轮缩放（避免 drag 区域拦截）
+  // 窗口失焦或隐藏时结束拖拽（兜底处理）
+  useEffect(() => {
+    const handleBlur = () => {
+      if (dragging) {
+        setDragging(false);
+        rafPendingRef.current = false;
+        window.electronAPI.endStickerDrag();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && dragging) {
+        setDragging(false);
+        rafPendingRef.current = false;
+        window.electronAPI.endStickerDrag();
+      }
+    };
+
+    window.addEventListener("blur", handleBlur);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener("blur", handleBlur);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [dragging]);
+
+  // 容器级滚轮缩放（围绕鼠标锚点）
   const handleWheel: React.WheelEventHandler = (e) => {
     e.preventDefault();
-    window.electronAPI.scaleStickerWindow(e.deltaY);
+    window.electronAPI.scaleStickerWindow(e.deltaY, {
+      x: e.clientX,
+      y: e.clientY,
+      dpr: window.devicePixelRatio,
+    });
+  };
+
+  // 自定义拖拽（整图可拖，控制条除外）
+  const beginDrag: React.PointerEventHandler = (e) => {
+    // 仅响应左键
+    if (e.button !== 0) return;
+
+    // 排除控制按钮区域
+    if ((e.target as HTMLElement)?.closest(".sticker-controls")) return;
+
+    containerRef.current?.setPointerCapture(e.pointerId);
+    setDragging(true);
+    window.electronAPI.beginStickerDrag();
+  };
+
+  const tickDrag = () => {
+    rafPendingRef.current = false;
+    window.electronAPI.dragStickerWindow();
+  };
+
+  const onPointerMove: React.PointerEventHandler = () => {
+    if (!dragging) return;
+    if (rafPendingRef.current) return;
+    rafPendingRef.current = true;
+    requestAnimationFrame(tickDrag);
+  };
+
+  const endDrag: React.PointerEventHandler = (e) => {
+    if (!dragging) return;
+    try {
+      containerRef.current?.releasePointerCapture(e.pointerId);
+    } catch {
+      // 忽略释放捕获失败的错误
+    }
+    setDragging(false);
+    rafPendingRef.current = false;
+    window.electronAPI.endStickerDrag();
   };
 
   const handleClose = () => {
@@ -93,12 +163,17 @@ const StickerWindow: React.FC = () => {
   }
 
   return (
-    <div className="sticker-window">
-      {/* 顶部拖拽条 */}
-      <div className="sticker-drag-area" />
-
-      {/* 图片区域（允许滚轮） */}
-      <div className="sticker-image-container" onWheel={handleWheel}>
+    <div className={`sticker-window ${dragging ? "dragging" : ""}`}>
+      {/* 图片区域（可拖拽、可滚轮缩放） */}
+      <div
+        ref={containerRef}
+        className="sticker-image-container"
+        onWheel={handleWheel}
+        onPointerDown={beginDrag}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+      >
         <img
           src={stickerData.imageData}
           alt="Sticker"
