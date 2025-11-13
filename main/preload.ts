@@ -380,4 +380,22 @@ contextBridge.exposeInMainWorld("electronAPI", {
   resizeStickerWindow: (width: number, height: number) =>
     ipcRenderer.invoke("resize-sticker-window", width, height),
 
+  // 监听贴图窗口滚轮事件
+  onStickerWheel: (callback: (data: { deltaY: number }) => void) => {
+    logger.debug("注册贴图滚轮事件监听器");
+    ipcRenderer.on("sticker-wheel", (event, data) => {
+      try {
+        callback(data);
+      } catch (error) {
+        logger.error("贴图滚轮事件回调函数执行失败", { error });
+      }
+    });
+  },
+
+  // 缩放贴图窗口
+  scaleStickerWindow: (deltaY: number) => ipcRenderer.invoke("scale-sticker-window", deltaY),
+
+  // 重置贴图窗口大小
+  resetStickerWindow: () => ipcRenderer.invoke("reset-sticker-window"),
+
 });

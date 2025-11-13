@@ -64,6 +64,7 @@ export class WindowManager {
   private resultWindow: BrowserWindow | null = null;
   private htmlViewerWindow: BrowserWindow | null = null;
   private stickerWindows: Map<number, BrowserWindow> = new Map(); // 存储多个贴图窗口
+  private stickerWindowStates: Map<number, { originalWidth: number; originalHeight: number; scale: number }> = new Map(); // 存储贴图窗口状态
   private _trayAvailabilityChecked = false;
   private _screenshotReadyListenerRegistered = false;
   private _shouldShowMainWindowOnScreenshotClose = true; // 控制截图窗口关闭时是否显示主窗口
@@ -828,8 +829,13 @@ export class WindowManager {
 
     const stickerWindow = new BrowserWindow(stickerConfig);
 
-    // 存储窗口实例
+    // 存储窗口实例和初始状态
     this.stickerWindows.set(stickerWindow.id, stickerWindow);
+    this.stickerWindowStates.set(stickerWindow.id, {
+      originalWidth: width,
+      originalHeight: height,
+      scale: windowWidth / width, // 初始scale值
+    });
 
     // 加载贴图页面
     if (isDevelopment) {
@@ -860,6 +866,7 @@ export class WindowManager {
     stickerWindow.on("closed", () => {
       logger.debug("贴图窗口已关闭", { id: stickerWindow.id });
       this.stickerWindows.delete(stickerWindow.id);
+      this.stickerWindowStates.delete(stickerWindow.id);
     });
 
     // 开发者工具快捷键
@@ -1066,17 +1073,61 @@ export class WindowManager {
       }
     });
 
-    // 调整贴图窗口大小
-    ipcMain.handle("resize-sticker-window", (event, width: number, height: number) => {
+    // 缩放贴图窗口
+    ipcMain.handle("scale-sticker-window", (event, deltaY: number) => {
       try {
         const win = BrowserWindow.fromWebContents(event.sender);
         if (win && !win.isDestroyed()) {
-          win.setSize(width, height, true); // true 表示动画过渡
-          logger.debug("调整贴图窗口大小", { width, height, windowId: win.id });
+          const state = this.stickerWindowStates.get(win.id);
+          if (state) {
+            // 计算新的scale值
+            const delta = deltaY > 0 ? -0.1 : 0.1; // 向下滚缩小，向上滚放大
+            const newScale = Math.max(0.3, Math.min(3, state.scale + delta));
+
+            // 更新状态
+            state.scale = newScale;
+
+            // 计算新的窗口大小
+            const newWidth = Math.round(state.originalWidth * newScale);
+            const newHeight = Math.round(state.originalHeight * newScale);
+
+            // 调整窗口大小
+            win.setSize(newWidth, newHeight, true);
+            logger.debug("缩放贴图窗口", { windowId: win.id, newScale, newWidth, newHeight });
+          }
         }
         return { success: true };
       } catch (error) {
-        logger.error("调整贴图窗口大小失败", {
+        logger.error("缩放贴图窗口失败", {
+          error: error instanceof Error ? error.message : "未知错误",
+        });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误",
+        };
+      }
+    });
+
+    // 重置贴图窗口大小到原始比例
+    ipcMain.handle("reset-sticker-window", (event) => {
+      try {
+        const win = BrowserWindow.fromWebContents(event.sender);
+        if (win && !win.isDestroyed()) {
+          const state = this.stickerWindowStates.get(win.id);
+          if (state) {
+            // 重置scale为1
+            state.scale = 1;
+            const newWidth = Math.round(state.originalWidth);
+            const newHeight = Math.round(state.originalHeight);
+
+            // 调整窗口大小
+            win.setSize(newWidth, newHeight, true);
+            logger.debug("重置贴图窗口大小", { windowId: win.id, newWidth, newHeight });
+          }
+        }
+        return { success: true };
+      } catch (error) {
+        logger.error("重置贴图窗口大小失败", {
           error: error instanceof Error ? error.message : "未知错误",
         });
         return {
