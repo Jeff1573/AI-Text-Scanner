@@ -96,7 +96,7 @@ export class WindowManager {
     return this.htmlViewerWindow;
   }
 
-  createMainWindow(): BrowserWindow | null {
+  createMainWindow(initialRoute?: string): BrowserWindow | null {
     try {
       logger.info("开始创建主窗口...");
 
@@ -158,35 +158,53 @@ export class WindowManager {
 
       // 加载页面
       try {
+        const normalizedRoute = initialRoute
+          ? initialRoute.startsWith("/")
+            ? initialRoute
+            : `/${initialRoute}`
+          : "";
+
         if (isDevelopment) {
+          const url = normalizedRoute
+            ? `${VITE_DEV_SERVER_URL}#${normalizedRoute}`
+            : VITE_DEV_SERVER_URL;
           logger.debug("加载开发服务器URL", {
-            url: VITE_DEV_SERVER_URL,
+            url,
+            initialRoute: normalizedRoute || undefined,
           });
-          this.mainWindow.loadURL(VITE_DEV_SERVER_URL);
+          this.mainWindow.loadURL(url);
         } else {
           // 添加调试信息
           logger.info("生产环境路径信息", {
             __dirname,
             resourcesPath: process.resourcesPath,
             appPath: app.getAppPath(),
-            isPackaged: app.isPackaged
+            isPackaged: app.isPackaged,
           });
           // 生产环境下的正确路径
           const htmlPath = path.join(__dirname, `../renderer/index.html`);
-          logger.info("加载HTML文件", { htmlPath });
-          
+          logger.info("加载HTML文件", { htmlPath, initialRoute: normalizedRoute || undefined });
+
+          const loadWithHash = (filePath: string) => {
+            if (normalizedRoute) {
+              this.mainWindow!.loadFile(filePath, { hash: normalizedRoute });
+            } else {
+              this.mainWindow!.loadFile(filePath);
+            }
+          };
+
           // 检查文件是否存在
           if (fs.existsSync(htmlPath)) {
             logger.info("HTML文件存在，开始加载");
-            this.mainWindow.loadFile(htmlPath);
+            loadWithHash(htmlPath);
           } else {
             // 尝试备用路径
             const altHtmlPath = path.join(process.resourcesPath, "app/.vite/renderer/index.html");
             logger.info("尝试备用HTML路径", { altHtmlPath });
-            
+
             if (fs.existsSync(altHtmlPath)) {
               logger.info("备用HTML文件存在，开始加载");
-              this.mainWindow.loadFile(altHtmlPath);
+              loadWithHash(altHtmlPath);
             } else {
               logger.error("HTML文件不存在", { htmlPath, altHtmlPath });
               throw new Error(`HTML文件不存在: ${htmlPath} 或 ${altHtmlPath}`);
@@ -929,19 +947,23 @@ export class WindowManager {
     ipcMain.handle("open-main-window-with-route", async (_event, route: string) => {
       try {
         logger.debug("打开主窗口并导航", { route });
-        
-        if (!this.mainWindow || this.mainWindow.isDestroyed()) {
-          this.createMainWindow();
+
+        const isNewWindow = !this.mainWindow || this.mainWindow.isDestroyed();
+        if (isNewWindow) {
+          // 新建主窗口时，直接以目标路由作为初始 hash 加载，避免先落在首页再跳转
+          this.createMainWindow(route);
         }
-        
+
         if (this.mainWindow) {
+          // 对于已经存在的主窗口，优先发送导航事件，再显示窗口，尽量避免先闪现旧页面
+          if (!isNewWindow) {
+            this.mainWindow.webContents.send("navigate-to", route);
+          }
+
           this.mainWindow.show();
           this.mainWindow.focus();
-          
-          // 发送导航事件到渲染进程
-          this.mainWindow.webContents.send("navigate-to", route);
         }
-        
+
         return { success: true };
       } catch (error) {
         logger.error("打开主窗口失败", {
