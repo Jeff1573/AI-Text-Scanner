@@ -365,7 +365,9 @@ export const ScreenshotViewer = () => {
         try {
           localStorage.removeItem("latestAnalysisResult");
           localStorage.removeItem("latestAnalysisTimestamp");
-        } catch {}
+        } catch (storageError) {
+          console.warn("清理本地识别结果缓存失败", storageError);
+        }
         saveSelectedImage(
           selectedImageData,
           cropCoords.width,

@@ -5,6 +5,7 @@ import {
   screen,
   ipcMain,
   desktopCapturer,
+  nativeImage,
 } from "electron";
 import path from "node:path";
 import fs from "node:fs";
@@ -600,9 +601,30 @@ export class WindowManager {
     }
 
     const isMac = process.platform === "darwin";
+
+    // 根据图片尺寸动态计算窗口大小，使窗口与截图大小尽量一致
+    let imageWidth = 900;
+    let imageHeight = 700;
+
+    try {
+      const image = nativeImage.createFromDataURL(imageData);
+      const size = image.getSize();
+
+      if (size.width > 0 && size.height > 0) {
+        imageWidth = size.width;
+        imageHeight = size.height;
+      } else {
+        logger.warn("解析截图尺寸结果为空，使用默认预览窗口大小");
+      }
+    } catch (error) {
+      logger.warn("解析截图尺寸失败，使用默认预览窗口大小", {
+        error: error instanceof Error ? error.message : "未知错误",
+      });
+    }
+
     const windowConfig: Electron.BrowserWindowConstructorOptions = {
-      width: 900,
-      height: 700,
+      width: imageWidth,
+      height: imageHeight,
       show: false,
       center: true,
       resizable: true,

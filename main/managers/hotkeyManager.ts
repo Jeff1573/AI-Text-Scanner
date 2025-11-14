@@ -44,25 +44,23 @@ export class HotkeyManager {
       try {
         await this.windowManager.hideAllWindows();
 
-        if (process.platform === 'darwin' || process.platform === 'win32') {
+        // 所有平台统一：获取截图图片 dataURL 后，打开截图预览窗口
+        if (process.platform === "darwin" || process.platform === "win32") {
           // macOS/Windows: 使用原生截图工具
           logger.info("使用系统原生截图工具");
           const filepath = await NativeScreenshotService.captureInteractive();
           const dataURL = await NativeScreenshotService.readScreenshotAsDataURL(filepath);
           NativeScreenshotService.cleanupScreenshot(filepath);
 
-          // 显示 ScreenshotViewer 界面（带工具栏和贴图功能）
-          const screenshotData = {
-            id: 'native-screenshot',
-            name: 'Native Screenshot',
-            thumbnail: dataURL
-          };
-          await this.windowManager.createScreenshotWindow(screenshotData);
+          await this.windowManager.createScreenshotPreviewWindow(dataURL);
         } else {
-          // Linux: 使用 Electron desktopCapturer
+          // 其他平台: 使用 Electron desktopCapturer
           logger.info("使用 Electron desktopCapturer 截图");
           const screenshotData = await ScreenshotService.captureScreen();
-          await this.windowManager.createScreenshotWindow(screenshotData);
+
+          await this.windowManager.createScreenshotPreviewWindow(
+            screenshotData.thumbnail
+          );
         }
       } catch (error) {
         const err = error as Error;
@@ -82,9 +80,9 @@ export class HotkeyManager {
     }
 
     if (!ret2) {
-      logger.warn("ScreenshotViewer全局快捷键注册失败");
+      logger.warn("截图预览窗口全局快捷键注册失败");
     } else {
-      logger.info("ScreenshotViewer全局快捷键注册成功", { hotkey: screenshotHotkey });
+      logger.info("截图预览窗口全局快捷键注册成功", { hotkey: screenshotHotkey });
     }
 
     return { resultRegistered: !!ret1, screenshotRegistered: !!ret2 };

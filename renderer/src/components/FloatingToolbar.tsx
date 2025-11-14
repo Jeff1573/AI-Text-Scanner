@@ -1,23 +1,40 @@
 import React, { useState } from "react";
 import "../assets/styles/floating-toolbar.css";
 
+/**
+ * 浮动工具栏组件属性
+ */
 interface FloatingToolbarProps {
   onConfirm: () => void;
   onCancel: () => void;
   /** 复制选中区域图片到剪切板 */
   onCopy: () => Promise<void>;
-  /** 复制成功后的回调函数，用于关闭截图窗口 */
+  /** 复制成功后的回调函数，用于关闭截图窗口或预览窗口 */
   onCopySuccess?: () => void;
-  /** 贴图功能 */
+  /** 贴图功能（可选） */
   onSticker?: () => void;
+  /** 工具栏锚点位置，用于 selection 模式 */
   selection: {
     x: number;
     y: number;
     width: number;
     height: number;
   };
+  /**
+   * 布局模式：
+   * - 'selection'：跟随选区右下角（默认，用于截图选择界面）
+   * - 'imageBottom'：居中固定在容器底部（用于整图预览界面）
+   */
+  positionMode?: "selection" | "imageBottom";
 }
 
+/**
+ * 截图操作浮动工具栏。
+ *
+ * 根据 positionMode 决定布局：
+ * - selection：工具栏跟随选区移动；
+ * - imageBottom：工具栏固定在图片容器底部居中。
+ */
 export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
   onConfirm,
   onCancel,
@@ -25,6 +42,7 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
   onCopySuccess,
   onSticker,
   selection,
+  positionMode = "selection",
 }) => {
   const [copySuccess, setCopySuccess] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
@@ -49,12 +67,24 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
     }
   };
 
-  const toolbarStyle: React.CSSProperties = {
+  const baseToolbarStyle: React.CSSProperties = {
     position: "absolute",
-    left: `${selection.x + selection.width - 10}px`,
-    top: `${selection.y + selection.height + 10}px`, // 10px offset
     zIndex: 1000,
   };
+
+  const toolbarStyle: React.CSSProperties =
+    positionMode === "selection"
+      ? {
+          ...baseToolbarStyle,
+          left: `${selection.x + selection.width - 10}px`,
+          top: `${selection.y + selection.height + 10}px`,
+        }
+      : {
+          ...baseToolbarStyle,
+          left: "80%",
+          bottom: "0px",
+          transform: "translateX(-50%)",
+        };
 
   return (
     <>
@@ -86,14 +116,24 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
       </div>
       
       {copySuccess && (
-        <div 
-          className="copy-success-tooltip" 
-          style={{
-            position: "absolute",
-            left: `${selection.x + selection.width / 2}px`,
-            top: `${selection.y - 40}px`,
-            zIndex: 1001,
-          }}
+        <div
+          className="copy-success-tooltip"
+          style={
+            positionMode === "selection"
+              ? {
+                  position: "absolute",
+                  left: `${selection.x + selection.width / 2}px`,
+                  top: `${selection.y - 40}px`,
+                  zIndex: 1001,
+                }
+              : {
+                  position: "absolute",
+                  left: "50%",
+                  bottom: "80px",
+                  transform: "translateX(-50%)",
+                  zIndex: 1001,
+                }
+          }
         >
           图片已复制到剪切板
         </div>

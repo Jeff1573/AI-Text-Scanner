@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { FloatingToolbar } from "../components/FloatingToolbar";
+import { copyImageToClipboard } from "../utils/clipboardUtils";
 import "../assets/styles/screenshot-preview.css";
 
 /**
@@ -8,9 +10,46 @@ import "../assets/styles/screenshot-preview.css";
  */
 export const ScreenshotPreviewPage = () => {
   const [imageData, setImageData] = useState<string>("");
-  const [copySuccess, setCopySuccess] = useState(false);
-  const [isCopying, setIsCopying] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selection, setSelection] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
+
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
+
+  // 为截图预览页调整 body/html 布局，避免窗口缩小时出现滚动条
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+
+    const prev = {
+      bodyOverflow: body.style.overflow,
+      htmlOverflow: html.style.overflow,
+      minWidth: body.style.minWidth,
+      minHeight: body.style.minHeight,
+    };
+
+    body.style.overflow = "hidden";
+    html.style.overflow = "hidden";
+    body.style.minWidth = "0";
+    body.style.minHeight = "0";
+
+    return () => {
+      body.style.overflow = prev.bodyOverflow;
+      html.style.overflow = prev.htmlOverflow;
+      body.style.minWidth = prev.minWidth;
+      body.style.minHeight = prev.minHeight;
+    };
+  }, []);
 
   // 监听截图数据
   useEffect(() => {
@@ -27,39 +66,78 @@ export const ScreenshotPreviewPage = () => {
   }, []);
 
   /**
-   * 复制图片到剪切板
+   * 根据图片在舞台中的位置更新工具栏锚点位置
+   *
+   * 工具栏会跟随图片底部居中显示，当窗口大小变化或图片加载完成后重新计算位置。
+   */
+  const updateSelectionFromImage = useCallback(() => {
+    const stageElement = stageRef.current;
+    const imageElement = imageRef.current;
+
+    if (!stageElement || !imageElement) {
+      return;
+    }
+
+    const stageRect = stageElement.getBoundingClientRect();
+    const imageRect = imageElement.getBoundingClientRect();
+
+    const offsetX = imageRect.left - stageRect.left;
+    const offsetY = imageRect.top - stageRect.top;
+    const centerX = offsetX + imageRect.width / 2;
+    // 让工具栏稍微覆盖在图片底部内部，而不是完全位于图片下方，避免被容器裁剪
+    const desiredY = offsetY + imageRect.height - 40;
+    const clampedY = Math.max(0, desiredY);
+
+    setSelection({
+      // +10 与 FloatingToolbar 内部 -10 偏移相抵，用于让工具栏水平居中于图片
+      x: centerX + 10,
+      // 使用图片底部附近作为工具栏锚点，保证始终位于容器可见区域内
+      y: clampedY,
+      width: 0,
+      height: 0,
+    });
+  }, []);
+
+  // 图片数据变化时（例如接收到新的截图）重新计算工具栏位置
+  useEffect(() => {
+    if (!imageData) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      updateSelectionFromImage();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [imageData, updateSelectionFromImage]);
+
+  // 窗口大小变化时，重新计算工具栏位置
+  useEffect(() => {
+    const handleResize = () => {
+      updateSelectionFromImage();
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [updateSelectionFromImage]);
+
+  /**
+   * 复制当前截图到剪切板
    */
   const handleCopyImage = useCallback(async () => {
-    if (!imageData || isCopying) return;
+    if (!imageData) return;
 
-    setIsCopying(true);
     try {
-      if (!navigator.clipboard || !navigator.clipboard.write) {
-        alert("您的浏览器不支持复制图片到剪切板");
-        return;
-      }
-
-      const response = await fetch(imageData);
-      const blob = await response.blob();
-      const clipboardItem = new ClipboardItem({
-        [blob.type]: blob,
-      });
-
-      await navigator.clipboard.write([clipboardItem]);
-      
-      setCopySuccess(true);
-      setTimeout(() => {
-        setCopySuccess(false);
-        // 复制成功后关闭窗口
-        window.close();
-      }, 1000);
+      await copyImageToClipboard(imageData);
     } catch (error) {
       console.error("复制图片失败:", error);
       alert("复制图片失败，请重试");
-    } finally {
-      setIsCopying(false);
     }
-  }, [imageData, isCopying]);
+  }, [imageData]);
 
   /**
    * 分析图片内容
@@ -131,6 +209,77 @@ export const ScreenshotPreviewPage = () => {
     window.close();
   }, []);
 
+  /**
+   * 贴图：将当前整张截图作为贴图窗口展示
+   */
+  const handleSticker = useCallback(async () => {
+    if (!imageData) return;
+
+    try {
+      const img = new Image();
+
+      img.onload = async () => {
+        try {
+          const originalWidth = img.naturalWidth;
+          const originalHeight = img.naturalHeight;
+
+          if (!originalWidth || !originalHeight) {
+            alert("无法获取图片尺寸，贴图失败");
+            return;
+          }
+
+          await window.electronAPI.createStickerWindow(
+            imageData,
+            originalWidth,
+            originalHeight
+          );
+
+          try {
+            await window.electronAPI.windowHide();
+          } catch (hideError) {
+            console.error("隐藏截图预览窗口失败:", hideError);
+            window.close();
+          }
+        } catch (error) {
+          console.error("创建贴图失败:", error);
+          alert("创建贴图失败，请重试");
+        }
+      };
+
+      img.onerror = () => {
+        alert("图片加载失败，无法贴图");
+      };
+
+      img.src = imageData;
+    } catch (error) {
+      console.error("贴图功能失败:", error);
+      alert("贴图功能失败，请重试");
+    }
+  }, [imageData]);
+
+  /**
+   * 处理键盘事件：按下 ESC 时关闭截图预览窗口
+   */
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        handleClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleClose]);
+
+  /**
+   * 复制成功后的回调：在工具栏内部短暂展示提示后关闭窗口
+   */
+  const handleCopySuccess = useCallback(() => {
+    handleClose();
+  }, [handleClose]);
+
   if (!imageData) {
     return (
       <div className="screenshot-preview-page loading">
@@ -141,63 +290,26 @@ export const ScreenshotPreviewPage = () => {
 
   return (
     <div className="screenshot-preview-page">
-      {/* 图片预览区域 */}
-      <div className="screenshot-preview-content">
+      {/* 图片预览区域，承载图片与浮动工具栏 */}
+      <div className="screenshot-preview-content" ref={stageRef}>
         <img
+          ref={imageRef}
           src={imageData}
           alt="截图预览"
           className="screenshot-preview-image"
+          onLoad={updateSelectionFromImage}
         />
-      </div>
 
-      {/* 底部工具栏 */}
-      <div className="screenshot-preview-toolbar-container">
-        {copySuccess && (
-          <div className="screenshot-preview-tooltip">
-            图片已复制到剪切板
-          </div>
-        )}
-        <div className="screenshot-preview-toolbar">
-          <button
-            onClick={handleCopyImage}
-            className={`screenshot-preview-button copy ${copySuccess ? "success" : ""}`}
-            disabled={isCopying}
-            title="复制图片到剪切板"
-          >
-            <span className="button-icon">
-              {isCopying ? "⏳" : copySuccess ? "✅" : "📋"}
-            </span>
-            <span className="button-text">
-              {isCopying ? "复制中..." : copySuccess ? "已复制" : "复制图片"}
-            </span>
-          </button>
-
-          <button
-            onClick={handleAnalyzeImage}
-            className="screenshot-preview-button analyze"
-            disabled={isAnalyzing}
-            title="分析图片内容"
-          >
-            <span className="button-icon">
-              {isAnalyzing ? "⏳" : "🔍"}
-            </span>
-            <span className="button-text">
-              {isAnalyzing ? "分析中..." : "分析图片"}
-            </span>
-          </button>
-
-          <button
-            onClick={handleClose}
-            className="screenshot-preview-button close"
-            disabled={isAnalyzing}
-            title="关闭"
-          >
-            <span className="button-icon">❌</span>
-            <span className="button-text">关闭</span>
-          </button>
-        </div>
+        <FloatingToolbar
+          onConfirm={handleAnalyzeImage}
+          onCancel={handleClose}
+          onCopy={handleCopyImage}
+          onCopySuccess={handleCopySuccess}
+          onSticker={handleSticker}
+          selection={selection}
+          positionMode="imageBottom"
+        />
       </div>
     </div>
   );
 };
-

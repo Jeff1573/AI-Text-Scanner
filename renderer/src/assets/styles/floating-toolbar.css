@@ -10,6 +10,8 @@
   transform: translate(-50%, 10px) scale(0.95);
   transform-origin: top center;
   animation: fadeIn 0.15s forwards;
+  /* 在可拖拽窗口中，确保工具栏区域本身不可拖拽，从而可以接收点击事件 */
+  -webkit-app-region: no-drag;
 }
 
 @keyframes fadeIn {
