@@ -37,32 +37,37 @@ export class HotkeyManager {
     });
 
     const ret2 = globalShortcut.register(screenshotHotkey, async () => {
-      logger.info("全局快捷键被触发，准备启动截图功能", { 
-        platform: process.platform 
+      logger.info("全局快捷键被触发，准备启动截图功能", {
+        platform: process.platform
       });
 
       try {
         await this.windowManager.hideAllWindows();
-        
-        if (process.platform === 'darwin') {
-          // macOS: 使用原生截图
-          logger.info("使用 macOS 原生截图");
+
+        if (process.platform === 'darwin' || process.platform === 'win32') {
+          // macOS/Windows: 使用原生截图工具
+          logger.info("使用系统原生截图工具");
           const filepath = await NativeScreenshotService.captureInteractive();
           const dataURL = await NativeScreenshotService.readScreenshotAsDataURL(filepath);
           NativeScreenshotService.cleanupScreenshot(filepath);
-          
-          // 创建预览窗口
-          this.windowManager.createScreenshotPreviewWindow(dataURL);
+
+          // 显示 ScreenshotViewer 界面（带工具栏和贴图功能）
+          const screenshotData = {
+            id: 'native-screenshot',
+            name: 'Native Screenshot',
+            thumbnail: dataURL
+          };
+          await this.windowManager.createScreenshotWindow(screenshotData);
         } else {
-          // Windows/Linux: 使用 Electron desktopCapturer
+          // Linux: 使用 Electron desktopCapturer
           logger.info("使用 Electron desktopCapturer 截图");
           const screenshotData = await ScreenshotService.captureScreen();
-          this.windowManager.createScreenshotWindow(screenshotData);
+          await this.windowManager.createScreenshotWindow(screenshotData);
         }
       } catch (error) {
         const err = error as Error;
-        if (err.message.includes("取消")) {
-          logger.info("用户取消了截图");
+        if (err.message.includes("取消") || err.message.includes("超时")) {
+          logger.info("用户取消了截图或超时");
         } else {
           logger.error("截图过程中发生错误", { error: err.message });
         }
