@@ -147,7 +147,7 @@ export const ScreenshotPreviewPage = () => {
 
     setIsAnalyzing(true);
     try {
-      console.log("开始分析图片...");
+      console.log("开始分析图片，准备跳转到结果页面...");
       // 清理上一次识别结果，避免误读旧内容
       try {
         localStorage.removeItem("latestAnalysisResult");
@@ -155,48 +155,29 @@ export const ScreenshotPreviewPage = () => {
       } catch (storageError) {
         console.warn("清理localStorage失败", storageError);
       }
-      
-      // 保存图片到 localStorage 供分析页面使用
+
+      // 保存图片到 localStorage，交给 ImageAnalysisPage 统一触发 AI 分析
       localStorage.setItem("selectedImageData", imageData);
-      localStorage.setItem("selectedImageInfo", JSON.stringify({
-        width: 0,
-        height: 0,
-        size: imageData.length,
-        format: 'png',
-      }));
+      localStorage.setItem(
+        "selectedImageInfo",
+        JSON.stringify({
+          width: 0,
+          height: 0,
+          size: imageData.length,
+          format: "png",
+        })
+      );
 
-      // 调用 AI 分析接口
-      const result = await window.electronAPI.analyzeImage({
-        imageData: imageData,
-        prompt: "请识别并提取图片中的所有文字内容，保持原有的格式和排版。",
-      });
+      // 打开主窗口并导航到图片分析页面
+      await window.electronAPI.openMainWindowWithRoute("/image-analysis");
 
-      if (result.content) {
-        console.log("图片分析成功，内容长度:", result.content.length);
-        
-        // 将分析结果存储到 localStorage
-        localStorage.setItem("latestAnalysisResult", result.content);
-        localStorage.setItem("latestAnalysisTimestamp", Date.now().toString());
-        
-        console.log("已保存到 localStorage:", {
-          contentLength: result.content.length,
-          timestamp: Date.now()
-        });
-        
-        // 先打开主窗口并导航到分析页面
-        await window.electronAPI.openMainWindowWithRoute("/image-analysis");
-        
-        // 稍作延迟后关闭预览窗口，确保主窗口已经打开并读取了数据
-        setTimeout(() => {
-          window.close();
-        }, 500);
-      } else {
-        console.error("图片分析失败:", result.error);
-        alert(`分析失败: ${result.error || "未知错误"}`);
-      }
+      // 稍作延迟后关闭预览窗口，确保主窗口已经打开并读取了数据
+      setTimeout(() => {
+        window.close();
+      }, 300);
     } catch (error) {
-      console.error("分析图片失败:", error);
-      alert(`分析失败: ${error}`);
+      console.error("跳转到分析页面失败:", error);
+      alert(`打开分析页面失败: ${error}`);
     } finally {
       setIsAnalyzing(false);
     }

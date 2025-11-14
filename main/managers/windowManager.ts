@@ -622,9 +622,12 @@ export class WindowManager {
       });
     }
 
+    // 预留一部分高度用于底部工具栏，避免遮挡图片内容
+    const TOOLBAR_EXTRA_HEIGHT = 80;
+
     const windowConfig: Electron.BrowserWindowConstructorOptions = {
       width: imageWidth,
-      height: imageHeight,
+      height: imageHeight + TOOLBAR_EXTRA_HEIGHT,
       show: false,
       center: true,
       resizable: true,

@@ -81,7 +81,7 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
         }
       : {
           ...baseToolbarStyle,
-          left: "80%",
+          left: "50%",
           bottom: "0px",
           transform: "translateX(-50%)",
         };
