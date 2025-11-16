@@ -211,3 +211,4 @@ settings.local.json
 out/
 .workflow/
 nul
+.spec-workflow
