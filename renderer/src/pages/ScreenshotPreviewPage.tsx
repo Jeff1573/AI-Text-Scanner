@@ -286,7 +286,7 @@ export const ScreenshotPreviewPage = () => {
           onCancel={handleClose}
           onCopy={handleCopyImage}
           onCopySuccess={handleCopySuccess}
-          onSticker={handleSticker}
+          // onSticker={handleSticker}
           selection={selection}
           positionMode="imageBottom"
         />
