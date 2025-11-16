@@ -388,6 +388,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   scaleScreenshotPreviewWindow: (deltaY: number, anchor?: { x: number; y: number; dpr?: number }) =>
     ipcRenderer.invoke("scale-screenshot-preview-window", deltaY, anchor),
 
+  // 截图预览窗口自定义拖拽
+  beginScreenshotPreviewDrag: () => ipcRenderer.invoke("begin-screenshot-preview-drag"),
+  dragScreenshotPreviewWindow: () => ipcRenderer.invoke("drag-screenshot-preview-window"),
+  endScreenshotPreviewDrag: () => ipcRenderer.invoke("end-screenshot-preview-drag"),
+
   // 重置贴图窗口大小
   resetStickerWindow: () => ipcRenderer.invoke("reset-sticker-window"),
 

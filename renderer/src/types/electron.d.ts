@@ -189,6 +189,11 @@ export interface ElectronAPI {
   // 截图预览窗口缩放（带鼠标锚点）
   scaleScreenshotPreviewWindow: (deltaY: number, anchor?: { x: number; y: number; dpr?: number }) => Promise<void>;
 
+  // 截图预览窗口自定义拖拽
+  beginScreenshotPreviewDrag: () => Promise<void>;
+  dragScreenshotPreviewWindow: () => Promise<void>;
+  endScreenshotPreviewDrag: () => Promise<void>;
+
 }
 
 declare global {

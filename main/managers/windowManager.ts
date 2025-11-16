@@ -68,6 +68,7 @@ export class WindowManager {
   private stickerWindowStates: Map<number, { originalWidth: number; originalHeight: number; scale: number }> = new Map(); // 存储贴图窗口状态
   private stickerDragStates: Map<number, { startCursor: Electron.Point; startBounds: Electron.Rectangle }> = new Map(); // 存储贴图窗口拖拽状态
   private screenshotPreviewWindowState: { originalWidth: number; originalHeight: number; scale: number } | null = null; // 截图预览窗口缩放状态
+  private screenshotPreviewDragState: { startCursor: Electron.Point; startBounds: Electron.Rectangle } | null = null; // 截图预览窗口拖拽状态
   private _trayAvailabilityChecked = false;
   private _screenshotReadyListenerRegistered = false;
   private _shouldShowMainWindowOnScreenshotClose = true; // 控制截图窗口关闭时是否显示主窗口
@@ -1229,6 +1230,83 @@ export class WindowManager {
           success: false,
           error: error instanceof Error ? error.message : "未知错误",
         };
+      }
+    });
+
+    /**
+     * 开始拖拽截图预览窗口
+     *
+     * 记录起始鼠标位置和窗口位置，用于后续计算相对位移
+     */
+    ipcMain.handle("begin-screenshot-preview-drag", (event) => {
+      try {
+        const win = this.screenshotPreviewWindow;
+        if (!win || win.isDestroyed()) return;
+
+        // 获取当前鼠标屏幕坐标
+        const startCursor = screen.getCursorScreenPoint();
+        // 获取当前窗口位置和大小
+        const startBounds = win.getBounds();
+
+        // 保存起始状态
+        this.screenshotPreviewDragState = { startCursor, startBounds };
+      } catch (error) {
+        logger.error("开始拖拽截图预览窗口失败", {
+          error: error instanceof Error ? error.message : "未知错误",
+        });
+      }
+    });
+
+    /**
+     * 拖拽截图预览窗口中
+     *
+     * 根据鼠标移动距离计算新的窗口位置
+     * 使用相对位移算法避免累积误差
+     */
+    ipcMain.handle("drag-screenshot-preview-window", (event) => {
+      try {
+        const win = this.screenshotPreviewWindow;
+        if (!win || win.isDestroyed()) return;
+
+        const dragState = this.screenshotPreviewDragState;
+        if (!dragState) return;
+
+        // 获取当前鼠标位置
+        const currentCursor = screen.getCursorScreenPoint();
+
+        // 计算鼠标移动的相对距离
+        const dx = Math.round(currentCursor.x - dragState.startCursor.x);
+        const dy = Math.round(currentCursor.y - dragState.startCursor.y);
+
+        // 更新窗口位置（相对于起始位置的偏移）
+        // 保持窗口尺寸不变，只更新位置
+        // false 参数表示不使用动画，立即更新
+        win.setBounds({
+          x: dragState.startBounds.x + dx,
+          y: dragState.startBounds.y + dy,
+          width: dragState.startBounds.width,
+          height: dragState.startBounds.height,
+        }, false);
+      } catch (error) {
+        logger.error("拖拽截图预览窗口失败", {
+          error: error instanceof Error ? error.message : "未知错误",
+        });
+      }
+    });
+
+    /**
+     * 结束拖拽截图预览窗口
+     *
+     * 清理拖拽状态
+     */
+    ipcMain.handle("end-screenshot-preview-drag", (event) => {
+      try {
+        // 清理拖拽状态
+        this.screenshotPreviewDragState = null;
+      } catch (error) {
+        logger.error("结束拖拽截图预览窗口失败", {
+          error: error instanceof Error ? error.message : "未知错误",
+        });
       }
     });
 

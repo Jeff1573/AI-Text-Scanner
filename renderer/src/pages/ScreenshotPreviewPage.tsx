@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { FloatingToolbar } from "../components/FloatingToolbar";
 import { copyImageToClipboard } from "../utils/clipboardUtils";
+import { useWindowDrag } from "../hooks/useWindowDrag";
 import "../assets/styles/screenshot-preview.css";
 
 /**
  * 截图预览弹窗页面
- * 
+ *
  * 在独立窗口中显示原生截图结果，并提供操作工具栏
  */
 export const ScreenshotPreviewPage = () => {
@@ -25,6 +26,16 @@ export const ScreenshotPreviewPage = () => {
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+
+  // 使用自定义拖拽 Hook，支持窗口拖拽功能
+  // 排除工具栏区域，避免拖拽时误触按钮
+  const { dragHandlers, isDragging } = useWindowDrag({
+    onBeginDrag: () => window.electronAPI.beginScreenshotPreviewDrag(),
+    onDragMove: () => window.electronAPI.dragScreenshotPreviewWindow(),
+    onEndDrag: () => window.electronAPI.endScreenshotPreviewDrag(),
+    excludeSelector: ".floating-toolbar", // 工具栏不触发拖拽
+    containerRef: stageRef,
+  });
 
   // 为截图预览页调整 body/html 布局，避免窗口缩小时出现滚动条
   useEffect(() => {
@@ -276,7 +287,7 @@ export const ScreenshotPreviewPage = () => {
   if (!imageData) {
     return (
       <div className="screenshot-preview-page loading">
-        <div className="loading-text">加载中...</div>
+        <div className="loading-text">加载中...</div>-
       </div>
     );
   }
@@ -285,9 +296,10 @@ export const ScreenshotPreviewPage = () => {
     <div className="screenshot-preview-page">
       {/* 图片预览区域，承载图片与浮动工具栏 */}
       <div
-        className="screenshot-preview-content"
+        className={`screenshot-preview-content ${isDragging ? "dragging" : ""}`}
         ref={stageRef}
         onWheel={handleWheel}
+        {...dragHandlers}
       >
         <img
           ref={imageRef}
@@ -307,6 +319,5 @@ export const ScreenshotPreviewPage = () => {
           positionMode="imageBottom"
         />
       </div>
-    </div>
-  );
+    </div>  );
 };

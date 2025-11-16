@@ -30,16 +30,26 @@
   padding: 0 0 50px 0; /* 为底部工具栏预留空间，避免遮挡图片 */
   overflow: hidden;
   position: relative;
+  /* 使用自定义拖拽逻辑代替 -webkit-app-region */
+  cursor: grab;
+  touch-action: none; /* 防止触摸手势干扰 */
+}
+
+/* 拖拽状态下的光标 */
+.screenshot-preview-content.dragging {
+  cursor: grabbing;
 }
 
 .screenshot-preview-image {
   max-width: 100%;
   max-height: 100%;
   flex: 1;
-  -webkit-app-region: drag; /* 允许拖拽窗口 */
-  /* object-fit: contain; */
+  /* 移除 -webkit-app-region: drag，改用自定义拖拽逻辑 */
+  /* 这样可以同时支持滚轮缩放和窗口拖拽 */
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  user-select: none; /* 防止拖拽时选中图片 */
+  pointer-events: none; /* 图片本身不响应事件，由容器处理 */
 }
 
 /* 底部工具栏容器 */
