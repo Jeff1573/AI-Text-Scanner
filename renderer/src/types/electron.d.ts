@@ -186,6 +186,9 @@ export interface ElectronAPI {
   dragStickerWindow: () => Promise<void>;
   endStickerDrag: () => Promise<void>;
 
+  // 截图预览窗口缩放（带鼠标锚点）
+  scaleScreenshotPreviewWindow: (deltaY: number, anchor?: { x: number; y: number; dpr?: number }) => Promise<void>;
+
 }
 
 declare global {

@@ -384,6 +384,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   scaleStickerWindow: (deltaY: number, anchor?: { x: number; y: number; dpr?: number }) =>
     ipcRenderer.invoke("scale-sticker-window", deltaY, anchor),
 
+  // 缩放截图预览窗口（带鼠标锚点）
+  scaleScreenshotPreviewWindow: (deltaY: number, anchor?: { x: number; y: number; dpr?: number }) =>
+    ipcRenderer.invoke("scale-screenshot-preview-window", deltaY, anchor),
+
   // 重置贴图窗口大小
   resetStickerWindow: () => ipcRenderer.invoke("reset-sticker-window"),
 

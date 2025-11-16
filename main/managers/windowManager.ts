@@ -67,6 +67,7 @@ export class WindowManager {
   private stickerWindows: Map<number, BrowserWindow> = new Map(); // 存储多个贴图窗口
   private stickerWindowStates: Map<number, { originalWidth: number; originalHeight: number; scale: number }> = new Map(); // 存储贴图窗口状态
   private stickerDragStates: Map<number, { startCursor: Electron.Point; startBounds: Electron.Rectangle }> = new Map(); // 存储贴图窗口拖拽状态
+  private screenshotPreviewWindowState: { originalWidth: number; originalHeight: number; scale: number } | null = null; // 截图预览窗口缩放状态
   private _trayAvailabilityChecked = false;
   private _screenshotReadyListenerRegistered = false;
   private _shouldShowMainWindowOnScreenshotClose = true; // 控制截图窗口关闭时是否显示主窗口
@@ -673,7 +674,14 @@ export class WindowManager {
       if (this.screenshotPreviewWindow && !this.screenshotPreviewWindow.isDestroyed()) {
         this.screenshotPreviewWindow.show();
         this.screenshotPreviewWindow.focus();
-        
+
+        // 初始化窗口缩放状态
+        this.screenshotPreviewWindowState = {
+          originalWidth: imageWidth,
+          originalHeight: imageHeight + TOOLBAR_EXTRA_HEIGHT,
+          scale: 1,
+        };
+
         // 发送截图数据到渲染进程
         this.screenshotPreviewWindow.webContents.send("screenshot-preview-data", imageData);
       }
@@ -682,6 +690,7 @@ export class WindowManager {
     this.screenshotPreviewWindow.on("closed", () => {
       logger.debug("截图预览窗口已关闭");
       this.screenshotPreviewWindow = null;
+      this.screenshotPreviewWindowState = null;
     });
   }
 
@@ -1165,6 +1174,55 @@ export class WindowManager {
         return { success: true };
       } catch (error) {
         logger.error("缩放贴图窗口失败", {
+          error: error instanceof Error ? error.message : "未知错误",
+        });
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "未知错误",
+        };
+      }
+    });
+
+    // 缩放截图预览窗口（支持鼠标锚点）
+    ipcMain.handle("scale-screenshot-preview-window", (event, deltaY: number, anchor?: { x: number; y: number; dpr?: number }) => {
+      try {
+        const win = this.screenshotPreviewWindow;
+        if (!win || win.isDestroyed()) return { success: false };
+
+        const state = this.screenshotPreviewWindowState;
+        if (!state) return { success: false };
+
+        const oldBounds = win.getBounds();
+
+        // 连续缩放：按滚轮增量计算比例
+        const factor = Math.exp(-deltaY * 0.0015);
+        const minScale = 0.1;
+        const maxScale = 6;
+        const newScale = Math.min(maxScale, Math.max(minScale, state.scale * factor));
+        const newWidth = Math.max(1, Math.round(state.originalWidth * newScale));
+        const newHeight = Math.max(1, Math.round(state.originalHeight * newScale));
+
+        // 计算锚点位置（DIP坐标，clientX/clientY 本身就是 DIP，无需除以 dpr）
+        const axDip = anchor ? anchor.x : oldBounds.width / 2;
+        const ayDip = anchor ? anchor.y : oldBounds.height / 2;
+
+        // 计算缩放比例
+        const ratioW = newWidth / oldBounds.width;
+        const ratioH = newHeight / oldBounds.height;
+
+        // 计算新的窗口位置（围绕锚点缩放）
+        const newX = Math.round(oldBounds.x - axDip * (ratioW - 1));
+        const newY = Math.round(oldBounds.y - ayDip * (ratioH - 1));
+
+        // 原子更新窗口位置和大小
+        win.setBounds({ x: newX, y: newY, width: newWidth, height: newHeight });
+
+        // 更新状态
+        this.screenshotPreviewWindowState = { ...state, scale: newScale };
+
+        return { success: true };
+      } catch (error) {
+        logger.error("缩放截图预览窗口失败", {
           error: error instanceof Error ? error.message : "未知错误",
         });
         return {

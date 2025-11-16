@@ -261,6 +261,18 @@ export const ScreenshotPreviewPage = () => {
     handleClose();
   }, [handleClose]);
 
+  /**
+   * 处理滚轮缩放事件
+   */
+  const handleWheel: React.WheelEventHandler = useCallback((e) => {
+    e.preventDefault();
+    window.electronAPI.scaleScreenshotPreviewWindow(e.deltaY, {
+      x: e.clientX,
+      y: e.clientY,
+      dpr: window.devicePixelRatio,
+    });
+  }, []);
+
   if (!imageData) {
     return (
       <div className="screenshot-preview-page loading">
@@ -272,7 +284,11 @@ export const ScreenshotPreviewPage = () => {
   return (
     <div className="screenshot-preview-page">
       {/* 图片预览区域，承载图片与浮动工具栏 */}
-      <div className="screenshot-preview-content" ref={stageRef}>
+      <div
+        className="screenshot-preview-content"
+        ref={stageRef}
+        onWheel={handleWheel}
+      >
         <img
           ref={imageRef}
           src={imageData}
