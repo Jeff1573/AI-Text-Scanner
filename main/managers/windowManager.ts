@@ -61,14 +61,14 @@ function getPreloadPath(): string {
 export class WindowManager {
   private mainWindow: BrowserWindow | null = null;
   private screenshotWindow: BrowserWindow | null = null;
-  private screenshotPreviewWindow: BrowserWindow | null = null;
+  private screenshotPreviewWindows: Map<number, BrowserWindow> = new Map(); // 存储多个截图预览窗口
   private resultWindow: BrowserWindow | null = null;
   private htmlViewerWindow: BrowserWindow | null = null;
   private stickerWindows: Map<number, BrowserWindow> = new Map(); // 存储多个贴图窗口
   private stickerWindowStates: Map<number, { originalWidth: number; originalHeight: number; scale: number }> = new Map(); // 存储贴图窗口状态
   private stickerDragStates: Map<number, { startCursor: Electron.Point; startBounds: Electron.Rectangle }> = new Map(); // 存储贴图窗口拖拽状态
-  private screenshotPreviewWindowState: { originalWidth: number; originalHeight: number; scale: number } | null = null; // 截图预览窗口缩放状态
-  private screenshotPreviewDragState: { startCursor: Electron.Point; startBounds: Electron.Rectangle } | null = null; // 截图预览窗口拖拽状态
+  private screenshotPreviewWindowStates: Map<number, { originalWidth: number; originalHeight: number; scale: number }> = new Map(); // 截图预览窗口缩放状态
+  private screenshotPreviewDragStates: Map<number, { startCursor: Electron.Point; startBounds: Electron.Rectangle }> = new Map(); // 截图预览窗口拖拽状态
   private _trayAvailabilityChecked = false;
   private _screenshotReadyListenerRegistered = false;
   private _shouldShowMainWindowOnScreenshotClose = true; // 控制截图窗口关闭时是否显示主窗口
@@ -595,12 +595,8 @@ export class WindowManager {
    * 
    * 用于显示原生截图的结果，并提供操作工具栏
    */
-  createScreenshotPreviewWindow(imageData: string): void {
-    // 如果已存在预览窗口，先关闭
-    if (this.screenshotPreviewWindow) {
-      this.screenshotPreviewWindow.close();
-      this.screenshotPreviewWindow.destroy();
-    }
+  createScreenshotPreviewWindow(imageData: string): BrowserWindow {
+    logger.info("创建截图预览窗口");
 
     const isMac = process.platform === "darwin";
 
@@ -651,48 +647,54 @@ export class WindowManager {
       windowConfig.titleBarStyle = "hidden";
     }
 
-    this.screenshotPreviewWindow = new BrowserWindow(windowConfig);
+    const screenshotPreviewWindow = new BrowserWindow(windowConfig);
+
+    // 存储窗口实例和初始状态
+    this.screenshotPreviewWindows.set(screenshotPreviewWindow.id, screenshotPreviewWindow);
+    this.screenshotPreviewWindowStates.set(screenshotPreviewWindow.id, {
+      originalWidth: imageWidth,
+      originalHeight: imageHeight + TOOLBAR_EXTRA_HEIGHT,
+      scale: 1,
+    });
 
     if (isDevelopment) {
-      this.screenshotPreviewWindow.loadURL(`${VITE_DEV_SERVER_URL}#/screenshot-preview`);
+      screenshotPreviewWindow.loadURL(`${VITE_DEV_SERVER_URL}#/screenshot-preview`);
     } else {
       const htmlPath = path.join(__dirname, `../renderer/index.html`);
       if (fs.existsSync(htmlPath)) {
-        this.screenshotPreviewWindow.loadFile(htmlPath, {
+        screenshotPreviewWindow.loadFile(htmlPath, {
           hash: "/screenshot-preview",
         });
       } else {
         const altHtmlPath = path.join(process.resourcesPath, "app/.vite/renderer/index.html");
-        this.screenshotPreviewWindow.loadFile(altHtmlPath, {
+        screenshotPreviewWindow.loadFile(altHtmlPath, {
           hash: "/screenshot-preview",
         });
       }
     }
 
-    this.screenshotPreviewWindow.on("ready-to-show", () => {
-      logger.info("截图预览窗口加载完成");
+    screenshotPreviewWindow.on("ready-to-show", () => {
+      logger.info("截图预览窗口加载完成", { id: screenshotPreviewWindow.id });
 
-      if (this.screenshotPreviewWindow && !this.screenshotPreviewWindow.isDestroyed()) {
-        this.screenshotPreviewWindow.show();
-        this.screenshotPreviewWindow.focus();
-
-        // 初始化窗口缩放状态
-        this.screenshotPreviewWindowState = {
-          originalWidth: imageWidth,
-          originalHeight: imageHeight + TOOLBAR_EXTRA_HEIGHT,
-          scale: 1,
-        };
+      if (!screenshotPreviewWindow.isDestroyed()) {
+        screenshotPreviewWindow.show();
+        screenshotPreviewWindow.focus();
 
         // 发送截图数据到渲染进程
-        this.screenshotPreviewWindow.webContents.send("screenshot-preview-data", imageData);
+        screenshotPreviewWindow.webContents.send("screenshot-preview-data", imageData);
       }
     });
 
-    this.screenshotPreviewWindow.on("closed", () => {
-      logger.debug("截图预览窗口已关闭");
-      this.screenshotPreviewWindow = null;
-      this.screenshotPreviewWindowState = null;
+    // 窗口关闭时从 Map 中移除
+    screenshotPreviewWindow.on("closed", () => {
+      logger.debug("截图预览窗口已关闭", { id: screenshotPreviewWindow.id });
+      this.screenshotPreviewWindows.delete(screenshotPreviewWindow.id);
+      this.screenshotPreviewWindowStates.delete(screenshotPreviewWindow.id);
+      this.screenshotPreviewDragStates.delete(screenshotPreviewWindow.id);
     });
+
+    logger.info("截图预览窗口创建成功", { id: screenshotPreviewWindow.id });
+    return screenshotPreviewWindow;
   }
 
   createHtmlViewerWindow(htmlContent: string, title = "AI 分析结果"): void {
@@ -1187,10 +1189,13 @@ export class WindowManager {
     // 缩放截图预览窗口（支持鼠标锚点）
     ipcMain.handle("scale-screenshot-preview-window", (event, deltaY: number, anchor?: { x: number; y: number; dpr?: number }) => {
       try {
-        const win = this.screenshotPreviewWindow;
+        const windowId = event.sender.getOwnerBrowserWindow()?.id;
+        if (!windowId) return { success: false };
+
+        const win = this.screenshotPreviewWindows.get(windowId);
         if (!win || win.isDestroyed()) return { success: false };
 
-        const state = this.screenshotPreviewWindowState;
+        const state = this.screenshotPreviewWindowStates.get(windowId);
         if (!state) return { success: false };
 
         const oldBounds = win.getBounds();
@@ -1219,7 +1224,7 @@ export class WindowManager {
         win.setBounds({ x: newX, y: newY, width: newWidth, height: newHeight });
 
         // 更新状态
-        this.screenshotPreviewWindowState = { ...state, scale: newScale };
+        this.screenshotPreviewWindowStates.set(windowId, { ...state, scale: newScale });
 
         return { success: true };
       } catch (error) {
@@ -1240,7 +1245,10 @@ export class WindowManager {
      */
     ipcMain.handle("begin-screenshot-preview-drag", (event) => {
       try {
-        const win = this.screenshotPreviewWindow;
+        const windowId = event.sender.getOwnerBrowserWindow()?.id;
+        if (!windowId) return;
+
+        const win = this.screenshotPreviewWindows.get(windowId);
         if (!win || win.isDestroyed()) return;
 
         // 获取当前鼠标屏幕坐标
@@ -1249,7 +1257,7 @@ export class WindowManager {
         const startBounds = win.getBounds();
 
         // 保存起始状态
-        this.screenshotPreviewDragState = { startCursor, startBounds };
+        this.screenshotPreviewDragStates.set(windowId, { startCursor, startBounds });
       } catch (error) {
         logger.error("开始拖拽截图预览窗口失败", {
           error: error instanceof Error ? error.message : "未知错误",
@@ -1265,10 +1273,13 @@ export class WindowManager {
      */
     ipcMain.handle("drag-screenshot-preview-window", (event) => {
       try {
-        const win = this.screenshotPreviewWindow;
+        const windowId = event.sender.getOwnerBrowserWindow()?.id;
+        if (!windowId) return;
+
+        const win = this.screenshotPreviewWindows.get(windowId);
         if (!win || win.isDestroyed()) return;
 
-        const dragState = this.screenshotPreviewDragState;
+        const dragState = this.screenshotPreviewDragStates.get(windowId);
         if (!dragState) return;
 
         // 获取当前鼠标位置
@@ -1301,8 +1312,11 @@ export class WindowManager {
      */
     ipcMain.handle("end-screenshot-preview-drag", (event) => {
       try {
+        const windowId = event.sender.getOwnerBrowserWindow()?.id;
+        if (!windowId) return;
+
         // 清理拖拽状态
-        this.screenshotPreviewDragState = null;
+        this.screenshotPreviewDragStates.delete(windowId);
       } catch (error) {
         logger.error("结束拖拽截图预览窗口失败", {
           error: error instanceof Error ? error.message : "未知错误",
