@@ -609,8 +609,20 @@ export class WindowManager {
       const size = image.getSize();
 
       if (size.width > 0 && size.height > 0) {
-        imageWidth = size.width;
-        imageHeight = size.height;
+        const cursorPoint = screen.getCursorScreenPoint();
+        const display = screen.getDisplayNearestPoint(cursorPoint);
+        const scaleFactor = display.scaleFactor;
+
+        imageWidth = Math.round(size.width / scaleFactor);
+        imageHeight = Math.round(size.height / scaleFactor);
+
+        logger.debug("截图尺寸计算", {
+          physicalWidth: size.width,
+          physicalHeight: size.height,
+          scaleFactor,
+          logicalWidth: imageWidth,
+          logicalHeight: imageHeight,
+        });
       } else {
         logger.warn("解析截图尺寸结果为空，使用默认预览窗口大小");
       }
