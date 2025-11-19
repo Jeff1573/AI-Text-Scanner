@@ -406,7 +406,8 @@ export class WindowManager {
           // 检查是否有其他窗口打开
           const hasOtherWindows =
             (this.resultWindow && !this.resultWindow.isDestroyed()) ||
-            (this.htmlViewerWindow && !this.htmlViewerWindow.isDestroyed());
+            (this.htmlViewerWindow && !this.htmlViewerWindow.isDestroyed()) ||
+            (this.screenshotPreviewWindows.size > 0);
 
           if (!this.mainWindow.isVisible() && !hasOtherWindows) {
             logger.debug("截图窗口关闭且无其他窗口，重新显示主窗口");
@@ -697,12 +698,27 @@ export class WindowManager {
       }
     });
 
-    // 窗口关闭时从 Map 中移除
+    // 窗口关闭时从 Map 中移除,并检查是否需要显示主窗口
     screenshotPreviewWindow.on("closed", () => {
       logger.debug("截图预览窗口已关闭", { id: screenshotPreviewWindow.id });
       this.screenshotPreviewWindows.delete(screenshotPreviewWindow.id);
       this.screenshotPreviewWindowStates.delete(screenshotPreviewWindow.id);
       this.screenshotPreviewDragStates.delete(screenshotPreviewWindow.id);
+
+      // 检查是否需要显示主窗口:只有当所有其他窗口都关闭且主窗口被隐藏时才显示
+      if (this.mainWindow && !this.mainWindow.isDestroyed() && !this.mainWindow.isVisible()) {
+        const hasOtherWindows =
+          (this.screenshotWindow && !this.screenshotWindow.isDestroyed() && this.screenshotWindow.isVisible()) ||
+          (this.resultWindow && !this.resultWindow.isDestroyed()) ||
+          (this.htmlViewerWindow && !this.htmlViewerWindow.isDestroyed()) ||
+          (this.screenshotPreviewWindows.size > 0);
+
+        if (!hasOtherWindows) {
+          logger.debug("截图预览窗口关闭且无其他窗口,重新显示主窗口");
+          this.mainWindow.show();
+          this.mainWindow.focus();
+        }
+      }
     });
 
     logger.info("截图预览窗口创建成功", { id: screenshotPreviewWindow.id });

@@ -180,12 +180,18 @@ export const ScreenshotPreviewPage = () => {
       );
 
       // 打开主窗口并导航到图片分析页面
-      await window.electronAPI.openMainWindowWithRoute("/image-analysis");
-
-      // 稍作延迟后关闭预览窗口，确保主窗口已经打开并读取了数据
-      setTimeout(() => {
+      const result = await window.electronAPI.openMainWindowWithRoute("/image-analysis");
+      
+      if (result.success) {
+        // 等待主窗口完全打开并读取数据后,再关闭预览窗口
+        await new Promise(resolve => setTimeout(resolve, 600));
+        
+        // 关闭预览窗口
         window.close();
-      }, 300);
+      } else {
+        console.error("打开主窗口失败:", result.error);
+        alert(`打开分析页面失败: ${result.error}`);
+      }
     } catch (error) {
       console.error("跳转到分析页面失败:", error);
       alert(`打开分析页面失败: ${error}`);
