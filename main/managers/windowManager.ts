@@ -397,24 +397,10 @@ export class WindowManager {
         this.screenshotWindow.hide();
         logger.debug("截图窗口已隐藏（保持常驻，无动画）");
 
-        const shouldShowMain = this._shouldShowMainWindowOnScreenshotClose;
         // 重置标志为默认值
         this._shouldShowMainWindowOnScreenshotClose = true;
 
-        // 如果主窗口存在但被隐藏，并且没有其他窗口打开，且允许显示主窗口，则重新显示主窗口
-        if (this.mainWindow && !this.mainWindow.isDestroyed() && shouldShowMain) {
-          // 检查是否有其他窗口打开
-          const hasOtherWindows =
-            (this.resultWindow && !this.resultWindow.isDestroyed()) ||
-            (this.htmlViewerWindow && !this.htmlViewerWindow.isDestroyed()) ||
-            (this.screenshotPreviewWindows.size > 0);
-
-          if (!this.mainWindow.isVisible() && !hasOtherWindows) {
-            logger.debug("截图窗口关闭且无其他窗口，重新显示主窗口");
-            this.mainWindow.show();
-            this.mainWindow.focus();
-          }
-        }
+        // 不再自动显示主窗口，用户需要手动从托盘或其他方式打开
       }
     });
 
@@ -705,20 +691,7 @@ export class WindowManager {
       this.screenshotPreviewWindowStates.delete(screenshotPreviewWindow.id);
       this.screenshotPreviewDragStates.delete(screenshotPreviewWindow.id);
 
-      // 检查是否需要显示主窗口:只有当所有其他窗口都关闭且主窗口被隐藏时才显示
-      if (this.mainWindow && !this.mainWindow.isDestroyed() && !this.mainWindow.isVisible()) {
-        const hasOtherWindows =
-          (this.screenshotWindow && !this.screenshotWindow.isDestroyed() && this.screenshotWindow.isVisible()) ||
-          (this.resultWindow && !this.resultWindow.isDestroyed()) ||
-          (this.htmlViewerWindow && !this.htmlViewerWindow.isDestroyed()) ||
-          (this.screenshotPreviewWindows.size > 0);
-
-        if (!hasOtherWindows) {
-          logger.debug("截图预览窗口关闭且无其他窗口,重新显示主窗口");
-          this.mainWindow.show();
-          this.mainWindow.focus();
-        }
-      }
+      // 不再自动显示主窗口，用户需要手动从托盘或其他方式打开
     });
 
     logger.info("截图预览窗口创建成功", { id: screenshotPreviewWindow.id });
@@ -806,15 +779,7 @@ export class WindowManager {
     this.htmlViewerWindow.on("closed", () => {
       logger.debug("HTML查看器窗口已关闭");
       this.htmlViewerWindow = null;
-      
-      // 如果主窗口存在但被隐藏，重新显示它
-      if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-        if (!this.mainWindow.isVisible()) {
-          // logger.debug("HTML查看器窗口关闭后，重新显示主窗口");
-          // this.mainWindow.show();
-          // this.mainWindow.focus();
-        }
-      }
+      // 不再自动显示主窗口，用户需要手动从托盘或其他方式打开
     });
 
     // 开发者工具快捷键和ESC关闭窗口
