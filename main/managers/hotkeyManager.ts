@@ -15,6 +15,11 @@ export class HotkeyManager {
   };
 
   private readonly DEFAULT_HOTKEYS: HotkeyConfig = { ...this.currentHotkeys };
+  
+  // 截图防抖相关属性
+  private _lastScreenshotTime = 0; // 记录上次截图的时间戳
+  private _screenshotDebounceMs = 500; // 截图防抖时间间隔（毫秒）
+  private _isScreenshotInProgress = false; // 标记是否有截图流程正在进行中
 
   constructor(
     private windowManager: WindowManager,
@@ -42,6 +47,31 @@ export class HotkeyManager {
       });
 
       try {
+        // 检查是否有截图流程正在进行中
+        if (this._isScreenshotInProgress) {
+          logger.warn("截图流程正在进行中，已拒绝新的调用");
+          return;
+        }
+        
+        // 防抖检查：限制短时间内多次调用
+        const now = Date.now();
+        const timeSinceLastScreenshot = now - this._lastScreenshotTime;
+        
+        if (timeSinceLastScreenshot < this._screenshotDebounceMs) {
+          const remainingTime = Math.ceil((this._screenshotDebounceMs - timeSinceLastScreenshot) / 1000);
+          logger.warn("截图调用过于频繁，已拒绝", {
+            timeSinceLastScreenshot,
+            debounceMs: this._screenshotDebounceMs,
+            remainingSeconds: remainingTime
+          });
+          return;
+        }
+        
+        // 标记截图流程开始
+        this._isScreenshotInProgress = true;
+        // 更新上次截图时间
+        this._lastScreenshotTime = now;
+        
         await this.windowManager.hideAllWindows();
 
         // 所有平台统一：获取截图图片 dataURL 后，打开截图预览窗口
@@ -62,8 +92,15 @@ export class HotkeyManager {
             screenshotData.thumbnail
           );
         }
+        
+        // 截图流程成功完成，重置状态
+        this._isScreenshotInProgress = false;
       } catch (error) {
         const err = error as Error;
+        
+        // 截图流程失败，重置状态
+        this._isScreenshotInProgress = false;
+        
         if (err.message.includes("取消") || err.message.includes("超时")) {
           logger.info("用户取消了截图或超时");
         } else {

@@ -31,6 +31,12 @@ export const useMainAppLogic = () => {
           console.log("原生截图成功，预览窗口已打开");
         } else if (result.errorCode === "USER_CANCELLED") {
           console.log("用户取消截图");
+        } else if (result.errorCode === "IN_PROGRESS") {
+          console.warn("截图流程正在进行中:", result.error);
+          alert(result.error || "截图正在进行中，请完成当前截图后再试");
+        } else if (result.errorCode === "RATE_LIMITED") {
+          console.warn("截图调用过于频繁:", result.error);
+          alert(result.error || "截图调用过于频繁，请稍后再试");
         } else {
           console.error("原生截图失败:", result.error);
           alert(`截图失败: ${result.error || "未知错误"}`);
