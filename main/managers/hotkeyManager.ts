@@ -20,11 +20,42 @@ export class HotkeyManager {
   private _lastScreenshotTime = 0; // 记录上次截图的时间戳
   private _screenshotDebounceMs = 500; // 截图防抖时间间隔（毫秒）
   private _isScreenshotInProgress = false; // 标记是否有截图流程正在进行中
+  private _screenshotTimeoutMs = 30000; // 截图超时时间（30秒）
+  private _screenshotTimeoutTimer: NodeJS.Timeout | null = null; // 截图超时定时器
 
   constructor(
     private windowManager: WindowManager,
     private configManager: ConfigManager
   ) {}
+
+  /**
+   * 启动截图超时保护定时器
+   * 如果截图流程超过指定时间未完成，自动重置状态
+   */
+  private startScreenshotTimeout(): void {
+    // 清除旧的定时器
+    this.clearScreenshotTimeout();
+
+    // 设置新的超时定时器
+    this._screenshotTimeoutTimer = setTimeout(() => {
+      if (this._isScreenshotInProgress) {
+        logger.warn("截图流程超时，自动重置状态", {
+          timeoutMs: this._screenshotTimeoutMs
+        });
+        this._isScreenshotInProgress = false;
+      }
+    }, this._screenshotTimeoutMs);
+  }
+
+  /**
+   * 清除截图超时保护定时器
+   */
+  private clearScreenshotTimeout(): void {
+    if (this._screenshotTimeoutTimer) {
+      clearTimeout(this._screenshotTimeoutTimer);
+      this._screenshotTimeoutTimer = null;
+    }
+  }
 
   registerGlobalShortcuts(hotkeys: HotkeyConfig): HotkeyStatus {
     globalShortcut.unregisterAll();
@@ -46,32 +77,39 @@ export class HotkeyManager {
         platform: process.platform
       });
 
+      // 检查是否有截图流程正在进行中
+      if (this._isScreenshotInProgress) {
+        logger.warn("检测到上一次截图仍在进行中，尝试取消并重新开始");
+        // 取消当前的截图等待（如果是 Windows 平台）
+        NativeScreenshotService.cancelCurrentCapture();
+        // 清除之前的超时定时器
+        this.clearScreenshotTimeout();
+        // 重置状态，允许新的截图开始
+        this._isScreenshotInProgress = false;
+      }
+
+      // 防抖检查：限制短时间内多次调用
+      const now = Date.now();
+      const timeSinceLastScreenshot = now - this._lastScreenshotTime;
+
+      if (timeSinceLastScreenshot < this._screenshotDebounceMs) {
+        const remainingTime = Math.ceil((this._screenshotDebounceMs - timeSinceLastScreenshot) / 1000);
+        logger.warn("截图调用过于频繁，已拒绝", {
+          timeSinceLastScreenshot,
+          debounceMs: this._screenshotDebounceMs,
+          remainingSeconds: remainingTime
+        });
+        return;
+      }
+
+      // 标记截图流程开始
+      this._isScreenshotInProgress = true;
+      // 更新上次截图时间
+      this._lastScreenshotTime = now;
+      // 启动超时保护
+      this.startScreenshotTimeout();
+
       try {
-        // 检查是否有截图流程正在进行中
-        if (this._isScreenshotInProgress) {
-          logger.warn("截图流程正在进行中，已拒绝新的调用");
-          return;
-        }
-        
-        // 防抖检查：限制短时间内多次调用
-        const now = Date.now();
-        const timeSinceLastScreenshot = now - this._lastScreenshotTime;
-        
-        if (timeSinceLastScreenshot < this._screenshotDebounceMs) {
-          const remainingTime = Math.ceil((this._screenshotDebounceMs - timeSinceLastScreenshot) / 1000);
-          logger.warn("截图调用过于频繁，已拒绝", {
-            timeSinceLastScreenshot,
-            debounceMs: this._screenshotDebounceMs,
-            remainingSeconds: remainingTime
-          });
-          return;
-        }
-        
-        // 标记截图流程开始
-        this._isScreenshotInProgress = true;
-        // 更新上次截图时间
-        this._lastScreenshotTime = now;
-        
         await this.windowManager.hideAllWindows();
 
         // 所有平台统一：获取截图图片 dataURL 后，打开截图预览窗口
@@ -92,21 +130,25 @@ export class HotkeyManager {
             screenshotData.thumbnail
           );
         }
-        
-        // 截图流程成功完成，重置状态
-        this._isScreenshotInProgress = false;
       } catch (error) {
         const err = error as Error;
-        
-        // 截图流程失败，重置状态
-        this._isScreenshotInProgress = false;
-        
-        if (err.message.includes("取消") || err.message.includes("超时")) {
-          logger.info("用户取消了截图或超时");
+
+        if (err.message.includes("取消")) {
+          // 用户主动取消截图，不显示主窗口
+          logger.info("用户取消了截图");
+        } else if (err.message.includes("超时")) {
+          // 截图超时，显示主窗口并提示用户
+          logger.warn("截图超时");
+          this.windowManager.showMainWindow();
         } else {
+          // 其他错误，显示主窗口以便用户了解情况
           logger.error("截图过程中发生错误", { error: err.message });
+          this.windowManager.showMainWindow();
         }
-        this.windowManager.showMainWindow();
+      } finally {
+        // 无论成功、失败还是异常，都确保重置截图状态和清除定时器
+        this.clearScreenshotTimeout();
+        this._isScreenshotInProgress = false;
       }
     });
 

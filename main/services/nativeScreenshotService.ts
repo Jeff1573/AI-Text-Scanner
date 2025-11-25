@@ -16,6 +16,8 @@ const execAsync = promisify(exec);
 const logger = createModuleLogger('NativeScreenshotService');
 
 export class NativeScreenshotService {
+  // 用于取消当前截图等待的控制器
+  private static currentAbortController: AbortController | null = null;
   /**
    * 使用系统原生截图工具进行交互式截图
    *
@@ -70,10 +72,28 @@ export class NativeScreenshotService {
   }
 
   /**
+   * 取消当前正在进行的截图等待
+   */
+  static cancelCurrentCapture(): void {
+    if (this.currentAbortController) {
+      logger.info("取消当前截图等待");
+      this.currentAbortController.abort();
+      this.currentAbortController = null;
+    }
+  }
+
+  /**
    * Windows 截图实现（使用原生截图工具 + 剪贴板监听）
    */
   private static async captureWindows(): Promise<string> {
     logger.info("启动 Windows 原生截图工具");
+
+    // 取消之前的截图等待（如果存在）
+    this.cancelCurrentCapture();
+
+    // 创建新的 AbortController
+    this.currentAbortController = new AbortController();
+    const signal = this.currentAbortController.signal;
 
     const tempDir = app.getPath('temp');
     const timestamp = Date.now();
@@ -89,11 +109,17 @@ export class NativeScreenshotService {
       await execAsync('start ms-screenclip:');
 
       // 等待用户完成截图（轮询剪贴板）
-      const maxWaitTime = 60000; // 最多等待 60 秒
+      const maxWaitTime = 60000; // 最多等待 60 秒（足够长，因为可以被中断）
       const pollInterval = 100; // 每 100ms 检查一次
       const startTime = Date.now();
 
       while (Date.now() - startTime < maxWaitTime) {
+        // 检查是否被中断
+        if (signal.aborted) {
+          logger.info("截图等待被中断", { waitTime: Date.now() - startTime });
+          throw new Error("用户取消了截图");
+        }
+
         await new Promise(resolve => setTimeout(resolve, pollInterval));
 
         const currentImage = clipboard.readImage();
@@ -114,14 +140,20 @@ export class NativeScreenshotService {
               waitTime: Date.now() - startTime
             });
 
+            // 清除 AbortController
+            this.currentAbortController = null;
             return filepath;
           }
         }
       }
 
-      throw new Error("用户取消了截图或超时");
+      // 超时后抛出错误
+      logger.info("Windows 截图等待超时", { waitTime: Date.now() - startTime });
+      this.currentAbortController = null;
+      throw new Error("用户取消了截图");
     } catch (error) {
       logger.error("Windows 截图失败", { error });
+      this.currentAbortController = null;
       if (fs.existsSync(filepath)) {
         fs.unlinkSync(filepath);
       }
